@@ -1,0 +1,62 @@
+---
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  gobuild:
+    name: Go lint and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          # CentOS Stream 9 go  version
+          go-version: '1.18.2'
+
+      - name: Setup golint
+        run: |
+          cd extbldr
+          GO111MODULE=off go get -u golang.org/x/lint/golint
+
+      # Tests not run, because of deps
+      # They are run in docker build
+      - name: Run go build
+        run: |
+          cd extbldr
+          go build .
+
+      - name: Run golint & go vet
+        run: |
+          cd extbldr
+          golint .
+          golint ./...
+          go vet .
+          go vet ./...
+
+  dockerbuild:
+    name: Dockerfile build without publish
+
+    # Run this only after gobuild succeeds
+    needs: gobuild
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup buildx with docker-container driver
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker build
+        uses: docker/build-push-action@v3
+        with:
+          # Dockerfile is within subdirectory
+          context: "{{defaultContext}}:extbldr"
+
+          # GIT_AUTH_TOKEN is unset for non-default context
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+
+          # Publish is done by Arista docker-library to push to on-prem registry
+          # This just checks the docker build and can work off-prem.
+          push: false
