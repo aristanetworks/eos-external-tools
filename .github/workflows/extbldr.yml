@@ -1,0 +1,52 @@
+---
+on:
+  pull_request:
+    branches:
+      - 'main-*'
+
+jobs:
+  gobuild:
+    name: Go lint and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          # CentOS Stream 9 go  version
+          go-version: '1.18.2'
+
+      - name: Install linter
+        run: |
+          go version
+          go get -u golang.org/x/lint/golint
+
+      # Tests not run, because of deps
+      # They are run in docker build
+      - name: Run go build
+        run: |
+          cd extbldr
+          go build .
+
+      - name: Run vet & lint
+        run: |
+          cd extbldr
+          go vet .
+          golint .
+
+  dockerbuild:
+    name: Dockerfile build without publish
+
+    # Run this only after gobuild succeeds
+    needs: gobuild
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/build-push-action@v3
+        with:
+          # Dockerfile is within subdirectory
+          context: "{{defaultContext}}:extbldr"
+
+          # Publish is done by Arista docker-library to push to on-prem registry
+          # This just checks the docker build and can work off-prem.
+          push: false
