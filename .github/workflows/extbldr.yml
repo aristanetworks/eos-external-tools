@@ -14,7 +14,7 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter/slim@v4
         env:
-          #VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FILTER_REGEX_INCLUDE: .*extbldr/Dockerfile
@@ -61,7 +61,8 @@ jobs:
         with:
           # Dockerfile is within subdirectory
           context: "{{defaultContext}}:extbldr"
-
+          quiet: true
+          buildArgs: quiet
           # GIT_AUTH_TOKEN is unset for non-default context
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
