@@ -1,5 +1,5 @@
 ---
-on:
+on:   # yamllint disable-line rule:truthy
   pull_request:
     branches:
       - 'main'
@@ -14,10 +14,14 @@ jobs:
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v2.0.0
         with:
-          # using recursive to avoid hardcoding paths and missing any future additions
+          # using recursive to avoid hardcoding paths
+          # and missing any future additions
           recursive: true
           verbose: true
-      
+
+      - name: Lint yaml files
+        run: yamllint .
+
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
