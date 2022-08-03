@@ -1,0 +1,17 @@
+---
+package:
+  - name: tcpdump
+    upstream:
+      - http://foo/foo.src.rpm
+    type: srpm
+    spec: foo.spec
+    source:
+      - a.cfg
+      - a1.patch
+    target:
+      - name: i686
+        include:
+          - a.tpl
+        repo:
+          - name: bar
+            baseurl: http://bar/el7/RPMS

@@ -32,11 +32,12 @@ COPY *.go ./
 COPY cmd/ cmd/
 COPY impl/ impl/
 COPY util/ util/
+COPY manifest/ manifest/
 RUN go build -o  /home/extbldr-robot/bin/extbldr && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
-    PATH="$PATH:$HOME/go/bin" golint . && \
-    PATH="$PATH:$HOME/go/bin" golint ./... && \
+    PATH="$PATH:$HOME/go/bin" golint -set_exit_status .  && \
+    PATH="$PATH:$HOME/go/bin" golint -set_exit_status ./... && \
     go vet . && \
     go vet ./...
 
