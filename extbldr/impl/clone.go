@@ -39,8 +39,13 @@ func Clone(repoURL string, dstBasePath string, pkg string, force bool) error {
 	if creatErr != nil {
 		return fmt.Errorf("impl.Clone: Creating %s errored out with %s", dstBasePath, creatErr)
 	}
+	var cloneErr error
+	if util.GlobalVar.Quiet {
+		cloneErr = util.RunSystemCmd("git", "clone", "--quiet", repoURL, dstPath)
+	}else{
+		cloneErr = util.RunSystemCmd("git", "clone", repoURL, dstPath)
+	}
 
-	cloneErr := util.RunSystemCmd("git", "clone", repoURL, dstPath)
 	if cloneErr != nil {
 		return fmt.Errorf("impl.Clone: Cloning %s to %s errored out with %s",
 			repoURL, dstPath, cloneErr)

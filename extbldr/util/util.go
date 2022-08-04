@@ -6,13 +6,26 @@ package util
 import (
 	"os"
 	"os/exec"
+	"io"
 )
+
+//Globals type struct exported for global flags
+type Globals struct {
+	Quiet bool
+}
+
+//GlobalVar global variable exported for global flags
+var GlobalVar Globals
 
 // RunSystemCmd runs a command on the shell and pipes to stdout and stderr
 func RunSystemCmd(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
-	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if !GlobalVar.Quiet {
+		cmd.Stdout = os.Stdout
+	}else {
+		cmd.Stdout = io.Discard
+	}
 	err := cmd.Run()
 	return err
 }

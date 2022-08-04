@@ -9,6 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"extbldr/util"
 )
 
 var cfgFile string
@@ -45,6 +47,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.extbldr.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&pkgName, "package", "p", "", "Package name (REQUIRED)")
+	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
 	rootCmd.MarkPersistentFlagRequired("package")
 
 	// Cobra also supports local flags, which will only run
