@@ -43,9 +43,7 @@ jobs:
       - name: Run golint & go vet
         run: |
           cd extbldr
-          golint -set_exit_status .
           golint -set_exit_status ./...
-          go vet .
           go vet ./...
 
   dockerbuild:
