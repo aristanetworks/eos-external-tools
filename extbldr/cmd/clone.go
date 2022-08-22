@@ -17,7 +17,7 @@ var force bool
 
 // cloneCmd represents the clone command
 var cloneCmd = &cobra.Command{
-	Use:   "clone <URL>",
+	Use:   "clone -p <package> <URL>",
 	Short: "git clone the repository for the modified external package",
 	Long: `The git repository specified by the URL is cloned to a local directory.
 The local directory is <BASE_PATH>/<package>.

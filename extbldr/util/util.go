@@ -4,17 +4,18 @@
 package util
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"io"
 )
 
-//Globals type struct exported for global flags
+// Globals type struct exported for global flags
 type Globals struct {
 	Quiet bool
 }
 
-//GlobalVar global variable exported for global flags
+// GlobalVar global variable exported for global flags
 var GlobalVar Globals
 
 // RunSystemCmd runs a command on the shell and pipes to stdout and stderr
@@ -23,7 +24,7 @@ func RunSystemCmd(name string, arg ...string) error {
 	cmd.Stderr = os.Stderr
 	if !GlobalVar.Quiet {
 		cmd.Stdout = os.Stdout
-	}else {
+	} else {
 		cmd.Stdout = io.Discard
 	}
 	err := cmd.Run()
@@ -32,10 +33,20 @@ func RunSystemCmd(name string, arg ...string) error {
 
 // MaybeCreateDir creates a directory with permissions 0775
 // Pre-existing directories are left untouched.
-func MaybeCreateDir(dirPath string) error {
+func MaybeCreateDir(errorPrefix string, dirPath string) error {
 	err := os.Mkdir(dirPath, 0775)
 	if err != nil && !os.IsExist(err) {
-		return err
+		return fmt.Errorf("%s: Error '%s' creating %s", errorPrefix, err, dirPath)
+	}
+	return nil
+}
+
+// CopyFile runs cp src dst in the shell
+func CopyFile(errorPrefix string, src string, dst string) error {
+	var cpErr error
+	cpErr = RunSystemCmd("cp", src, dst)
+	if cpErr != nil {
+		return fmt.Errorf("%s: Error '%s' copying %s to %s", errorPrefix, cpErr, src, dst)
 	}
 	return nil
 }

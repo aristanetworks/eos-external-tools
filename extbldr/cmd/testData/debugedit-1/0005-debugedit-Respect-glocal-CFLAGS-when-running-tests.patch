@@ -1,0 +1,38 @@
+From e0538e124c51d1cc459765206f29427c017eca8e Mon Sep 17 00:00:00 2001
+From: Romanos Skiadas <rski@arista.com>
+Date: Mon, 9 May 2022 06:31:16 -0700
+Subject: [PATCH] debugedit: Respect glocal CFLAGS when running tests
+
+This way debugedit tests will run under _our_ environment, not using the
+default compiler flags. One case where this is needed is gcc11: We set
+-gdwarf-4 everywhere because binutils doesn't support it and readelf is
+having problems. gcc8 had dwarf4 as the default so there was no problem,
+but with the gcc11 toolchain, 5 is the default. The tests fail, and even
+if they didn't, they would not be testing what we want and use, namely
+dwarf4.
+---
+ tests/atlocal.in | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git tests/atlocal.in tests/atlocal.in
+index 2f12e60..c6bffaa 100644
+--- a/tests/atlocal.in
++++ b/tests/atlocal.in
+@@ -5,8 +5,13 @@ PATH=@abs_builddir@:@abs_top_builddir@:$top_srcdir:$srcdir:$PATH
+ 
+ # We do use the CC and LD found by configure, but explicitly keep
+ # CFLAGS and LDFLAGS empty because the tests use specific flags.
++# Arista:
++# Set CFLAGS, otherwise gcc defaults to things we don't support or use.
++# For example, gcc11 defaults to dwarf-5, which we override via CFLAGS to 4.
++# 5 doesn't currently work with our binutils so tests fail and it's not what we
++# use so they would be irrelevant if they even passed.
+ CC="@CC@"
+-CFLAGS=""
++CFLAGS="@CFLAGS@"
+ LD="@LD@"
+ LDFLAGS=""
+ 
+-- 
+2.36.0
+

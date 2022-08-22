@@ -16,5 +16,6 @@ func main() {
 	viper.SetEnvPrefix("extbldr")
 	homeDir := os.Getenv("HOME")
 	viper.SetDefault("SrcDir", filepath.Join(homeDir, "extbldr-src"))
+	viper.SetDefault("WorkingDir", "/var/extbldr")
 	cmd.Execute()
 }

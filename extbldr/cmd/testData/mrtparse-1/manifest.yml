@@ -1,0 +1,9 @@
+---
+package:
+  - name: mrtparse
+    upstream:
+      - https://opentuna.cn/pypi/web/packages/eb/c5/6d46da5ba5c5d5a4890289d0228c06c13aedf07c04f9441b630ff0d0bf5c/mrtparse-2.0.1.tar.gz
+    type: tarball
+    spec: mrtparse.spec
+    source:
+      - arista-remove-default-sigpipe.patch

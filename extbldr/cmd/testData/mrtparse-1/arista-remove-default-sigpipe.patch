@@ -1,0 +1,34 @@
+commit b3f99a5824f9817b7ad99296a39ce769d025c2cf
+Author: Joanne Mikkelson <jmmikkel@arista.com>
+Date:   Thu Feb 17 17:12:57 2022 -0800
+
+    Do not change the SIGPIPE handler to SIG_DFL
+    
+    When other code imports a module, it doesn't usually expect the signal
+    handlers to be changed. In this case, anything that imports mrtparse
+    will now silently exit instead of being able to handle the half-closed
+    pipe, and this applies to any file, not just the MRT files.
+    
+    The rationale for this signal handler change is unclear. If some other
+    script using the mrtparse module wants to silently exit, said script
+    should change the signal handler.
+
+diff --git a/mrtparse/__init__.py b/mrtparse/__init__.py
+index 1c79d0b..4f04e55 100644
+--- a/mrtparse/__init__.py
++++ b/mrtparse/__init__.py
+@@ -25,14 +25,9 @@ import sys
+ import gzip
+ import bz2
+ import collections
+-import signal
+ from datetime import datetime
+ from .params import *
+ from .base import *
+-try:
+-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+-except AttributeError:
+-    pass
+ 
+ __version__ = '2.0.1'
+ 

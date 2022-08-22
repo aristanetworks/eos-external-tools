@@ -1,0 +1,12 @@
+---
+package:
+  - name: debugedit
+    upstream:
+      - https://dl.rockylinux.org/pub/rocky/9/AppStream/source/tree/Packages/d/debugedit-5.0-3.el9.src.rpm
+    type: srpm
+    spec: debugedit.spec
+    source:
+      - 0002-Add-src-dir-option-to-find-debuginfo.patch
+      - 0003-Make-DWZ-filenames-idempotent.patch
+      - 0004-Don-t-use-multifile-option-for-DWZ.patch
+      - 0005-debugedit-Respect-glocal-CFLAGS-when-running-tests.patch

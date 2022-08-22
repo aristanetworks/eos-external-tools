@@ -1,0 +1,25 @@
+From ca8e61032ae4eab565d28d1262b2606a55054d12 Mon Sep 17 00:00:00 2001
+From: rpm-build <rpm-build>
+Date: Fri, 16 Jul 2021 13:16:29 +0100
+Subject: [PATCH 3/5] Make DWZ filenames idempotent
+
+---
+ scripts/find-debuginfo.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/find-debuginfo.in b/scripts/find-debuginfo.in
+index c98fd82..ee15b08 100644
+--- a/scripts/find-debuginfo.in
++++ b/scripts/find-debuginfo.in
+@@ -685,7 +685,7 @@ if $run_dwz \
+   readarray dwz_files < <(cd "${RPM_BUILD_ROOT}/usr/lib/debug"; find -type f -name \*.debug | LC_ALL=C sort)
+   if [ ${#dwz_files[@]} -gt 0 ]; then
+     size_before=$(du -sk ${RPM_BUILD_ROOT}/usr/lib/debug | cut -f1)
+-    dwz_multifile_name="${RPM_PACKAGE_NAME}-${RPM_PACKAGE_VERSION}-${RPM_PACKAGE_RELEASE}.${RPM_ARCH}"
++    dwz_multifile_name="${RPM_PACKAGE_NAME}-${RPM_PACKAGE_VERSION}.${RPM_ARCH}"
+     dwz_multifile_suffix=
+     dwz_multifile_idx=0
+     while [ -f "${RPM_BUILD_ROOT}/usr/lib/debug/.dwz/${dwz_multifile_name}${dwz_multifile_suffix}" ]; do
+-- 
+2.31.0
+

@@ -34,15 +34,15 @@ func Clone(repoURL string, dstBasePath string, pkg string, force bool) error {
 	}
 
 	// Create dstBasePath if required
-	creatErr := util.MaybeCreateDir(dstBasePath)
+	creatErr := util.MaybeCreateDir("impl.clone", dstBasePath)
 
 	if creatErr != nil {
-		return fmt.Errorf("impl.Clone: Creating %s errored out with %s", dstBasePath, creatErr)
+		return creatErr
 	}
 	var cloneErr error
 	if util.GlobalVar.Quiet {
 		cloneErr = util.RunSystemCmd("git", "clone", "--quiet", repoURL, dstPath)
-	}else{
+	} else {
 		cloneErr = util.RunSystemCmd("git", "clone", repoURL, dstPath)
 	}
 

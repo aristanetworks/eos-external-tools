@@ -5,10 +5,10 @@ package cmd
 
 import (
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-	"io/ioutil"
 
 	"github.com/spf13/viper"
 )
@@ -19,8 +19,8 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 	const repoURL string = "https://github.com/aristanetworks/aajith-test-repo.git"
 	const pkg string = "bar"
 	rescueStdout := os.Stdout
-  	r, w, _ := os.Pipe()
-  	
+	r, w, _ := os.Pipe()
+
 	args := []string{"clone", repoURL, "--package", pkg}
 	if force {
 		args = append(args, "--force")
@@ -49,7 +49,7 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Empty(t,out)
+			assert.Empty(t, out)
 			os.Stdout = rescueStdout
 		}
 	} else {

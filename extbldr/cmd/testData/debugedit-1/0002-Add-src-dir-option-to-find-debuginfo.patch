@@ -1,0 +1,193 @@
+From e42ab74158979ce07c536527d313aa3245d71547 Mon Sep 17 00:00:00 2001
+From: rpm-build <rpm-build>
+Date: Fri, 16 Jul 2021 13:09:44 +0100
+Subject: [PATCH 2/5] Add '--src-dir' option to find-debuginfo
+
+... and refactor a little to reduce duplication with new functionality.
+---
+ scripts/find-debuginfo.in | 121 ++++++++++++++++++++++++++++----------
+ 1 file changed, 89 insertions(+), 32 deletions(-)
+
+diff --git a/scripts/find-debuginfo.in b/scripts/find-debuginfo.in
+index 82e1adb..c98fd82 100644
+--- a/scripts/find-debuginfo.in
++++ b/scripts/find-debuginfo.in
+@@ -39,6 +39,7 @@ Options:
+ [--unique-debug-suffix SUFFIX]
+ [--unique-debug-src-base BASE]
+ [[-l filelist]... [-p 'pattern'] -o debuginfo.list]
++[--src-dir DIR]...
+ [builddir]
+ 
+ The -g flag says to use strip -g instead of full strip on DSOs or EXEs.
+@@ -72,6 +73,9 @@ the -l filelist file, or whose names match the -p pattern.
+ The -p argument is an grep -E -style regexp matching the a file name,
+ and must not use anchors (^ or $).
+ 
++--src-dir option specifies additional directories containing
++files to be included in debuginfo RPMs.
++
+ The --run-dwz flag instructs find-debuginfo to run the dwz utility
+ if available, and --dwz-low-mem-die-limit and --dwz-max-die-limit
+ provide detailed limits.  See dwz(1) -l and -L option for details.
+@@ -147,6 +151,7 @@ n_jobs=1
+ done=false
+ 
+ BUILDDIR=.
++SRCDIR=
+ out=debugfiles.list
+ srcout=
+ nout=0
+@@ -185,6 +190,10 @@ while [ $# -gt 0 ]; do
+   --g-libs)
+     strip_glibs=true
+     ;;
++  --src-dir)
++    SRCDIR+=" $2"
++    shift
++    ;;
+   -g)
+     strip_g=true
+     ;;
+@@ -441,6 +450,61 @@ get_debugfn()
+   debugfn=${debugdn}/${bn}
+ }
+ 
++# The code that sets debug_base_name and debug_dest_name variables
++# used to be duplicated in the original version of this script.
++# Given that we had to change this logic to support multiple directories
++# and switch to using debug_base_names instead, it's better to factor this
++# out into a new function.
++#
++# Globals (read-only):
++#   RPM_BUILD_DIR, BUILDDIR, SRCDIR, unique_debug_src_base
++#
++# Arguments:
++#   None
++#
++# Returns:
++#   None:
++#
++# Modified globals:
++#
++#   debug_base_names         - list of directories to match during debuginfo rewrite
++#   debug_base_names_regex   - regexp matching all directories ib debug_base_names
++#   debug_dest_name          - target path (based on /usr/src/debug) to rewrite
++#                              debug_base_names paths to
++#
++# Example usage:
++#   Input:
++#
++#     BUILDDIR=/bld/myFoo1
++#     SRCDIR=/src/Foo1
++#     unique_debug_src_base=Foo1
++#
++#   Output:
++#     debug_base_names="/bld/my-Foo1 /src/Foo1"
++#     debug_base_names_regex="^/bld/my-Foo1/\|^/src/Foo1/"
++#     debug_dest_name="/usr/src/debug/Foo1"
++#
++get_debug_rewrite_names()
++{
++  debug_base_names="$RPM_BUILD_DIR"
++  debug_dest_name="/usr/src/debug"
++  if [ ! -z "$unique_debug_src_base" ]; then
++    debug_base_names="$BUILDDIR"
++    debug_dest_name="/usr/src/debug/${unique_debug_src_base}"
++  fi
++  if [ ! -z "$SRCDIR" ]; then
++    debug_base_names+=" $SRCDIR"
++  fi
++  debug_base_names_regex=
++  for debug_base_name in $debug_base_names; do
++    real_path=$(realpath $debug_base_name)
++    if [ ! -z "$debug_base_names_regex" ]; then
++      debug_base_names_regex+="\|"
++    fi
++    debug_base_names_regex+="^$real_path/"
++  done
++}
++
+ set -o pipefail
+ 
+ strict_error=ERROR
+@@ -478,25 +542,21 @@ do_file()
+   [ -f "${debugfn}" ] && return
+ 
+   echo "extracting debug info from $f"
+-  # See also cpio SOURCEFILE copy. Directories must match up.
+-  debug_base_name="$RPM_BUILD_DIR"
+-  debug_dest_name="/usr/src/debug"
+-  if [ ! -z "$unique_debug_src_base" ]; then
+-    debug_base_name="$BUILDDIR"
+-    debug_dest_name="/usr/src/debug/${unique_debug_src_base}"
+-  fi
+-  no_recompute=
+-  if [ "$no_recompute_build_id" = "true" ]; then
+-    no_recompute="-n"
+-  fi
+-  id=$(${install_dir}/debugedit -b "$debug_base_name" -d "$debug_dest_name" \
+-			      $no_recompute -i \
+-			      ${build_id_seed:+--build-id-seed="$build_id_seed"} \
+-			      -l "$SOURCEFILE" "$f") || exit
+-  if [ -z "$id" ]; then
+-    echo >&2 "*** ${strict_error}: No build ID note found in $f"
+-    $strict && exit 2
+-  fi
++  get_debug_rewrite_names
++  # Obtain the list of all referenced files from BUILDDIR and SRCDIR 
++  # and store them as absolute paths in SOURCEFILE
++  # Then rewrite respective directories one by one, as (ar)debugedit
++  # does not support rewriting then in one go
++  debugedit -l /dev/stdout "$f" | grep -z "$debug_base_names_regex" >> "$SOURCEFILE"
++  for debug_base_name in $debug_base_names; do
++    # echo "debug edit: rewrite $debug_base_name to $debug_dest_name"
++    id=$(debugedit -b "$debug_base_name" -d "$debug_dest_name" \
++ 			      -i "$f") || exit
++    if [ -z "$id" ]; then
++      echo >&2 "*** ${strict_error}: No build ID note found in $f"
++      $strict && exit 2
++    fi
++  done
+ 
+   # Add .gdb_index if requested.
+   if $include_gdb_index; then
+@@ -674,25 +734,22 @@ do
+ done
+ 
+ if [ -s "$SOURCEFILE" ]; then
+-  # See also debugedit invocation. Directories must match up.
+-  debug_base_name="$RPM_BUILD_DIR"
+-  debug_dest_name="/usr/src/debug"
+-  if [ ! -z "$unique_debug_src_base" ]; then
+-    debug_base_name="$BUILDDIR"
+-    debug_dest_name="/usr/src/debug/${unique_debug_src_base}"
+-  fi
+-
++  get_debug_rewrite_names
+   mkdir -p "${RPM_BUILD_ROOT}${debug_dest_name}"
+   # Filter out anything compiler generated which isn't a source file.
+   # e.g. <internal>, <built-in>, <__thread_local_inner macros>.
+   # Some compilers generate them as if they are part of the working
+   # directory (which is why we match against ^ or /).
++  #
++  # Then use a combination of tar/untar with path transform
++  # logic which removes BUILDDIR and SRCDIR paths when extracting
++  # files
+   LC_ALL=C sort -z -u "$SOURCEFILE" | grep -E -v -z '(^|/)<[a-z _-]+>$' |
+-  (cd "${debug_base_name}"; cpio -pd0mL "${RPM_BUILD_ROOT}${debug_dest_name}")
+-  # stupid cpio creates new directories in mode 0700,
+-  # and non-standard modes may be inherented from original directories, fixup
+-  find "${RPM_BUILD_ROOT}${debug_dest_name}" -type d -print0 |
+-  xargs --no-run-if-empty -0 chmod 0755
++    tar --create --no-recursion --absolute-names --null --files-from /dev/stdin \
++        --preserve-permissions --dereference --xform "s#$debug_base_names_regex##" |
++    tar --extract --preserve-permissions --directory "${RPM_BUILD_ROOT}${debug_dest_name}"
++  # fix permissions of files & directories to match %aetup RPM macro
++  chmod -Rf a+rX,u+w,g-w,o-w "${RPM_BUILD_ROOT}${debug_dest_name}"
+ fi
+ 
+ if [ -d "${RPM_BUILD_ROOT}/usr/lib" ] || [ -d "${RPM_BUILD_ROOT}/usr/src" ]; then
+-- 
+2.31.0
+

@@ -15,6 +15,7 @@ import (
 
 var cfgFile string
 var pkgName string
+var subPkgName string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -47,6 +48,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.extbldr.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&pkgName, "package", "p", "", "Package name (REQUIRED)")
+	rootCmd.PersistentFlags().StringVarP(&subPkgName, "subpackage", "s", "", "Subpackage name (OPTIONAL)")
 	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
 	rootCmd.MarkPersistentFlagRequired("package")
 

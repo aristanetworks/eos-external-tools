@@ -1,0 +1,33 @@
+From 9f40f4c6e3ba46d63f7fc614eb9d8f38140837e5 Mon Sep 17 00:00:00 2001
+From: rpm-build <rpm-build>
+Date: Fri, 16 Jul 2021 13:16:39 +0100
+Subject: [PATCH 4/5] Don't use multifile option for DWZ
+
+Multifile .dwz causes rebuild cascades when you change a single ELF
+image.
+---
+ scripts/find-debuginfo.in | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/find-debuginfo.in b/scripts/find-debuginfo.in
+index ee15b08..d6b58ed 100644
+--- a/scripts/find-debuginfo.in
++++ b/scripts/find-debuginfo.in
+@@ -694,8 +694,12 @@ if $run_dwz \
+     done
+     dwz_multifile_name="${dwz_multifile_name}${dwz_multifile_suffix}"
+     dwz_opts="-h -q -r"
+-    [ ${#dwz_files[@]} -gt 1 ] && [ "$dwz_single_file_mode" = "false" ] \
+-      && dwz_opts="${dwz_opts} -m .dwz/${dwz_multifile_name}"
++    # Deliberately comment out -m option that creates multifile
++    # .dwz archive. Otherwise. changes to a single ELF binary
++    # in the package could have cascading effect to all
++    # ELF binaries that are processed by dwz tool in one go
++    # [ ${#dwz_files[@]} -gt 1 ] \
++    #  && dwz_opts="${dwz_opts} -m .dwz/${dwz_multifile_name}"
+     mkdir -p "${RPM_BUILD_ROOT}/usr/lib/debug/.dwz"
+     [ -n "${dwz_low_mem_die_limit}" ] \
+       && dwz_opts="${dwz_opts} -l ${dwz_low_mem_die_limit}"
+-- 
+2.31.0
+
