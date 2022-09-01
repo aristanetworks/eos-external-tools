@@ -4,6 +4,9 @@ on:   # yamllint disable-line rule:truthy
     branches:
       - 'main'
 
+env:
+  TEST_TAG: extbldr:test
+
 jobs:
   gobuild:
     name: Go lint and build
@@ -66,6 +69,24 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
+          load: true
+          tags: ${{ env.TEST_TAG }}
+          target: builder
+      - name: Test privileged
+        run: |
+          docker run --rm --privileged \
+          ${{ env.TEST_TAG }} sh -c 'go test ./... -tags=privileged'
+
+      - name: Dockerfile build without publish
+        uses: docker/build-push-action@v3
+        with:
+          # Dockerfile is within subdirectory
+          context: "{{defaultContext}}:extbldr"
+
+          # GIT_AUTH_TOKEN is unset for non-default context
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
           # Publish is done by Arista docker-library to push to on-prem registry
           # This just checks the docker build and can work off-prem.
+          target: deploy
           push: false

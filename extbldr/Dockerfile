@@ -32,6 +32,7 @@ COPY *.go ./
 COPY cmd/ cmd/
 COPY impl/ impl/
 COPY util/ util/
+COPY testutil/ testutil/
 COPY manifest/ manifest/
 RUN go build -o  /home/extbldr-robot/bin/extbldr && \
     go test ./... && \

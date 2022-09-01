@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 )
 
 // Globals type struct exported for global flags
@@ -47,6 +49,43 @@ func CopyFile(errorPrefix string, src string, dst string) error {
 	cpErr = RunSystemCmd("cp", src, dst)
 	if cpErr != nil {
 		return fmt.Errorf("%s: Error '%s' copying %s to %s", errorPrefix, cpErr, src, dst)
+	}
+	return nil
+}
+
+// GetMatchingFileNamesFromDir gets list of files matching the regex
+func GetMatchingFileNamesFromDir(dirPath string, regexString string) ([]string, error) {
+	var fileNames []string
+	files, err := os.ReadDir(dirPath)
+	if err != nil {
+		return fileNames, fmt.Errorf("impl.getMatchingFileNamesFromDir: os.ReadDir returned %v", err)
+	}
+
+	matchRegexp, err := regexp.Compile(regexString)
+	if err != nil {
+		return fileNames, fmt.Errorf("impl.getMatchingFileNamesFromDir: regexp.compile returned %v", err)
+	}
+	var matched bool
+	for _, file := range files {
+		matched = matchRegexp.MatchString(file.Name())
+		if matched {
+			fileNames = append(fileNames, file.Name())
+		}
+	}
+	return fileNames, nil
+}
+
+// CopyFilesToDir copies files in filelist from src to dest dir, creates dest dir if it doesn't exist
+func CopyFilesToDir(fileList []string, src string, dest string) error {
+	creatErr := MaybeCreateDir("util.CopyFilesToDir", dest)
+	if creatErr != nil {
+		return creatErr
+	}
+	for _, file := range fileList {
+		fileErr := RunSystemCmd("mv", "-f", filepath.Join(src, file), dest)
+		if fileErr != nil {
+			return fmt.Errorf("util.CopyFilesToDir: move file %s errored out with %s", file, fileErr)
+		}
 	}
 	return nil
 }
