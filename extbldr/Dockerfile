@@ -38,7 +38,8 @@ RUN go build -o  /home/extbldr-robot/bin/extbldr && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
     PATH="$PATH:$HOME/go/bin" golint -set_exit_status ./... && \
-    go vet ./...
+    go vet ./... && \
+    test -z "$(gofmt -l .)"
 
 FROM base as deploy
 COPY --from=builder /home/extbldr-robot/bin/extbldr /usr/bin/

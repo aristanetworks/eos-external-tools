@@ -43,11 +43,12 @@ jobs:
           cd extbldr
           go build .
 
-      - name: Run golint & go vet
+      - name: Run golint, go vet and go fmt
         run: |
           cd extbldr
           golint -set_exit_status ./...
           go vet ./...
+          test -z $(gofmt -l .)
 
   dockerbuild:
     name: Dockerfile build without publish
