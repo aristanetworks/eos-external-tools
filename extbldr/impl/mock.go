@@ -13,7 +13,7 @@ import (
 	"extbldr/util"
 )
 
-func mockSubPkg(arch string, pkg string) error {
+func mockPkg(arch string, pkg string) error {
 	var mockErr error
 	baseDir := viper.GetString("WorkingDir")
 
@@ -26,7 +26,7 @@ func mockSubPkg(arch string, pkg string) error {
 
 	srpmName, srpmErr := util.GetMatchingFileNamesFromDir(srpmPath, "(?i).*\\.src\\.rpm")
 	if srpmErr != nil {
-		return fmt.Errorf("impl.mockSubPkg: *.src.rpm file not found in %s , error: %s", srpmPath, srpmErr)
+		return fmt.Errorf("impl.mockPkg: *.src.rpm file not found in %s , error: %s", srpmPath, srpmErr)
 	}
 	srpmFullPath := filepath.Join(srpmPath, srpmName[0]) ////expecting single file
 
@@ -34,11 +34,11 @@ func mockSubPkg(arch string, pkg string) error {
 	for _, path := range []string{rpmPath, logPath, scratchPath} {
 		cleanupErr := util.RunSystemCmd("rm", "-rf", path)
 		if cleanupErr != nil {
-			return fmt.Errorf("impl.mockSubPkg: cleanup %s errored out with %s", path, cleanupErr)
+			return fmt.Errorf("impl.mockPkg: cleanup %s errored out with %s", path, cleanupErr)
 		}
 	}
 
-	creatErr := util.MaybeCreateDir("impl.mockSubPkg", rpmPath)
+	creatErr := util.MaybeCreateDir("impl.mockPkg", rpmPath)
 	if creatErr != nil {
 		return creatErr
 	}
@@ -51,7 +51,7 @@ func mockSubPkg(arch string, pkg string) error {
 
 	mockErr = util.RunSystemCmd("mock", mockArgs...)
 	if mockErr != nil {
-		return fmt.Errorf("impl.mockSubPkg: mock on %s to arch %s errored out with %s",
+		return fmt.Errorf("impl.mockPkg: mock on %s to arch %s errored out with %s",
 			pkg, arch, mockErr)
 	}
 
@@ -82,20 +82,20 @@ func filterAndMove(movePathMap map[string]string, srcPath string) error {
 
 // Mock calls fedora mock to build the RPMS for the specified target
 // from the already built SRPMs and places the results in {WorkingDir}/<pkg>/RPMS
-func Mock(arch string, pkg string, subPkg string) error {
-	pkgManifest, loadManifestErr := manifest.LoadManifest(pkg)
+func Mock(arch string, repo string, pkg string) error {
+	repoManifest, loadManifestErr := manifest.LoadManifest(repo)
 	if loadManifestErr != nil {
 		return loadManifestErr
 	}
-	var subPkgSpecified bool = (subPkg != "")
-	for _, subPkgSpec := range pkgManifest.SubPackage {
-		thisSubPkgName := subPkgSpec.Name
-		if subPkgSpecified && (subPkg != thisSubPkgName) {
+	var pkgSpecified bool = (pkg != "")
+	for _, pkgSpec := range repoManifest.Package {
+		thisPkgName := pkgSpec.Name
+		if pkgSpecified && (pkg != thisPkgName) {
 			continue
 		}
-		subPkgErr := mockSubPkg(arch, subPkgSpec.Name)
-		if subPkgErr != nil {
-			return fmt.Errorf("impl.Mock: subPkg %s mock errored out  %s", subPkgSpec.Name, subPkgErr)
+		pkgErr := mockPkg(arch, pkgSpec.Name)
+		if pkgErr != nil {
+			return fmt.Errorf("impl.Mock: pkg %s mock errored out  %s", pkgSpec.Name, pkgErr)
 		}
 	}
 

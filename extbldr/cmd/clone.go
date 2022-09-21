@@ -17,10 +17,10 @@ var force bool
 
 // cloneCmd represents the clone command
 var cloneCmd = &cobra.Command{
-	Use:   "clone -p <package> <URL>",
+	Use:   "clone -r <repo> <URL>",
 	Short: "git clone the repository for the modified external package",
 	Long: `The git repository specified by the URL is cloned to a local directory.
-The local directory is <BASE_PATH>/<package>.
+The local directory is <BASE_PATH>/<repo>.
 <BASE_PATH> is specified by the SrcDir configuration or the EXTBLDR_SRCDIR env var.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -34,7 +34,7 @@ The local directory is <BASE_PATH>/<package>.
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pkg, _ := cmd.Flags().GetString("package")
+		pkg, _ := cmd.Flags().GetString("repo")
 		basePath := viper.GetString("SrcDir")
 		err := impl.Clone(args[0], basePath, pkg, force)
 		return err

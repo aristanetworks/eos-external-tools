@@ -20,7 +20,7 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 	const repoURL string = "https://github.com/aristanetworks/aajith-test-repo.git"
 	const pkg string = "bar"
 
-	args := []string{"clone", repoURL, "--package", pkg}
+	args := []string{"clone", repoURL, "--repo", pkg}
 	if force {
 		args = append(args, "--force")
 	}

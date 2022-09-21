@@ -17,7 +17,7 @@ func testCreateSrpm(t *testing.T, workingDir string, srcDir string, pkgName stri
 	viper.Set("WorkingDir", workingDir)
 	defer viper.Reset()
 
-	args := []string{"createSrpm", "--package", pkgName}
+	args := []string{"createSrpm", "--repo", pkgName}
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
 
 }

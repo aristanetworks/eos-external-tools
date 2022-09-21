@@ -17,7 +17,7 @@ import (
 )
 
 func testMock(t *testing.T, pkgName string, quiet bool) {
-	args := []string{"mock", "--target", "x86_64", "--package", pkgName}
+	args := []string{"mock", "--target", "x86_64", "--repo", pkgName}
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
 }
 
@@ -31,7 +31,7 @@ func TestMock(t *testing.T) {
 	baseName := "mrtparse-1"
 	viper.Set("WorkingDir", workingDir)
 	viper.Set("SrcDir", "testData")
-	args := []string{"createSrpm", "--package", pkgName}
+	args := []string{"createSrpm", "--repo", baseName}
 	rootCmd.SetArgs(args)
 
 	cmdErr := rootCmd.Execute()

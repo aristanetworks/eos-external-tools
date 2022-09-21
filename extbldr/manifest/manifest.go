@@ -28,11 +28,11 @@ type Target struct {
 	Repo    []Repo   `yaml:"baseurl"`
 }
 
-// SubPackage spec
-// In the general case, there will only be one subpackage/
-// But each git repo can have multiple sub-packages if there is
+// Package spec
+// In the general case, there will only be one package/
+// But each git repo can have multiple packages if there is
 // a dependency order to be maintained.
-type SubPackage struct {
+type Package struct {
 	Name        string   `yaml:"name"`
 	UpstreamSrc []string `yaml:"upstream"`
 	Type        string   `yaml:"type"`
@@ -44,8 +44,8 @@ type SubPackage struct {
 // Manifest spec
 // This is loaded from manifest.yml
 type Manifest struct {
-	// In most cases there is only one subpackage.
-	SubPackage []SubPackage `yaml:"package"`
+	// In most cases there is only one package.
+	Package []Package `yaml:"package"`
 }
 
 // LoadManifest loads the manifest file for the super-package pkg to memory and

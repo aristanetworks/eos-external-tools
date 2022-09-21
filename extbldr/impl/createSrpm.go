@@ -15,18 +15,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-func getDownloadDir(subPkgWorkingDir string) string {
-	return filepath.Join(subPkgWorkingDir, "upstream")
+func getDownloadDir(pkgWorkingDir string) string {
+	return filepath.Join(pkgWorkingDir, "upstream")
 }
 
-func getRpmbuildDir(subPkgWorkingDir string) string {
-	return filepath.Join(subPkgWorkingDir, "rpmbuild")
+func getRpmbuildDir(pkgWorkingDir string) string {
+	return filepath.Join(pkgWorkingDir, "rpmbuild")
 }
 
-func createEmptyRpmbuildDir(subPkgWorkingDir string,
+func createEmptyRpmbuildDir(pkgWorkingDir string,
 	subdirs []string) error {
 	// Create rpmbuild directory
-	rpmbuildDir := getRpmbuildDir(subPkgWorkingDir)
+	rpmbuildDir := getRpmbuildDir(pkgWorkingDir)
 	dirCreateErr := util.MaybeCreateDir("impl.createSrpm", rpmbuildDir)
 	if dirCreateErr != nil {
 		return dirCreateErr
@@ -43,9 +43,9 @@ func createEmptyRpmbuildDir(subPkgWorkingDir string,
 }
 
 func installUpstreamSrpm(
-	pkg string,
-	subPkgSpec *manifest.SubPackage,
-	subPkgWorkingDir string,
+	repo string,
+	pkgSpec *manifest.Package,
+	pkgWorkingDir string,
 	downloadedSources []string) error {
 
 	if len(downloadedSources) != 1 {
@@ -58,13 +58,13 @@ func installUpstreamSrpm(
 	}
 
 	// Cleanup and (re)create rpmbuild directory
-	creatErr := createEmptyRpmbuildDir(subPkgWorkingDir, nil)
+	creatErr := createEmptyRpmbuildDir(pkgWorkingDir, nil)
 	if creatErr != nil {
 		return creatErr
 	}
 
 	// Install upstream SRPM first
-	rpmbuildDir := getRpmbuildDir(subPkgWorkingDir)
+	rpmbuildDir := getRpmbuildDir(pkgWorkingDir)
 	rpmInstErr := util.RunSystemCmd("rpm", "--define", fmt.Sprintf("_topdir %s", rpmbuildDir),
 		"-i", upstreamSrpmFile)
 
@@ -83,8 +83,8 @@ func installUpstreamSrpm(
 	return nil
 }
 
-func copySources(subPkgSpec *manifest.SubPackage, subPkgWorkingDir string, srcDir string, extraSources *[]string) error {
-	rpmbuildDir := getRpmbuildDir(subPkgWorkingDir)
+func copySources(pkgSpec *manifest.Package, pkgWorkingDir string, srcDir string, extraSources *[]string) error {
+	rpmbuildDir := getRpmbuildDir(pkgWorkingDir)
 	rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
 	rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
 
@@ -98,7 +98,7 @@ func copySources(subPkgSpec *manifest.SubPackage, subPkgWorkingDir string, srcDi
 		}
 	}
 
-	for _, source := range subPkgSpec.Source {
+	for _, source := range pkgSpec.Source {
 		srcPath := filepath.Join(srcDir, source)
 		_, srcStatErr := os.Stat(srcPath)
 		if srcStatErr != nil {
@@ -111,7 +111,7 @@ func copySources(subPkgSpec *manifest.SubPackage, subPkgWorkingDir string, srcDi
 	}
 
 	// Copy spec file
-	specFilePath := filepath.Join(srcDir, subPkgSpec.SpecFile)
+	specFilePath := filepath.Join(srcDir, pkgSpec.SpecFile)
 	err = util.CopyFile("impl.createSrpm", specFilePath, rpmbuildSpecsDir)
 	if err != nil {
 		return err
@@ -119,8 +119,8 @@ func copySources(subPkgSpec *manifest.SubPackage, subPkgWorkingDir string, srcDi
 	return nil
 }
 
-func buildModifiedSrpm(subPkgWorkingDir string, specFile string) error {
-	rpmbuildDir := getRpmbuildDir(subPkgWorkingDir)
+func buildModifiedSrpm(pkgWorkingDir string, specFile string) error {
+	rpmbuildDir := getRpmbuildDir(pkgWorkingDir)
 	specFilePath := filepath.Join(rpmbuildDir, "SPECS", specFile)
 	rpmbuildErr := util.RunSystemCmd("rpmbuild", "--define", fmt.Sprintf("_topdir %s", rpmbuildDir),
 		"-bs", specFilePath)
@@ -132,17 +132,17 @@ func buildModifiedSrpm(subPkgWorkingDir string, specFile string) error {
 
 // CreateSrpm creates a modified SRPM based on the git repo already cloned at repoDir
 // force indicates whether to overwrite an already existing SRPM.
-func CreateSrpm(pkg string, subPkg string) error {
+func CreateSrpm(repo string, pkg string) error {
 	srcDir := viper.GetString("SrcDir")
 	workingDir := viper.GetString("WorkingDir")
 
-	pkgSrcDir := filepath.Join(srcDir, pkg)
-	_, statErr := os.Stat(pkgSrcDir)
+	repoSrcDir := filepath.Join(srcDir, repo)
+	_, statErr := os.Stat(repoSrcDir)
 	if statErr != nil {
-		return fmt.Errorf("impl.createSrpm: Source dir %s not found", pkgSrcDir)
+		return fmt.Errorf("impl.createSrpm: Source dir %s not found", repoSrcDir)
 	}
 
-	pkgManifest, loadManifestErr := manifest.LoadManifest(pkg)
+	repoManifest, loadManifestErr := manifest.LoadManifest(repo)
 	if loadManifestErr != nil {
 		return loadManifestErr
 	}
@@ -152,35 +152,35 @@ func CreateSrpm(pkg string, subPkg string) error {
 		return dirCreateErr
 	}
 
-	var subPkgSpecified bool = (subPkg != "")
-	found := !subPkgSpecified
-	for _, subPkgSpec := range pkgManifest.SubPackage {
-		thisSubPkgName := subPkgSpec.Name
-		if subPkgSpecified && (subPkg != thisSubPkgName) {
+	var pkgSpecified bool = (pkg != "")
+	found := !pkgSpecified
+	for _, pkgSpec := range repoManifest.Package {
+		thisPkgName := pkgSpec.Name
+		if pkgSpecified && (pkg != thisPkgName) {
 			continue
 		}
 
 		found = true
 
-		subPkgWorkingDir := filepath.Join(workingDir, thisSubPkgName)
-		rmErr := util.RunSystemCmd("rm", "-rf", subPkgWorkingDir)
+		pkgWorkingDir := filepath.Join(workingDir, thisPkgName)
+		rmErr := util.RunSystemCmd("rm", "-rf", pkgWorkingDir)
 		if rmErr != nil {
-			return fmt.Errorf("impl.createSrpm: Removing %s errored out with %s", subPkgWorkingDir, rmErr)
+			return fmt.Errorf("impl.createSrpm: Removing %s errored out with %s", pkgWorkingDir, rmErr)
 		}
 
-		dirCreateErr = util.MaybeCreateDir("impl.createSrpm", subPkgWorkingDir)
+		dirCreateErr = util.MaybeCreateDir("impl.createSrpm", pkgWorkingDir)
 		if dirCreateErr != nil {
 			return dirCreateErr
 		}
 
-		downloadDir := getDownloadDir(subPkgWorkingDir)
+		downloadDir := getDownloadDir(pkgWorkingDir)
 		dirCreateErr = util.MaybeCreateDir("impl.createSrpm", downloadDir)
 		if dirCreateErr != nil {
 			return dirCreateErr
 		}
 
 		var downloadedSources []string
-		for _, upstreamSrc := range subPkgSpec.UpstreamSrc {
+		for _, upstreamSrc := range pkgSpec.UpstreamSrc {
 			downloaded, downloadError := util.Download(upstreamSrc, downloadDir)
 			if downloadError != nil {
 				return fmt.Errorf("impl.createSrpm: Error '%s' downloading %s", downloadError, upstreamSrc)
@@ -190,31 +190,31 @@ func CreateSrpm(pkg string, subPkg string) error {
 
 		var err error
 		var extraSources *[]string
-		if subPkgSpec.Type == "srpm" {
-			err = installUpstreamSrpm(pkg, &subPkgSpec, subPkgWorkingDir, downloadedSources)
+		if pkgSpec.Type == "srpm" {
+			err = installUpstreamSrpm(repo, &pkgSpec, pkgWorkingDir, downloadedSources)
 
-		} else if subPkgSpec.Type == "tarball" {
-			err = createEmptyRpmbuildDir(subPkgWorkingDir, []string{"SOURCES", "SPECS"})
+		} else if pkgSpec.Type == "tarball" {
+			err = createEmptyRpmbuildDir(pkgWorkingDir, []string{"SOURCES", "SPECS"})
 			extraSources = &downloadedSources
 
 		} else {
-			return fmt.Errorf("impl.createSrpm: Invalid type %s in manifest", subPkgSpec.Type)
+			return fmt.Errorf("impl.createSrpm: Invalid type %s in manifest", pkgSpec.Type)
 		}
 		if err != nil {
 			return err
 		}
 
-		copySources(&subPkgSpec, subPkgWorkingDir, pkgSrcDir, extraSources)
+		copySources(&pkgSpec, pkgWorkingDir, repoSrcDir, extraSources)
 
 		// Now build the modified SRPM
-		buildErr := buildModifiedSrpm(subPkgWorkingDir, subPkgSpec.SpecFile)
+		buildErr := buildModifiedSrpm(pkgWorkingDir, pkgSpec.SpecFile)
 		if buildErr != nil {
 			return buildErr
 		}
 	}
 
 	if !found {
-		return fmt.Errorf("impl.createSrpm: Invalid subpackage name %s specified", subPkg)
+		return fmt.Errorf("impl.createSrpm: Invalid package name %s specified", pkg)
 	}
 
 	return nil

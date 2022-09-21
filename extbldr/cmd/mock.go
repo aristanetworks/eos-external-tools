@@ -12,13 +12,13 @@ import (
 var arch string
 
 var mockCmd = &cobra.Command{
-	Use:   "mock -t <Arch> -p <Package>",
+	Use:   "mock -t <Arch> -r <repo>",
 	Short: "Use mock to build the RPMS from the SRPMS built previously.",
-	Long:  `Use mock to build The RPMS for the specified architecture from the specified SRPM package in <SrcDir>/<package>/rpmbuild/SRPMS and output placed inside <WorkingDir>/<package>/RPMS.`,
+	Long:  `Use mock to build The RPMS for the specified architecture from the specified SRPM repo in <SrcDir>/<repo>/rpmbuild/SRPMS and output placed inside <WorkingDir>/<repo>/RPMS.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
-		subpkg, _ := cmd.Flags().GetString("subpackage")
-		err := impl.Mock(arch, pkg, subpkg)
+		err := impl.Mock(arch, repo, pkg)
 		return err
 	},
 }
