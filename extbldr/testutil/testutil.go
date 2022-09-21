@@ -4,10 +4,15 @@
 package testutil
 
 import (
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+var r, w, rescueStdout *(os.File)
 
 // SetupManifest used to setup a test manifest from testdata for manifest functionality testing
 func SetupManifest(t *testing.T, baseDir string, pkg string, sampleFile string) {
@@ -31,4 +36,42 @@ func SetupManifest(t *testing.T, baseDir string, pkg string, sampleFile string) 
 		t.Fatal(symlinkErr)
 	}
 
+}
+
+// RunCmd runs the command in cobra cmd and returns error
+func RunCmd(t *testing.T, rootCmd *cobra.Command, args []string, quiet bool, expectSuccess bool) error {
+	if quiet {
+		args = append(args, "--quiet")
+		setupQuiet()
+	}
+
+	rootCmd.SetArgs(args)
+	t.Logf("Running cmd with args: %v\n", args)
+	cmdErr := rootCmd.Execute()
+
+	if expectSuccess {
+		t.Log("Expecting success.")
+		assert.NoError(t, cmdErr)
+		if quiet {
+			checkAndCleanupQuiet(t)
+		}
+	}
+	return cmdErr
+
+}
+
+func setupQuiet() {
+	rescueStdout = os.Stdout
+	r, w, _ = os.Pipe()
+	os.Stdout = w
+}
+
+func checkAndCleanupQuiet(t *testing.T) {
+	w.Close()
+	out, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Empty(t, out)
+	os.Stdout = rescueStdout
 }

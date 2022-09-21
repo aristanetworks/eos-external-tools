@@ -7,44 +7,18 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+
+	"extbldr/testutil"
 )
 
 func testMock(t *testing.T, pkgName string, quiet bool) {
-	/* viper.Set("WorkingDir", workingDir)
-	viper.Set("SrcDir", "testData")
-	args := []string{"createSrpm", "--package", pkgName}
-	rootCmd.SetArgs(args)
-
-	cmdErr := rootCmd.Execute()
-	assert.NoError(t, cmdErr)
-	defer viper.Reset() */
 	args := []string{"mock", "--target", "x86_64", "--package", pkgName}
-	rescueStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	if quiet {
-		args = append(args, "--quiet")
-		os.Stdout = w
-	}
-	rootCmd.SetArgs(args)
-
-	cmdErr := rootCmd.Execute()
-	assert.NoError(t, cmdErr)
-
-	if quiet {
-		w.Close()
-		out, err := ioutil.ReadAll(r)
-		if err != nil {
-			t.Fatal(err)
-		}
-		assert.Empty(t, out)
-		os.Stdout = rescueStdout
-	}
+	testutil.RunCmd(t, rootCmd, args, quiet, true)
 }
 
 func TestMock(t *testing.T) {

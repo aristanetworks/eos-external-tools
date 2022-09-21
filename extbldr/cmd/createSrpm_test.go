@@ -4,24 +4,22 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
-	//"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
+
+	"extbldr/testutil"
 )
 
-func testCreateSrpm(t *testing.T, workingDir string, srcDir string, pkgName string) {
+func testCreateSrpm(t *testing.T, workingDir string, srcDir string, pkgName string, quiet bool) {
 	viper.Set("SrcDir", srcDir)
 	viper.Set("WorkingDir", workingDir)
 	defer viper.Reset()
 
 	args := []string{"createSrpm", "--package", pkgName}
-	rootCmd.SetArgs(args)
+	testutil.RunCmd(t, rootCmd, args, quiet, true)
 
-	cmdErr := rootCmd.Execute()
-	assert.NoError(t, cmdErr)
 }
 
 func TestCreateSrpm(t *testing.T) {
@@ -34,8 +32,8 @@ func TestCreateSrpm(t *testing.T) {
 	t.Logf("WorkingDir: %s", workingDir)
 
 	t.Log("Test createSrpm from SRPM")
-	testCreateSrpm(t, workingDir, "testData", "debugedit-1")
+	testCreateSrpm(t, workingDir, "testData", "debugedit-1", false)
 
 	t.Log("Test createSrpm from tarball")
-	testCreateSrpm(t, workingDir, "testData", "mrtparse-1")
+	testCreateSrpm(t, workingDir, "testData", "mrtparse-1", true)
 }
