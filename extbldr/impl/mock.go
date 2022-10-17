@@ -23,6 +23,7 @@ func mockPkg(arch string, pkg string) error {
 	scratchPath := filepath.Join(baseDir, pkg, "scratch")
 
 	targetArg := "--target=" + arch
+	cfgArg := "--root=" + getCfgFilePath(arch, pkg)
 
 	srpmName, srpmErr := util.GetMatchingFileNamesFromDir(srpmPath, "(?i).*\\.src\\.rpm")
 	if srpmErr != nil {
@@ -47,7 +48,7 @@ func mockPkg(arch string, pkg string) error {
 	if util.GlobalVar.Quiet {
 		mockArgs = append(mockArgs, "--quiet")
 	}
-	mockArgs = append(mockArgs, fmt.Sprintf("--resultdir=%s", rpmPath), targetArg, srpmFullPath)
+	mockArgs = append(mockArgs, fmt.Sprintf("--resultdir=%s", rpmPath), targetArg, cfgArg, srpmFullPath)
 
 	mockErr = util.RunSystemCmd("mock", mockArgs...)
 	if mockErr != nil {
@@ -92,6 +93,10 @@ func Mock(arch string, repo string, pkg string) error {
 		thisPkgName := pkgSpec.Name
 		if pkgSpecified && (pkg != thisPkgName) {
 			continue
+		}
+		cfgErr := mockCfgGenerate(arch, pkgSpec.Name, pkgSpec, repo)
+		if cfgErr != nil {
+			return fmt.Errorf("impl.Mock: pkg %s cfg generate errored out  %s", pkgSpec.Name, cfgErr)
 		}
 		pkgErr := mockPkg(arch, pkgSpec.Name)
 		if pkgErr != nil {

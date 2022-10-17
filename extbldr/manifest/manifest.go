@@ -25,7 +25,7 @@ type Repo struct {
 type Target struct {
 	Name    string   `yaml:"name"`
 	Include []string `yaml:"include"`
-	Repo    []Repo   `yaml:"baseurl"`
+	Repo    []Repo   `yaml:"repo"`
 }
 
 // Package spec

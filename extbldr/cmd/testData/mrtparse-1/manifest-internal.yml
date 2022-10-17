@@ -14,6 +14,6 @@ package:
           - a.tpl
         repo:
           - name: os
-            baseurl: http://dl.rockylinux.org/pub/rocky/$releasever/BaseOS/$basearch/os/
+            baseurl: https://artifactory-mirrors-px.infra.corp.arista.io/artifactory/rockylinux-9/AppStream/x86_64/os/
           - name: appstream
-            baseurl: http://dl.rockylinux.org/pub/rocky/$releasever/AppStream/$basearch/os/
+            baseurl: https://artifactory-mirrors-px.infra.corp.arista.io/artifactory/rockylinux-9/BaseOS/x86_64/os/
