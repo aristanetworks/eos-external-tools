@@ -34,6 +34,7 @@ COPY impl/ impl/
 COPY util/ util/
 COPY testutil/ testutil/
 COPY manifest/ manifest/
+COPY impl/mock_cfg.template /usr/share/mock_cfg.template
 RUN go build -o  /home/extbldr-robot/bin/extbldr && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
@@ -43,3 +44,4 @@ RUN go build -o  /home/extbldr-robot/bin/extbldr && \
 
 FROM base as deploy
 COPY --from=builder /home/extbldr-robot/bin/extbldr /usr/bin/
+COPY --from=builder /usr/share/mock_cfg.template /usr/share/mock_cfg.template

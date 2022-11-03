@@ -17,5 +17,6 @@ func main() {
 	homeDir := os.Getenv("HOME")
 	viper.SetDefault("SrcDir", filepath.Join(homeDir, "extbldr-src"))
 	viper.SetDefault("WorkingDir", "/var/extbldr")
+	viper.SetDefault("MockTemplate", "/usr/share/mock_cfg.template")
 	cmd.Execute()
 }

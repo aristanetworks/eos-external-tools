@@ -23,45 +23,13 @@ type TemplateParams struct {
 	Includes         []string
 }
 
-const tmpl = `
-config_opts['chroot_setup_cmd'] = "install bash bzip2 coreutils cpio diffutils redhat-release findutils gawk glibc-minimal-langpack grep gzip info patch redhat-rpm-config rpm-build sed shadow-utils tar unzip util-linux which xz"
-config_opts['package_manager'] = "dnf"
-config_opts['releasever'] = "9"
-{{range $key,$val := .DefaultCommonCfg}}
-config_opts['{{$key}}'] = "{{$val}}"
-{{end}}
-
-config_opts['dnf.conf'] = """
-[main]
-assumeyes=1
-best=1
-debuglevel=2
-gpgcheck=0
-install_weak_deps=0
-keepcache=1
-logfile=/var/log/yum.log
-mdpolicy=group:primary
-metadata_expire=0
-module_platform_id=platform:el9
-obsoletes=1
-protected_packages=
-reposdir=/dev/null
-retries=20
-syslog_device=
-syslog_ident=mock
-
-
-{{range .RemoteRepo}}
-[{{.Name}}]
-name = {{.Name}}
-baseurl = {{.BaseURL}}
-enabled = 1
-{{end}}
-"""
-{{range .Includes}}
-include("{{.}}")
-{{end}}
-`
+func loadCfgTemplate() (string, error) {
+	buf, readError := os.ReadFile(viper.GetString("MockTemplate"))
+	if readError != nil {
+		return "", readError
+	}
+	return string(buf), readError
+}
 
 func setupCfgParams(arch string, target manifest.Target, pkg string, srcRepo string) (TemplateParams, error) {
 	var templateParams TemplateParams
@@ -93,7 +61,11 @@ func generateCfg(arch string, target manifest.Target, pkg string, srcRepo string
 		return "", error
 	}
 	var buf bytes.Buffer
-	t, templateCreateErr := template.New("").Parse(tmpl)
+	templateString, readError := loadCfgTemplate()
+	if readError != nil {
+		return "", readError
+	}
+	t, templateCreateErr := template.New("").Parse(templateString)
 	if templateCreateErr != nil {
 		return "", templateCreateErr
 	}

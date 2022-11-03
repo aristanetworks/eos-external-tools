@@ -31,6 +31,7 @@ func TestMock(t *testing.T) {
 	baseName := "mrtparse-1"
 	viper.Set("WorkingDir", workingDir)
 	viper.Set("SrcDir", "testData")
+	viper.Set("MockTemplate", "/usr/share/mock_cfg.template")
 	args := []string{"createSrpm", "--repo", baseName}
 	rootCmd.SetArgs(args)
 
