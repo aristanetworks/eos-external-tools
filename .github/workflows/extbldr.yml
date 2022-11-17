@@ -78,6 +78,13 @@ jobs:
           docker run --rm --privileged \
           ${{ env.TEST_TAG }} sh -c 'go test ./... -tags=privileged'
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME_TEST }}
+          password: ${{ secrets.DOCKERHUB_TOKEN_TEST }}
+
+
       - name: Dockerfile build without publish
         uses: docker/build-push-action@v3
         with:
@@ -90,4 +97,5 @@ jobs:
           # Publish is done by Arista docker-library to push to on-prem registry
           # This just checks the docker build and can work off-prem.
           target: deploy
-          push: false
+          push: true
+          tags: shyammohanmurali/extbldr:latest
