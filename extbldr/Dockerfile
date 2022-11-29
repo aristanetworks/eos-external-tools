@@ -21,7 +21,7 @@ CMD ["bash"]
 
 FROM base as builder
 USER root
-RUN dnf install -y golang-1.17.* && dnf clean all
+RUN dnf install -y golang-1.18.* && dnf clean all
 USER extbldr-robot
 RUN mkdir -p src && mkdir -p bin
 WORKDIR /home/extbldr-robot/src
@@ -45,3 +45,7 @@ RUN go build -o  /home/extbldr-robot/bin/extbldr && \
 FROM base as deploy
 COPY --from=builder /home/extbldr-robot/bin/extbldr /usr/bin/
 COPY --from=builder /usr/share/mock_cfg.template /usr/share/mock_cfg.template
+USER root
+RUN mkdir /var/extbldr && \
+    chown  extbldr-robot /var/extbldr
+USER extbldr-robot
