@@ -20,21 +20,22 @@ WORKDIR /home/extbldr-robot
 CMD ["bash"]
 
 FROM base as builder
+ARG EXTBLDR_ROOT=extbldr
 USER root
 RUN dnf install -y golang-1.18.* && dnf clean all
 USER extbldr-robot
 RUN mkdir -p src && mkdir -p bin
 WORKDIR /home/extbldr-robot/src
-COPY go.mod ./
-COPY go.sum ./
+COPY ./${EXTBLDR_ROOT}/go.mod ./
+COPY ./${EXTBLDR_ROOT}/go.sum ./
 RUN go mod download
-COPY *.go ./
-COPY cmd/ cmd/
-COPY impl/ impl/
-COPY util/ util/
-COPY testutil/ testutil/
-COPY manifest/ manifest/
-COPY impl/mock_cfg.template /usr/share/mock_cfg.template
+COPY ./${EXTBLDR_ROOT}/*.go ./
+COPY ./${EXTBLDR_ROOT}/cmd/ cmd/
+COPY ./${EXTBLDR_ROOT}/impl/ impl/
+COPY ./${EXTBLDR_ROOT}/util/ util/
+COPY ./${EXTBLDR_ROOT}/testutil/ testutil/
+COPY ./${EXTBLDR_ROOT}/manifest/ manifest/
+COPY ./${EXTBLDR_ROOT}/impl/mock_cfg.template /usr/share/mock_cfg.template
 RUN go build -o  /home/extbldr-robot/bin/extbldr && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \

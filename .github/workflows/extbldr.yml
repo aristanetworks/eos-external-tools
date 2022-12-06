@@ -64,7 +64,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           # Dockerfile is within subdirectory
-          context: "{{defaultContext}}:extbldr"
+          context: "{{defaultContext}}"
+          file: extbldr/Dockerfile
 
           # GIT_AUTH_TOKEN is unset for non-default context
           secrets: |
@@ -82,7 +83,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           # Dockerfile is within subdirectory
-          context: "{{defaultContext}}:extbldr"
+          context: "{{defaultContext}}"
+          file: extbldr/Dockerfile
 
           # GIT_AUTH_TOKEN is unset for non-default context
           secrets: |
