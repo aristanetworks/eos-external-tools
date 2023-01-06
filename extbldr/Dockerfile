@@ -5,13 +5,6 @@ RUN dnf install -y epel-release-9* git-2.* jq-1.* \
     rpmdevtools-9.* sudo-1.*  && \
     dnf install -y mock-3.* && \
     dnf install -y wget-1.21.* && dnf clean all
-RUN echo "[jfrog-cli]" > jfrog-cli.repo && \
-    echo "name=jfrog-cli" >> jfrog-cli.repo && \ 
-    echo "baseurl=https://releases.jfrog.io/artifactory/jfrog-rpms" >> jfrog-cli.repo && \
-    echo "enabled=1" >> jfrog-cli.repo && \
-    rpm --import https://releases.jfrog.io/artifactory/jfrog-gpg-public/jfrog_public_gpg.key && \
-    mv jfrog-cli.repo /etc/yum.repos.d/ && \
-    dnf install -y jfrog-cli-1.53.4-1 && dnf clean all
 RUN useradd -s /bin/bash extbldr-robot -u 10001 -U -p "$(openssl passwd -1 extbldr-robot)" && \
     useradd -s /bin/bash mockbuild -p "$(openssl passwd -1 mockbuild)" && \
     usermod -aG mock extbldr-robot

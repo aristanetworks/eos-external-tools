@@ -85,6 +85,7 @@ jobs:
           # Dockerfile is within subdirectory
           context: "{{defaultContext}}"
           file: extbldr/Dockerfile
+          platforms: linux/amd64,linux/arm64
 
           # GIT_AUTH_TOKEN is unset for non-default context
           secrets: |
