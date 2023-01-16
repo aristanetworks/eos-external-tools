@@ -17,3 +17,5 @@ package:
             baseurl: http://dl.rockylinux.org/pub/rocky/$releasever/BaseOS/$basearch/os/
           - name: appstream
             baseurl: http://dl.rockylinux.org/pub/rocky/$releasever/AppStream/$basearch/os/
+          - name: epel
+            baseurl: http://mirror.earthlink.iq/epel/9/Everything/$basearch

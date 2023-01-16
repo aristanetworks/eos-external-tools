@@ -17,3 +17,5 @@ package:
             baseurl: https://artifactory-mirrors-px.infra.corp.arista.io/artifactory/rockylinux-9/AppStream/x86_64/os/
           - name: appstream
             baseurl: https://artifactory-mirrors-px.infra.corp.arista.io/artifactory/rockylinux-9/BaseOS/x86_64/os/
+          - name: epel
+            baseurl: https://artifactory-mirrors-px.infra.corp.arista.io/artifactory/centos-9-epel/
