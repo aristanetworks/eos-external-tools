@@ -76,6 +76,7 @@ jobs:
           target: builder
       - name: Test privileged
         run: |
+          ping -c 2 us-docker.pkg.dev;
           docker run --rm --privileged \
           ${{ env.TEST_TAG }} sh -c 'go test ./... -tags=privileged'
 
