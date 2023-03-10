@@ -42,7 +42,7 @@ type Package struct {
 }
 
 // Manifest spec
-// This is loaded from manifest.yml
+// This is loaded from manifest.yaml
 type Manifest struct {
 	// In most cases there is only one package.
 	Package []Package `yaml:"package"`
@@ -61,7 +61,7 @@ func LoadManifest(pkg string) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest.GetManifest: os.Stat on %s returned %s", srcPath, statErr)
 	}
 
-	yamlPath := filepath.Join(srcPath, "manifest.yml")
+	yamlPath := filepath.Join(srcPath, "manifest.yaml")
 	yamlContents, readErr := ioutil.ReadFile(yamlPath)
 	if readErr != nil {
 		return nil, fmt.Errorf("manifest.GetManifest: ioutil.ReadFile on %s returned %s", yamlPath, readErr)
