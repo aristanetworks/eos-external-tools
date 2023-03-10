@@ -78,19 +78,3 @@ jobs:
         run: |
           docker run --rm --privileged \
           ${{ env.TEST_TAG }} sh -c 'go test ./... -tags=privileged'
-
-      - name: Dockerfile build without publish
-        uses: docker/build-push-action@v3
-        with:
-          # Dockerfile is within subdirectory
-          context: "{{defaultContext}}"
-          file: lemurbldr/Dockerfile
-          platforms: linux/amd64,linux/arm64
-
-          # GIT_AUTH_TOKEN is unset for non-default context
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          # Publish is done by Arista docker-library to push to on-prem registry
-          # This just checks the docker build and can work off-prem.
-          target: deploy
-          push: false
