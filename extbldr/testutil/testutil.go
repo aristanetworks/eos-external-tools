@@ -30,7 +30,7 @@ func SetupManifest(t *testing.T, baseDir string, pkg string, sampleFile string) 
 	if absErr != nil {
 		t.Fatal(absErr)
 	}
-	linkPath := filepath.Join(pkgDir, "manifest.yaml")
+	linkPath := filepath.Join(pkgDir, "lemurbldr.yaml")
 	symlinkErr := os.Symlink(targetPath, linkPath)
 	if symlinkErr != nil {
 		t.Fatal(symlinkErr)
