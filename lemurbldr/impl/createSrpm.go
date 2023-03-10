@@ -181,7 +181,7 @@ func CreateSrpm(repo string, pkg string) error {
 
 		var downloadedSources []string
 		for _, upstreamSrc := range pkgSpec.UpstreamSrc {
-			downloaded, downloadError := util.Download(upstreamSrc, downloadDir)
+			downloaded, downloadError := util.Download(upstreamSrc, downloadDir, repoSrcDir)
 			if downloadError != nil {
 				return fmt.Errorf("impl.createSrpm: Error '%s' downloading %s", downloadError, upstreamSrc)
 			}
