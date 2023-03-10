@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"extbldr/manifest"
-	"extbldr/util"
+	"lemurbldr/manifest"
+	"lemurbldr/util"
 )
 
 func mockPkg(arch string, pkg string) error {

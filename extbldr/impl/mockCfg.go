@@ -12,8 +12,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"extbldr/manifest"
-	"extbldr/util"
+	"lemurbldr/manifest"
+	"lemurbldr/util"
 )
 
 // TemplateParams struct exported for template usage

@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"extbldr/testutil"
+	"lemurbldr/testutil"
 )
 
 func testClone(t *testing.T, force bool, quiet bool, workingDir string,
@@ -25,7 +25,7 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 		args = append(args, "--force")
 	}
 
-	basePath := filepath.Join(workingDir, "extbldr-src")
+	basePath := filepath.Join(workingDir, "lemurbldr-src")
 	viper.Set("SrcDir", basePath)
 	defer viper.Reset()
 

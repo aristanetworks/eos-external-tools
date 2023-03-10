@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"extbldr/testutil"
+	"lemurbldr/testutil"
 )
 
 func testLoad(t *testing.T, pkg string) {
