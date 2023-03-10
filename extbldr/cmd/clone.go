@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"extbldr/impl"
-	"extbldr/util"
+	"lemurbldr/impl"
+	"lemurbldr/util"
 )
 
 var force bool
@@ -21,7 +21,7 @@ var cloneCmd = &cobra.Command{
 	Short: "git clone the repository for the modified external package",
 	Long: `The git repository specified by the URL is cloned to a local directory.
 The local directory is <BASE_PATH>/<repo>.
-<BASE_PATH> is specified by the SrcDir configuration or the EXTBLDR_SRCDIR env var.`,
+<BASE_PATH> is specified by the SrcDir configuration or the LEMURBLDR_SRCDIR env var.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return fmt.Errorf("Requires exactly one argument (URL)")

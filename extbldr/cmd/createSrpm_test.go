@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"extbldr/testutil"
+	"lemurbldr/testutil"
 )
 
 func testCreateSrpm(t *testing.T, workingDir string, srcDir string, pkgName string, quiet bool) {

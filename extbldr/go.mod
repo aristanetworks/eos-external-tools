@@ -1,4 +1,4 @@
-module extbldr
+module lemurbldr
 
 go 1.17
 

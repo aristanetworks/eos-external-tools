@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"extbldr/manifest"
-	"extbldr/util"
+	"lemurbldr/manifest"
+	"lemurbldr/util"
 
 	"github.com/spf13/viper"
 )

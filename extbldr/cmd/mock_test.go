@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
-	"extbldr/testutil"
+	"lemurbldr/testutil"
 )
 
 func testMock(t *testing.T, pkgName string, quiet bool) {

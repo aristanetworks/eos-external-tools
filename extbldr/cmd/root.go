@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"extbldr/util"
+	"lemurbldr/util"
 )
 
 var cfgFile string
@@ -19,7 +19,7 @@ var pkgName string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "extbldr",
+	Use:   "lemurbldr",
 	Short: "Build external packages for EOS",
 	Long: `Modified external packages for EOS Abuild can be specified using a git repository.
 The repository would have a manifest which specifies the upstream SRPM/tarball,
@@ -46,7 +46,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.extbldr.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.lemurbldr.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
 	rootCmd.PersistentFlags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
 	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
@@ -67,10 +67,10 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".extbldr" (without extension).
+		// Search config in home directory with name ".lemurbldr" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".extbldr")
+		viper.SetConfigName(".lemurbldr")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

@@ -6,7 +6,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"extbldr/impl"
+	"lemurbldr/impl"
 )
 
 var arch string

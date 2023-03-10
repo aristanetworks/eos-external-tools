@@ -4,7 +4,7 @@
 package main
 
 import (
-	"extbldr/cmd"
+	"lemurbldr/cmd"
 
 	"github.com/spf13/viper"
 
@@ -13,10 +13,10 @@ import (
 )
 
 func main() {
-	viper.SetEnvPrefix("extbldr")
+	viper.SetEnvPrefix("lemurbldr")
 	homeDir := os.Getenv("HOME")
-	viper.SetDefault("SrcDir", filepath.Join(homeDir, "extbldr-src"))
-	viper.SetDefault("WorkingDir", "/var/extbldr")
+	viper.SetDefault("SrcDir", filepath.Join(homeDir, "lemurbldr-src"))
+	viper.SetDefault("WorkingDir", "/var/lemurbldr")
 	viper.SetDefault("MockTemplate", "/usr/share/mock_cfg.template")
 	cmd.Execute()
 }

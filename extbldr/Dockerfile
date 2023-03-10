@@ -5,31 +5,31 @@ RUN dnf install -y epel-release-9* git-2.* jq-1.* \
     rpmdevtools-9.* sudo-1.*  && \
     dnf install -y mock-3.* && \
     dnf install -y wget-1.21.* && dnf clean all
-RUN useradd -s /bin/bash extbldr-robot -u 10001 -U -p "$(openssl passwd -1 extbldr-robot)" && \
+RUN useradd -s /bin/bash lemurbldr-robot -u 10001 -U -p "$(openssl passwd -1 lemurbldr-robot)" && \
     useradd -s /bin/bash mockbuild -p "$(openssl passwd -1 mockbuild)" && \
-    usermod -aG mock extbldr-robot
-USER extbldr-robot
-WORKDIR /home/extbldr-robot
+    usermod -aG mock lemurbldr-robot
+USER lemurbldr-robot
+WORKDIR /home/lemurbldr-robot
 CMD ["bash"]
 
 FROM base as builder
-ARG EXTBLDR_ROOT=extbldr
+ARG LEMURBLDR_ROOT=extbldr
 USER root
 RUN dnf install -y golang-1.18.* && dnf clean all
-USER extbldr-robot
+USER lemurbldr-robot
 RUN mkdir -p src && mkdir -p bin
-WORKDIR /home/extbldr-robot/src
-COPY ./${EXTBLDR_ROOT}/go.mod ./
-COPY ./${EXTBLDR_ROOT}/go.sum ./
+WORKDIR /home/lemurbldr-robot/src
+COPY ./${LEMURBLDR_ROOT}/go.mod ./
+COPY ./${LEMURBLDR_ROOT}/go.sum ./
 RUN go mod download
-COPY ./${EXTBLDR_ROOT}/*.go ./
-COPY ./${EXTBLDR_ROOT}/cmd/ cmd/
-COPY ./${EXTBLDR_ROOT}/impl/ impl/
-COPY ./${EXTBLDR_ROOT}/util/ util/
-COPY ./${EXTBLDR_ROOT}/testutil/ testutil/
-COPY ./${EXTBLDR_ROOT}/manifest/ manifest/
-COPY ./${EXTBLDR_ROOT}/impl/mock_cfg.template /usr/share/mock_cfg.template
-RUN go build -o  /home/extbldr-robot/bin/extbldr && \
+COPY ./${LEMURBLDR_ROOT}/*.go ./
+COPY ./${LEMURBLDR_ROOT}/cmd/ cmd/
+COPY ./${LEMURBLDR_ROOT}/impl/ impl/
+COPY ./${LEMURBLDR_ROOT}/util/ util/
+COPY ./${LEMURBLDR_ROOT}/testutil/ testutil/
+COPY ./${LEMURBLDR_ROOT}/manifest/ manifest/
+COPY ./${LEMURBLDR_ROOT}/impl/mock_cfg.template /usr/share/mock_cfg.template
+RUN go build -o  /home/lemurbldr-robot/bin/lemurbldr && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
     PATH="$PATH:$HOME/go/bin" golint -set_exit_status ./... && \
@@ -37,9 +37,9 @@ RUN go build -o  /home/extbldr-robot/bin/extbldr && \
     test -z "$(gofmt -l .)"
 
 FROM base as deploy
-COPY --from=builder /home/extbldr-robot/bin/extbldr /usr/bin/
+COPY --from=builder /home/lemurbldr-robot/bin/lemurbldr /usr/bin/
 COPY --from=builder /usr/share/mock_cfg.template /usr/share/mock_cfg.template
 USER root
-RUN mkdir /var/extbldr && \
-    chown  extbldr-robot /var/extbldr
-USER extbldr-robot
+RUN mkdir /var/lemurbldr && \
+    chown  lemurbldr-robot /var/lemurbldr
+USER lemurbldr-robot

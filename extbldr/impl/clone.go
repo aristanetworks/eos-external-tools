@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"extbldr/util"
+	"lemurbldr/util"
 )
 
 // Clone git clones the repository pointed by repoURL to a new directory under
