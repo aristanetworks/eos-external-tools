@@ -31,7 +31,7 @@ func TestManifest(t *testing.T) {
 	defer viper.Reset()
 
 	t.Log("Copy sample manifest to test directory")
-	testutil.SetupManifest(t, dir, "pkg1", "sampleManifest1.yml")
+	testutil.SetupManifest(t, dir, "pkg1", "sampleManifest1.yaml")
 
 	t.Log("Testing Load")
 	testLoad(t, "pkg1")
