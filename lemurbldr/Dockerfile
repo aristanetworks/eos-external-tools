@@ -13,7 +13,7 @@ WORKDIR /home/lemurbldr-robot
 CMD ["bash"]
 
 FROM base as builder
-ARG LEMURBLDR_ROOT=extbldr
+ARG LEMURBLDR_ROOT=lemurbldr
 USER root
 RUN dnf install -y golang-1.18.* && dnf clean all
 USER lemurbldr-robot
