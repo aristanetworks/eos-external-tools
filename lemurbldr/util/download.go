@@ -15,7 +15,8 @@ import (
 
 // Download the resource srcURL to targetDir
 // srcURL could be URL or file path
-func Download(srcURL string, targetDir string) (string, error) {
+// srcDir is used at the root directory for a file URI
+func Download(srcURL string, targetDir string, srcDir string) (string, error) {
 	var uri *url.URL
 	uri, parseError := url.ParseRequestURI(srcURL)
 	if parseError != nil {
@@ -31,7 +32,7 @@ func Download(srcURL string, targetDir string) (string, error) {
 	filename := tokens[len(tokens)-1]
 
 	if uri.Scheme == "file" {
-		cpErr := RunSystemCmd("cp", uri.Path, targetDir)
+		cpErr := RunSystemCmd("cp", filepath.Join(srcDir, uri.Path), targetDir)
 		if cpErr != nil {
 			return "", cpErr
 		}
