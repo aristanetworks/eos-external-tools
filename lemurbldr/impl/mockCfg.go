@@ -73,20 +73,9 @@ func generateCfg(arch string, target manifest.Target, pkg string, srcRepo string
 	return buf.String(), templateExecErr
 }
 
-// getCfgFilePath Returns the config file location under the workingDir/Package.
-// File name of format mock_<pkg name>_<architecture>.cfg
-func getCfgFilePath(arch string, pkg string) string {
-	basePath := viper.GetString("WorkingDir")
-	srcPath := filepath.Join(basePath, pkg)
-	cfgFileName := fmt.Sprintf("mock_%s_%s.cfg", pkg, arch)
-	cfgFilePath := filepath.Join(srcPath, cfgFileName)
-	return cfgFilePath
-
-}
-
 func dumpToConfigFile(arch string, pkg string, cfg string) error {
 
-	cfgFile, createErr := os.Create(getCfgFilePath(arch, pkg))
+	cfgFile, createErr := os.Create(getMockCfgPath(pkg, arch))
 	if createErr != nil {
 		return createErr
 	}

@@ -24,13 +24,21 @@ func testMock(t *testing.T, pkgName string, quiet bool) {
 func TestMock(t *testing.T) {
 	t.Log("Create temporary working directory")
 
-	workingDir, err := os.MkdirTemp("", "mock-test")
+	workingDir, err := os.MkdirTemp("", "mock-test-wd")
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer os.RemoveAll(workingDir)
+	destDir, err := os.MkdirTemp("", "mock-test-dd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(destDir)
+
 	baseName := "mrtparse-1"
 	viper.Set("WorkingDir", workingDir)
 	viper.Set("SrcDir", "testData")
+	viper.Set("DestDir", destDir)
 	viper.Set("MockTemplate", "/usr/share/mock_cfg.template")
 	args := []string{"createSrpm", "--repo", baseName}
 	rootCmd.SetArgs(args)
@@ -38,8 +46,6 @@ func TestMock(t *testing.T) {
 	cmdErr := rootCmd.Execute()
 	assert.NoError(t, cmdErr)
 	defer viper.Reset()
-
-	defer os.RemoveAll(workingDir)
 
 	t.Logf("WorkingDir: %s", workingDir)
 	t.Log("Test mock from SRPM")
