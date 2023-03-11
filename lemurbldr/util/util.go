@@ -54,8 +54,8 @@ func CopyFile(errorPrefix string, src string, dst string) error {
 	return nil
 }
 
-// GetMatchingFileNamesFromDir gets list of files matching the regex
-func GetMatchingFileNamesFromDir(dirPath string, regexString string) ([]string, error) {
+// GetMatchingFilenamesFromDir gets list of files matching the regex
+func GetMatchingFilenamesFromDir(dirPath string, regexString string) ([]string, error) {
 	var fileNames []string
 	files, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -77,31 +77,37 @@ func GetMatchingFileNamesFromDir(dirPath string, regexString string) ([]string, 
 }
 
 // CopyFilesToDir copies files in filelist from src to dest dir, creates dest dir if it doesn't exist
-func CopyFilesToDir(fileList []string, src string, dest string) error {
+func CopyFilesToDir(fileList []string, src string, dest string, retainInSrc bool) error {
 	creatErr := MaybeCreateDir("util.CopyFilesToDir", dest)
 	if creatErr != nil {
 		return creatErr
 	}
+	cmd := "cp"
+	if !retainInSrc {
+		cmd = "mv"
+	}
 	for _, file := range fileList {
-		fileErr := RunSystemCmd("mv", "-f", filepath.Join(src, file), dest)
+		fileErr := RunSystemCmd(cmd, "-f", filepath.Join(src, file), dest)
 		if fileErr != nil {
-			return fmt.Errorf("util.CopyFilesToDir: move file %s errored out with %s", file, fileErr)
+			return fmt.Errorf("util.CopyFilesToDir: copy/move file %s errored out with %s", file, fileErr)
 		}
 	}
 	return nil
 }
 
+// CheckPath checks if path exists. It also optionally checks if it is a directory,
+// or if the path is writable
 func CheckPath(path string, checkDir bool, checkWritable bool) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
 	if checkDir && !info.IsDir() {
-		return fmt.Errorf("%s is not a directory!", path)
+		return fmt.Errorf("%s is not a directory", path)
 	}
 
 	if checkWritable && unix.Access(path, unix.W_OK) != nil {
-		return fmt.Errorf("%s is not writable!", path)
+		return fmt.Errorf("%s is not writable", path)
 	}
 	return nil
 }

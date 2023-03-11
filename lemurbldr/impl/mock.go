@@ -6,6 +6,7 @@ package impl
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 
@@ -13,68 +14,46 @@ import (
 	"lemurbldr/util"
 )
 
-func mockPkg(arch string, pkg string) error {
+func mockPkg(pkg string, arch string, srpmPath string) error {
 	var mockErr error
-	baseDir := viper.GetString("WorkingDir")
-
-	rpmPath := filepath.Join(baseDir, pkg, "RPMS")
-	logPath := filepath.Join(baseDir, pkg, "logs")
-	srpmPath := filepath.Join(baseDir, pkg, "rpmbuild", "SRPMS")
-	scratchPath := filepath.Join(baseDir, pkg, "scratch")
 
 	targetArg := "--target=" + arch
-	cfgArg := "--root=" + getCfgFilePath(arch, pkg)
+	cfgArg := "--root=" + getMockCfgPath(pkg, arch)
 
-	srpmName, srpmErr := util.GetMatchingFileNamesFromDir(srpmPath, "(?i).*\\.src\\.rpm")
-	if srpmErr != nil {
-		return fmt.Errorf("impl.mockPkg: *.src.rpm file not found in %s , error: %s", srpmPath, srpmErr)
-	}
-	srpmFullPath := filepath.Join(srpmPath, srpmName[0]) ////expecting single file
-
-	// cleanup RPM, logs, scratch from previous run
-	for _, path := range []string{rpmPath, logPath, scratchPath} {
-		cleanupErr := util.RunSystemCmd("rm", "-rf", path)
-		if cleanupErr != nil {
-			return fmt.Errorf("impl.mockPkg: cleanup %s errored out with %s", path, cleanupErr)
-		}
-	}
-
-	creatErr := util.MaybeCreateDir("impl.mockPkg", rpmPath)
-	if creatErr != nil {
-		return creatErr
-	}
 	var mockArgs []string
 
 	if util.GlobalVar.Quiet {
 		mockArgs = append(mockArgs, "--quiet")
 	}
-	mockArgs = append(mockArgs, fmt.Sprintf("--resultdir=%s", rpmPath), targetArg, cfgArg, srpmFullPath)
+
+	mockResultsDir := getMockResultsDir(pkg)
+	mockArgs = append(mockArgs, fmt.Sprintf("--resultdir=%s", mockResultsDir), targetArg, cfgArg, srpmPath)
 
 	mockErr = util.RunSystemCmd("mock", mockArgs...)
 	if mockErr != nil {
-		return fmt.Errorf("impl.mockPkg: mock on %s to arch %s errored out with %s",
+		return fmt.Errorf("impl.mockPkg: mock %s on arch %s errored out with %s",
 			pkg, arch, mockErr)
 	}
 
+	pkgRpmsDestDir := getPkgRpmsDestDir(pkg)
 	// move out logs, srpm from resultdir to logs and scratch respectively
-	movePathMap := make(map[string]string)
-	movePathMap[scratchPath] = "(?i).*\\.src\\.rpm"
-	movePathMap[logPath] = "(?i).*\\.log"
-	moveErr := filterAndMove(movePathMap, rpmPath)
-	if moveErr != nil {
-		return moveErr
+	copyPathMap := make(map[string]string)
+	copyPathMap[pkgRpmsDestDir] = "(?i).*\\.(noarch|i686|x86_64|aarch64)\\.rpm"
+	copyErr := filterAndCopy(copyPathMap, mockResultsDir)
+	if copyErr != nil {
+		return copyErr
 	}
 
 	return nil
 }
 
-func filterAndMove(movePathMap map[string]string, srcPath string) error {
+func filterAndCopy(movePathMap map[string]string, srcPath string) error {
 	for destPath, regexStr := range movePathMap {
-		name, err := util.GetMatchingFileNamesFromDir(srcPath, regexStr)
+		filenames, err := util.GetMatchingFilenamesFromDir(srcPath, regexStr)
 		if err == nil {
-			err = util.CopyFilesToDir(name, srcPath, destPath)
+			err = util.CopyFilesToDir(filenames, srcPath, destPath, true)
 			if err != nil {
-				return fmt.Errorf("impl.filterAndMove moving %s errored out with %s", name, err)
+				return fmt.Errorf("impl.filterAndCopy errored out with %s", err)
 			}
 		}
 	}
@@ -84,6 +63,28 @@ func filterAndMove(movePathMap map[string]string, srcPath string) error {
 // Mock calls fedora mock to build the RPMS for the specified target
 // from the already built SRPMs and places the results in {WorkingDir}/<pkg>/RPMS
 func Mock(arch string, repo string, pkg string) error {
+	srcDir := viper.GetString("SrcDir")
+	workingDir := viper.GetString("WorkingDir")
+	destDir := viper.GetString("DestDir")
+
+	repoSrcDir := filepath.Join(srcDir, repo)
+	if err := util.CheckPath(repoSrcDir, true, false); err != nil {
+		return fmt.Errorf("impl.Mock: repo-dir %s not found(in SrcDir): %s", repoSrcDir, err)
+	}
+
+	if err := util.CheckPath(workingDir, true, true); err != nil {
+		return fmt.Errorf("impl.Mock problem with WorkingDir %s: %s", workingDir, err)
+	}
+
+	if err := util.CheckPath(destDir, true, true); err != nil {
+		return fmt.Errorf("impl.Mock: problem with DestDir %s: %s", destDir, err)
+	}
+
+	rpmsDestDir := getAllRpmsDestDir()
+	if dirCreateErr := util.MaybeCreateDir("impl.Mock", rpmsDestDir); dirCreateErr != nil {
+		return dirCreateErr
+	}
+
 	repoManifest, loadManifestErr := manifest.LoadManifest(repo)
 	if loadManifestErr != nil {
 		return loadManifestErr
@@ -94,13 +95,53 @@ func Mock(arch string, repo string, pkg string) error {
 		if pkgSpecified && (pkg != thisPkgName) {
 			continue
 		}
+
+		pkgSrpmsDir := getPkgSrpmsDestDir(thisPkgName)
+		if err := util.CheckPath(pkgSrpmsDir, true, false); err != nil {
+			return fmt.Errorf("impl.Mock: Directory %s not found, input .src.rpm is expected here", pkgSrpmsDir)
+		}
+
+		srpmNames, readDirErr := util.GetMatchingFilenamesFromDir(pkgSrpmsDir, "")
+		if readDirErr != nil {
+			return fmt.Errorf("impl.Mock: %s", readDirErr)
+		}
+		if numMatched := len(srpmNames); numMatched != 1 {
+			return fmt.Errorf("impl.Mock: Found %d files in %s, expected (only) one .src.rpm file", numMatched, pkgSrpmsDir)
+		}
+		srpmName := srpmNames[0]
+		srpmPath := filepath.Join(pkgSrpmsDir, srpmName)
+		if !strings.HasSuffix(srpmName, ".src.rpm") {
+			return fmt.Errorf("impl.Mock: File %s found, but expected a .src.rpm file here", srpmPath)
+		}
+
+		pkgWorkingDir := getPkgWorkingDir(thisPkgName)
+		// These should be created but not cleaned up
+		for _, dir := range []string{pkgWorkingDir} {
+			if dirCreateErr := util.MaybeCreateDir("impl.Mock", dir); dirCreateErr != nil {
+				return dirCreateErr
+			}
+		}
+
+		// These should be cleaned up and re-created
+		pkgRpmsDestDir := getPkgRpmsDestDir(thisPkgName)
+		mockResultsDir := getMockResultsDir(thisPkgName)
+		for _, dir := range []string{pkgRpmsDestDir, mockResultsDir} {
+			if rmErr := util.RunSystemCmd("rm", "-rf", dir); rmErr != nil {
+				return fmt.Errorf("impl.createSrpm: Removing %s errored out with %s", dir, rmErr)
+			}
+			if dirCreateErr := util.MaybeCreateDir("impl.createSrpm", dir); dirCreateErr != nil {
+				return dirCreateErr
+			}
+		}
+
 		cfgErr := mockCfgGenerate(arch, pkgSpec.Name, pkgSpec, repo)
 		if cfgErr != nil {
-			return fmt.Errorf("impl.Mock: pkg %s cfg generate errored out  %s", pkgSpec.Name, cfgErr)
+			return fmt.Errorf("impl.Mock: pkg %s cfg generate errored out %s", pkgSpec.Name, cfgErr)
 		}
-		pkgErr := mockPkg(arch, pkgSpec.Name)
+
+		pkgErr := mockPkg(pkgSpec.Name, arch, srpmPath)
 		if pkgErr != nil {
-			return fmt.Errorf("impl.Mock: pkg %s mock errored out  %s", pkgSpec.Name, pkgErr)
+			return fmt.Errorf("impl.Mock: pkg %s mock errored out %s", pkgSpec.Name, pkgErr)
 		}
 	}
 
