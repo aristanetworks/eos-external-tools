@@ -27,5 +27,8 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 }
 
 func init() {
+	createSrpmCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
+	createSrpmCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
+	createSrpmCmd.MarkFlagRequired("repo")
 	rootCmd.AddCommand(createSrpmCmd)
 }

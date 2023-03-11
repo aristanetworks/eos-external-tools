@@ -5,6 +5,7 @@ package util
 
 import (
 	"fmt"
+	"golang.org/x/sys/unix"
 	"io"
 	"os"
 	"os/exec"
@@ -86,6 +87,21 @@ func CopyFilesToDir(fileList []string, src string, dest string) error {
 		if fileErr != nil {
 			return fmt.Errorf("util.CopyFilesToDir: move file %s errored out with %s", file, fileErr)
 		}
+	}
+	return nil
+}
+
+func CheckPath(path string, checkDir bool, checkWritable bool) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if checkDir && !info.IsDir() {
+		return fmt.Errorf("%s is not a directory!", path)
+	}
+
+	if checkWritable && unix.Access(path, unix.W_OK) != nil {
+		return fmt.Errorf("%s is not writable!", path)
 	}
 	return nil
 }

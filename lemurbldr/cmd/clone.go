@@ -43,6 +43,9 @@ The local directory is <BASE_PATH>/<repo>.
 
 func init() {
 	cloneCmd.Flags().BoolVarP(&force, "force", "f", false, "Clone again if the local directory already exists")
+	cloneCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
+	cloneCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
+	cloneCmd.MarkFlagRequired("repo")
 	rootCmd.AddCommand(cloneCmd)
 
 	// Here you will define your flags and configuration settings.

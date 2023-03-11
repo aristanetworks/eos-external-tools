@@ -17,6 +17,7 @@ func main() {
 	homeDir := os.Getenv("HOME")
 	viper.SetDefault("SrcDir", filepath.Join(homeDir, "lemurbldr-src"))
 	viper.SetDefault("WorkingDir", "/var/lemurbldr")
+	viper.SetDefault("DestDir", filepath.Join(homeDir, "lemurbldr-dest"))
 	viper.SetDefault("MockTemplate", "/usr/share/mock_cfg.template")
 	cmd.Execute()
 }

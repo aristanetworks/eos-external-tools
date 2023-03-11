@@ -47,10 +47,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.lemurbldr.yaml)")
-	rootCmd.PersistentFlags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
-	rootCmd.PersistentFlags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
 	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
-	rootCmd.MarkPersistentFlagRequired("repo")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

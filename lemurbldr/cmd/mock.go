@@ -24,6 +24,10 @@ var mockCmd = &cobra.Command{
 }
 
 func init() {
-	mockCmd.Flags().StringVarP(&arch, "target", "t", "", "target architecture for the RPM")
+	mockCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
+	mockCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
+	mockCmd.Flags().StringVarP(&arch, "target", "t", "", "target architecture for the RPM (REQUIRED)")
+	mockCmd.MarkFlagRequired("repo")
+	mockCmd.MarkFlagRequired("target")
 	rootCmd.AddCommand(mockCmd)
 }
