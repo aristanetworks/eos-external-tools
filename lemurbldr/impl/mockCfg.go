@@ -4,106 +4,97 @@
 package impl
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
-	"text/template"
-
-	"github.com/spf13/viper"
 
 	"lemurbldr/manifest"
 	"lemurbldr/util"
 )
 
-// TemplateParams struct exported for template usage
-type TemplateParams struct {
+// MockCfgTemplateData is used to execute the mock config template
+type MockCfgTemplateData struct {
 	DefaultCommonCfg map[string]string
-	RemoteRepo       []manifest.Repo
+	Repo             []manifest.Repo
 	Includes         []string
 }
 
-func loadCfgTemplate() (string, error) {
-	buf, readError := os.ReadFile(viper.GetString("MockTemplate"))
-	if readError != nil {
-		return "", readError
-	}
-	return string(buf), readError
-}
+// This sets up the MockCfgTemplateData instance
+// for executing the template.
+// It also copies over any include files to the relevant directory.
+func setupTemplateData(errPrefix string,
+	repo string, pkg string, arch string,
+	targetSpec manifest.Target) (
+	MockCfgTemplateData, error) {
 
-func setupCfgParams(arch string, target manifest.Target, pkg string, srcRepo string) (TemplateParams, error) {
-	var templateParams TemplateParams
-	workingBasePath := viper.GetString("WorkingDir")
-	destPath := filepath.Join(workingBasePath, pkg)
-	basePath := viper.GetString("SrcDir")
-	srcPath := filepath.Join(basePath, srcRepo)
-	templateParams.DefaultCommonCfg = map[string]string{
+	var templateData MockCfgTemplateData
+
+	templateData.DefaultCommonCfg = map[string]string{
 		"target_arch": arch,
-		"root":        fmt.Sprintf("%s-{{ target_arch }}", pkg)}
-	for _, manifestRepo := range target.Repo {
-		templateParams.RemoteRepo = append(templateParams.RemoteRepo, manifestRepo)
+		"root":        getMockChrootDirName(pkg, arch),
 	}
-	for _, includeTpl := range target.Include {
-		includeSrcPath := filepath.Join(srcPath, includeTpl)
-		err := util.CopyFile("impl.mockCfg", includeSrcPath, destPath)
-		if err != nil {
-			return templateParams, err
+
+	for _, repoSpecifiedInManifest := range targetSpec.Repo {
+		templateData.Repo = append(templateData.Repo, repoSpecifiedInManifest)
+	}
+
+	mockCfgDir := getMockCfgDir(pkg, arch)
+	for _, includeFile := range targetSpec.Include {
+		// Any templates mentioned here should be copied to the
+		// same directory as the mock configuration,
+		// and they'll be included with absolute paths in the generated
+		// mock configuration.
+		includeFileSrcPath := filepath.Join(getRepoSrcDir(repo), includeFile)
+		if util.CheckPath(includeFileSrcPath, false, false) != nil {
+			return MockCfgTemplateData{},
+				fmt.Errorf("%sCannot find the include file specified in manifest %s", errPrefix, includeFileSrcPath)
 		}
-		includePath := filepath.Join(destPath, includeTpl)
-		templateParams.Includes = append(templateParams.Includes, includePath)
+
+		if err := util.CopyFile(errPrefix,
+			includeFileSrcPath, mockCfgDir); err != nil {
+			return MockCfgTemplateData{}, err
+		}
+
+		absoluteIncludeFilePathForMockCfg := filepath.Join(mockCfgDir, includeFile)
+		templateData.Includes = append(templateData.Includes, absoluteIncludeFilePathForMockCfg)
 	}
-	return templateParams, nil
+	return templateData, nil
 }
 
-func generateCfg(arch string, target manifest.Target, pkg string, srcRepo string) (string, error) {
-	templateParams, error := setupCfgParams(arch, target, pkg, srcRepo)
-	if error != nil {
-		return "", error
-	}
-	var buf bytes.Buffer
-	templateString, readError := loadCfgTemplate()
-	if readError != nil {
-		return "", readError
-	}
-	t, templateCreateErr := template.New("").Parse(templateString)
-	if templateCreateErr != nil {
-		return "", templateCreateErr
-	}
-	templateExecErr := t.Execute(&buf, templateParams)
-	return buf.String(), templateExecErr
-}
+func createMockCfgFile(repo string, pkgSpec manifest.Package, arch string) error {
+	pkg := pkgSpec.Name
 
-func dumpToConfigFile(arch string, pkg string, cfg string) error {
+	errPrefix := fmt.Sprintf("impl.createMockCfgFile(%s): ", pkg)
 
-	cfgFile, createErr := os.Create(getMockCfgPath(pkg, arch))
+	targetValid := false
+	var targetSpec manifest.Target
+	for _, targetSpec = range pkgSpec.Target {
+		targetValid = true
+		break
+	}
+	if !targetValid {
+		return fmt.Errorf("%sTarget %s not found in manifest", errPrefix, arch)
+	}
+
+	templateData, stErr := setupTemplateData(errPrefix,
+		repo, pkg, arch, targetSpec)
+	if stErr != nil {
+		return stErr
+	}
+
+	mockCfgPath := getMockCfgPath(pkg, arch)
+	mockCfgFileHandle, createErr := os.Create(mockCfgPath)
 	if createErr != nil {
-		return createErr
+		return fmt.Errorf("%sError '%s' creating/truncating empty file %s for mock configuration",
+			errPrefix, createErr, mockCfgPath)
 	}
+	defer mockCfgFileHandle.Close()
 
-	defer cfgFile.Close()
-
-	_, writeErr := cfgFile.WriteString(cfg)
-
-	if writeErr != nil {
-		return writeErr
-	}
-
-	return nil
-}
-
-func mockCfgGenerate(arch string, pkg string, pkgManifest manifest.Package, srcRepo string) error {
-
-	for _, pkgTarget := range pkgManifest.Target {
-		thisTargetName := pkgTarget.Name
-		if arch != thisTargetName {
-			continue
-		}
-
-		mockCfgString, err := generateCfg(arch, pkgTarget, pkg, srcRepo)
-		if err != nil {
-			return err
-		}
-		return dumpToConfigFile(arch, pkg, mockCfgString)
+	// parsedMockCfgTemplate is already expected to be setup
+	templateExecError := parsedMockCfgTemplate.Execute(mockCfgFileHandle, templateData)
+	if templateExecError != nil {
+		return fmt.Errorf("%sError '%s' executing template with %s",
+			errPrefix, templateExecError, templateData)
 	}
 
 	return nil

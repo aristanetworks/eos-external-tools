@@ -25,13 +25,14 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 		args = append(args, "--force")
 	}
 
-	basePath := filepath.Join(workingDir, "lemurbldr-src")
-	viper.Set("SrcDir", basePath)
+	viper.Set("SrcDir", workingDir)
+	viper.Set("DestDir", workingDir)
+	viper.Set("WorkingDir", workingDir)
 	defer viper.Reset()
 
 	cmdErr := testutil.RunCmd(t, rootCmd, args, quiet, expectSuccess)
 	if expectSuccess {
-		dstPath := filepath.Join(basePath, pkg)
+		dstPath := filepath.Join(workingDir, pkg)
 		assert.DirExists(t, dstPath)
 	} else {
 		t.Log("Expecting failure.")

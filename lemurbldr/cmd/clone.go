@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"lemurbldr/impl"
 	"lemurbldr/util"
@@ -34,9 +33,8 @@ The local directory is <BASE_PATH>/<repo>.
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		pkg, _ := cmd.Flags().GetString("repo")
-		basePath := viper.GetString("SrcDir")
-		err := impl.Clone(args[0], basePath, pkg, force)
+		repo, _ := cmd.Flags().GetString("repo")
+		err := impl.Clone(args[0], repo, force)
 		return err
 	},
 }

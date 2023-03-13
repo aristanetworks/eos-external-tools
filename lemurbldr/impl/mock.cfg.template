@@ -25,7 +25,7 @@ syslog_device=
 syslog_ident=mock
 
 
-{{range .RemoteRepo}}
+{{range .Repo}}
 [{{.Name}}]
 name = {{.Name}}
 baseurl = {{.BaseURL}}

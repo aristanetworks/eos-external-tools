@@ -14,6 +14,8 @@ CMD ["bash"]
 
 FROM base as builder
 ARG LEMURBLDR_ROOT=lemurbldr
+ARG MOCK_CFG_TEMPLATE_DIR=/usr/share
+ARG MOCK_CFG_TEMPLATE=mock.cfg.template
 USER root
 RUN dnf install -y golang-1.18.* && dnf clean all
 USER lemurbldr-robot
@@ -28,7 +30,7 @@ COPY ./${LEMURBLDR_ROOT}/impl/ impl/
 COPY ./${LEMURBLDR_ROOT}/util/ util/
 COPY ./${LEMURBLDR_ROOT}/testutil/ testutil/
 COPY ./${LEMURBLDR_ROOT}/manifest/ manifest/
-COPY ./${LEMURBLDR_ROOT}/impl/mock_cfg.template /usr/share/mock_cfg.template
+COPY ./${LEMURBLDR_ROOT}/impl/${MOCK_CFG_TEMPLATE} ${MOCK_CFG_TEMPLATE_DIR}/${MOCK_CFG_TEMPLATE}
 RUN go build -o  /home/lemurbldr-robot/bin/lemurbldr && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
@@ -38,7 +40,7 @@ RUN go build -o  /home/lemurbldr-robot/bin/lemurbldr && \
 
 FROM base as deploy
 COPY --from=builder /home/lemurbldr-robot/bin/lemurbldr /usr/bin/
-COPY --from=builder /usr/share/mock_cfg.template /usr/share/mock_cfg.template
+COPY --from=builder ${MOCK_CFG_TEMPLATE_DIR}/${MOCK_CFG_TEMPLATE} ${MOCK_CFG_TEMPLATE_DIR}/${MOCK_CFG_TEMPLATE}
 USER root
 RUN mkdir /var/lemurbldr && \
     chown  lemurbldr-robot /var/lemurbldr
