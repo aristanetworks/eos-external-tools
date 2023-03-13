@@ -39,7 +39,7 @@ func TestMock(t *testing.T) {
 	viper.Set("WorkingDir", workingDir)
 	viper.Set("SrcDir", "testData")
 	viper.Set("DestDir", destDir)
-	viper.Set("MockTemplate", "/usr/share/mock_cfg.template")
+	viper.Set("MockCfgTemplate", "/usr/share/mock.cfg.template")
 	args := []string{"createSrpm", "--repo", baseName}
 	rootCmd.SetArgs(args)
 

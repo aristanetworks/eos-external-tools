@@ -22,7 +22,7 @@ var mockCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
-		err := impl.Mock(arch, repo, pkg)
+		err := impl.Mock(repo, pkg, arch)
 		return err
 	},
 }

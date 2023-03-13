@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+func getRepoSrcDir(repo string) string {
+	srcDir := viper.GetString("SrcDir")
+	return filepath.Join(srcDir, repo)
+}
+
 func getPkgWorkingDir(pkg string) string {
 	return filepath.Join(viper.GetString("WorkingDir"), pkg)
 
@@ -26,6 +31,31 @@ func getSrpmsRpmbuildDir(pkg string) string {
 	return filepath.Join(getRpmbuildDir(pkg), "SRPMS")
 }
 
+func getMockBaseDir(pkg string, arch string) string {
+	return filepath.Join(getPkgWorkingDir(pkg),
+		fmt.Sprintf("mock-%s", arch))
+}
+
+func getMockCfgDir(pkg string, arch string) string {
+	return filepath.Join(getMockBaseDir(pkg, arch),
+		"mock-cfg")
+}
+
+func getMockCfgPath(pkg string, arch string) string {
+	return filepath.Join(getMockCfgDir(pkg, arch), "mock.cfg")
+}
+
+func getMockResultsDir(pkg string, arch string) string {
+	return filepath.Join(getMockBaseDir(pkg, arch),
+		"mock-results")
+}
+
+// This doesn't return an absolute path
+// It gives the mock chroot name under mock working directory(not WorkingDir)
+func getMockChrootDirName(pkg string, arch string) string {
+	return fmt.Sprintf("%s-%s", pkg, arch)
+}
+
 func getAllSrpmsDestDir() string {
 	return filepath.Join(viper.GetString("DestDir"), "SRPMS")
 }
@@ -40,13 +70,4 @@ func getAllRpmsDestDir() string {
 
 func getPkgRpmsDestDir(pkg string) string {
 	return filepath.Join(getAllRpmsDestDir(), pkg)
-}
-
-func getMockCfgPath(pkg string, arch string) string {
-	return filepath.Join(getPkgWorkingDir(pkg),
-		fmt.Sprintf("mock_%s_%s.cfg", pkg, arch))
-}
-
-func getMockResultsDir(pkg string) string {
-	return filepath.Join(getPkgWorkingDir(pkg), "mock-results")
 }

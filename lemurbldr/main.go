@@ -18,6 +18,6 @@ func main() {
 	viper.SetDefault("SrcDir", filepath.Join(homeDir, "lemurbldr-src"))
 	viper.SetDefault("WorkingDir", "/var/lemurbldr")
 	viper.SetDefault("DestDir", filepath.Join(homeDir, "lemurbldr-dest"))
-	viper.SetDefault("MockTemplate", "/usr/share/mock_cfg.template")
+	viper.SetDefault("MockCfgTemplate", "/usr/share/mock.cfg.template")
 	cmd.Execute()
 }

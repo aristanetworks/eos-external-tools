@@ -6,7 +6,6 @@ package impl
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"lemurbldr/util"
 )
@@ -14,41 +13,30 @@ import (
 // Clone git clones the repository pointed by repoURL to a new directory under
 // named by pkg under dstBasePath. force indicates whether to overwrite an
 // existing directory
-func Clone(repoURL string, dstBasePath string, pkg string, force bool) error {
-	dstPath := filepath.Join(dstBasePath, pkg)
-	_, statErr := os.Stat(dstPath)
+func Clone(repoURL string, repo string, force bool) error {
+	if err := CheckEnv(); err != nil {
+		return err
+	}
+	repoSrcDir := getRepoSrcDir(repo)
 
-	if statErr != nil && !os.IsNotExist(statErr) {
-		// Error other than ENOENT
-		return fmt.Errorf("impl.Clone: os.Stat on %s returned %s", dstPath, statErr)
-	} else if statErr == nil {
-		// No error, dstPath already exists
-		if force {
-			rmErr := util.RunSystemCmd("rm", "-rf", dstPath)
-			if rmErr != nil {
-				return fmt.Errorf("Removing %s errored out with %s", dstPath, rmErr)
-			}
-		} else {
-			return fmt.Errorf("impl.Clone: %s already exists, use --force to overwrite", dstPath)
-		}
+	if util.CheckPath(repoSrcDir, false, false) == nil && !force {
+		return fmt.Errorf("impl.Clone: %s already exists, use --force to overwrite", repoSrcDir)
 	}
 
-	// Create dstBasePath if required
-	creatErr := util.MaybeCreateDir("impl.clone", dstBasePath)
-
-	if creatErr != nil {
-		return creatErr
+	if rmErr := os.RemoveAll(repoSrcDir); rmErr != nil {
+		return rmErr
 	}
+
 	var cloneErr error
 	if util.GlobalVar.Quiet {
-		cloneErr = util.RunSystemCmd("git", "clone", "--quiet", repoURL, dstPath)
+		cloneErr = util.RunSystemCmd("git", "clone", "--quiet", repoURL, repoSrcDir)
 	} else {
-		cloneErr = util.RunSystemCmd("git", "clone", repoURL, dstPath)
+		cloneErr = util.RunSystemCmd("git", "clone", repoURL, repoSrcDir)
 	}
 
 	if cloneErr != nil {
 		return fmt.Errorf("impl.Clone: Cloning %s to %s errored out with %s",
-			repoURL, dstPath, cloneErr)
+			repoURL, repoSrcDir, cloneErr)
 	}
 
 	return nil

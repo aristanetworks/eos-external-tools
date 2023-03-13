@@ -55,17 +55,23 @@ func CopyFile(errorPrefix string, src string, dst string) error {
 }
 
 // GetMatchingFilenamesFromDir gets list of files matching the regex
-func GetMatchingFilenamesFromDir(dirPath string, regexString string) ([]string, error) {
+func GetMatchingFilenamesFromDir(errPrefix string,
+	dirPath string, regexString string) ([]string, error) {
 	var fileNames []string
-	files, err := os.ReadDir(dirPath)
-	if err != nil {
-		return fileNames, fmt.Errorf("impl.getMatchingFileNamesFromDir: os.ReadDir returned %v", err)
+	files, readDirErr := os.ReadDir(dirPath)
+	if readDirErr != nil {
+		retErr := fmt.Errorf("%s: util.GetMatchingFilenamesFromDir: os.ReadDir(%s) returned %s",
+			errPrefix, dirPath, readDirErr)
+		return nil, retErr
 	}
 
-	matchRegexp, err := regexp.Compile(regexString)
-	if err != nil {
-		return fileNames, fmt.Errorf("impl.getMatchingFileNamesFromDir: regexp.compile returned %v", err)
+	matchRegexp, regexErr := regexp.Compile(regexString)
+	if regexErr != nil {
+		retErr := fmt.Errorf("%s: util.GetMatchingFilenamesFromDir: regexp.Compile(%s) returned %s",
+			errPrefix, regexString, regexErr)
+		return nil, retErr
 	}
+
 	var matched bool
 	for _, file := range files {
 		matched = matchRegexp.MatchString(file.Name())
@@ -77,8 +83,8 @@ func GetMatchingFilenamesFromDir(dirPath string, regexString string) ([]string, 
 }
 
 // CopyFilesToDir copies files in filelist from src to dest dir, creates dest dir if it doesn't exist
-func CopyFilesToDir(fileList []string, src string, dest string, retainInSrc bool) error {
-	creatErr := MaybeCreateDir("util.CopyFilesToDir", dest)
+func CopyFilesToDir(errPrefix string, fileList []string, src string, dest string, retainInSrc bool) error {
+	creatErr := MaybeCreateDir(errPrefix, dest)
 	if creatErr != nil {
 		return creatErr
 	}
@@ -89,7 +95,7 @@ func CopyFilesToDir(fileList []string, src string, dest string, retainInSrc bool
 	for _, file := range fileList {
 		fileErr := RunSystemCmd(cmd, "-f", filepath.Join(src, file), dest)
 		if fileErr != nil {
-			return fmt.Errorf("util.CopyFilesToDir: copy/move file %s errored out with %s", file, fileErr)
+			return fmt.Errorf("%s: copy/move file %s errored out with %s", errPrefix, file, fileErr)
 		}
 	}
 	return nil
@@ -108,6 +114,23 @@ func CheckPath(path string, checkDir bool, checkWritable bool) error {
 
 	if checkWritable && unix.Access(path, unix.W_OK) != nil {
 		return fmt.Errorf("%s is not writable", path)
+	}
+	return nil
+}
+
+// CreateDirs creates the specified directories
+// It calls mkdir, it doesn't create prefixes.
+// cleanup indicates whether to cleanup existing directories
+func CreateDirs(errPrefix string, dirs []string, cleanup bool) error {
+	for _, dir := range dirs {
+		if cleanup {
+			if err := os.RemoveAll(dir); err != nil {
+				return fmt.Errorf("%s: Removing %s errored out with %s", errPrefix, dir, err)
+			}
+		}
+		if err := MaybeCreateDir(errPrefix, dir); err != nil {
+			return err
+		}
 	}
 	return nil
 }
