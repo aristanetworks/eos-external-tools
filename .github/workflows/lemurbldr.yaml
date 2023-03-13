@@ -33,19 +33,16 @@ jobs:
 
       - name: Setup golint
         run: |
-          cd lemurbldr
           GO111MODULE=off go get -u golang.org/x/lint/golint
 
       # Tests not run, because of deps
       # They are run in docker build
       - name: Run go build
         run: |
-          cd lemurbldr
           go build .
 
       - name: Run golint, go vet and go fmt
         run: |
-          cd lemurbldr
           golint -set_exit_status ./...
           go vet ./...
           test -z $(gofmt -l .)
@@ -65,7 +62,7 @@ jobs:
         with:
           # Dockerfile is within subdirectory
           context: "{{defaultContext}}"
-          file: lemurbldr/Dockerfile
+          file: Dockerfile
 
           # GIT_AUTH_TOKEN is unset for non-default context
           secrets: |
