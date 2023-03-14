@@ -5,6 +5,7 @@ package impl
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -124,12 +125,20 @@ func createSrpm(repo string, pkgSpec manifest.Package) error {
 	errPrefix := util.ErrPrefix(fmt.Sprintf("impl.createSrpm(%s): ", pkg))
 
 	// These should be cleaned up and re-created
-	pkgSrpmsDestDir := getPkgSrpmsDestDir(pkg)
 	pkgWorkingDir := getPkgWorkingDir(pkg)
 	downloadDir := getDownloadDir(pkg)
-	setupDirs := []string{pkgWorkingDir, pkgSrpmsDestDir, downloadDir}
+	setupDirs := []string{pkgWorkingDir, downloadDir}
 	if err := util.CreateDirs(setupDirs, true, errPrefix); err != nil {
 		return err
+	}
+
+	// This should be cleaned up, but creation happens later
+	pkgSrpmsDestDir := getPkgSrpmsDestDir(pkg)
+	for _, dir := range []string{pkgSrpmsDestDir} {
+		if err := os.RemoveAll(dir); err != nil {
+			return fmt.Errorf("%sError '%s' removing %s",
+				errPrefix, err, dir)
+		}
 	}
 
 	// First download the upstream source file (distro-SRPM/tarball)
