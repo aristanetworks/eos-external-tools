@@ -8,7 +8,33 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/viper"
+
+	"lemurbldr/util"
 )
+
+// copyFromRepoSrcDir is a helper that copies file named srcFile
+// from the repo directory to the directory path destDir
+func copyFromRepoSrcDir(repo string, srcFile string,
+	destDir string,
+	errPrefix util.ErrPrefix) error {
+	repoSrcDir := getRepoSrcDir(repo)
+	srcFilePath := filepath.Join(repoSrcDir, srcFile)
+
+	if util.CheckPath(srcFilePath, false, false) != nil {
+		return fmt.Errorf("%sCannot find source file %s in repo %s to copy to %s",
+			errPrefix, srcFilePath, repo, destDir)
+	}
+
+	if util.CheckPath(destDir, true, true) != nil {
+		return fmt.Errorf("%sdestDir %s should be present and writable",
+			errPrefix, destDir)
+	}
+
+	if err := util.CopyFile(srcFilePath, destDir, errPrefix); err != nil {
+		return err
+	}
+	return nil
+}
 
 func getRepoSrcDir(repo string) string {
 	srcDir := viper.GetString("SrcDir")
