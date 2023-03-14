@@ -19,81 +19,83 @@ type MockCfgTemplateData struct {
 	Includes         []string
 }
 
-// This sets up the MockCfgTemplateData instance
-// for executing the template.
-// It also copies over any include files to the relevant directory.
-func setupTemplateData(
-	repo string, pkg string, arch string,
-	targetSpec manifest.Target,
-	errPrefix util.ErrPrefix) (
-	MockCfgTemplateData, error) {
+type mockCfgBuilder struct {
+	pkg          string
+	repo         string
+	targetSpec   *manifest.Target
+	errPrefix    util.ErrPrefix
+	templateData *MockCfgTemplateData
+}
 
-	var templateData MockCfgTemplateData
+// populateTemplateData sets up the MockCfgTemplateData instance named templateData
+// in cfgBldr for executing the template.
+func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 
-	templateData.DefaultCommonCfg = map[string]string{
+	pkg := cfgBldr.pkg
+	arch := cfgBldr.targetSpec.Name
+
+	cfgBldr.templateData = &MockCfgTemplateData{}
+	cfgBldr.templateData.DefaultCommonCfg = map[string]string{
 		"target_arch": arch,
 		"root":        getMockChrootDirName(pkg, arch),
 	}
 
-	for _, repoSpecifiedInManifest := range targetSpec.Repo {
-		templateData.Repo = append(templateData.Repo, repoSpecifiedInManifest)
+	for _, repoSpecifiedInManifest := range cfgBldr.targetSpec.Repo {
+		cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoSpecifiedInManifest)
 	}
 
 	mockCfgDir := getMockCfgDir(pkg, arch)
-	for _, includeFile := range targetSpec.Include {
-		// Any templates mentioned here should be copied to the
-		// same directory as the mock configuration,
-		// and they'll be included with absolute paths in the generated
-		// mock configuration.
-		includeFileSrcPath := filepath.Join(getRepoSrcDir(repo), includeFile)
-		if util.CheckPath(includeFileSrcPath, false, false) != nil {
-			return MockCfgTemplateData{},
-				fmt.Errorf("%sCannot find the include file specified in manifest %s", errPrefix, includeFileSrcPath)
-		}
-
-		if err := util.CopyFile(includeFileSrcPath, mockCfgDir, errPrefix); err != nil {
-			return MockCfgTemplateData{}, err
-		}
-
-		absoluteIncludeFilePathForMockCfg := filepath.Join(mockCfgDir, includeFile)
-		templateData.Includes = append(templateData.Includes, absoluteIncludeFilePathForMockCfg)
+	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.errPrefix); err != nil {
+		return err
 	}
-	return templateData, nil
+
+	// Includes in mock configuration will specify absolute paths.
+	// It is expected that includes are copied over to the
+	// same directory as the mock configuration file.
+	for _, includeFile := range cfgBldr.targetSpec.Include {
+		absoluteIncludeFilePathForMockCfg := filepath.Join(mockCfgDir, includeFile)
+		cfgBldr.templateData.Includes = append(cfgBldr.templateData.Includes,
+			absoluteIncludeFilePathForMockCfg)
+	}
+	return nil
 }
 
-func createMockCfgFile(repo string, pkgSpec manifest.Package, arch string) error {
-	pkg := pkgSpec.Name
-
-	errPrefix := util.ErrPrefix(fmt.Sprintf("impl.createMockCfgFile(%s): ", pkg))
-
-	targetValid := false
-	var targetSpec manifest.Target
-	for _, targetSpec = range pkgSpec.Target {
-		targetValid = true
-		break
-	}
-	if !targetValid {
-		return fmt.Errorf("%sTarget %s not found in manifest", errPrefix, arch)
+// Create mock configuration directory
+// Copy over any include files from source repo to mock configuration directory.
+func (cfgBldr *mockCfgBuilder) prep() error {
+	arch := cfgBldr.targetSpec.Name
+	mockCfgDir := getMockCfgDir(cfgBldr.pkg, arch)
+	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.errPrefix); err != nil {
+		return err
 	}
 
-	templateData, stErr := setupTemplateData(repo, pkg, arch, targetSpec, errPrefix)
-	if stErr != nil {
-		return stErr
+	for _, includeFile := range cfgBldr.targetSpec.Include {
+		if err := copyFromRepoSrcDir(cfgBldr.repo, includeFile,
+			mockCfgDir,
+			cfgBldr.errPrefix); err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
-	mockCfgPath := getMockCfgPath(pkg, arch)
+// This executes the mock configuration template with the templateData
+// seup previously and writes it to a file.
+func (cfgBldr *mockCfgBuilder) createMockCfgFile() error {
+	arch := cfgBldr.targetSpec.Name
+	mockCfgPath := getMockCfgPath(cfgBldr.pkg, arch)
 	mockCfgFileHandle, createErr := os.Create(mockCfgPath)
 	if createErr != nil {
 		return fmt.Errorf("%sError '%s' creating/truncating empty file %s for mock configuration",
-			errPrefix, createErr, mockCfgPath)
+			cfgBldr.errPrefix, createErr, mockCfgPath)
 	}
 	defer mockCfgFileHandle.Close()
 
 	// parsedMockCfgTemplate is already expected to be setup
-	templateExecError := parsedMockCfgTemplate.Execute(mockCfgFileHandle, templateData)
+	templateExecError := parsedMockCfgTemplate.Execute(mockCfgFileHandle, cfgBldr.templateData)
 	if templateExecError != nil {
 		return fmt.Errorf("%sError '%s' executing template with %s",
-			errPrefix, templateExecError, templateData)
+			cfgBldr.errPrefix, templateExecError, cfgBldr.templateData)
 	}
 
 	return nil
