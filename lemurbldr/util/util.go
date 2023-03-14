@@ -47,6 +47,44 @@ func MaybeCreateDir(dirPath string, errPrefix ErrPrefix) error {
 	return nil
 }
 
+// MaybeCreateDirWithParents creates a directory at dirPath if one
+// doesn't already exist. It also creates any parent directories.
+func MaybeCreateDirWithParents(dirPath string, errPrefix ErrPrefix) error {
+	if err := RunSystemCmd("mkdir", "-p", dirPath); err != nil {
+		return fmt.Errorf("%sError '%s' trying to create directory %s with parents",
+			errPrefix, err, dirPath)
+	}
+	return nil
+}
+
+// CreateDirs creates the specified directories
+// It calls mkdir, it doesn't create parent dirs.
+// cleanup indicates whether to cleanup existing directories
+func CreateDirs(dirs []string, cleanup bool, errPrefix ErrPrefix) error {
+	for _, dir := range dirs {
+		if cleanup {
+			if err := os.RemoveAll(dir); err != nil {
+				return fmt.Errorf("%sRemoving %s errored out with %s", errPrefix, dir, err)
+			}
+		}
+		if err := MaybeCreateDir(dir, errPrefix); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// RemoveDirs removes the directories dirs
+func RemoveDirs(dirs []string, errPrefix ErrPrefix) error {
+	for _, dir := range dirs {
+		if err := os.RemoveAll(dir); err != nil {
+			return fmt.Errorf("%sError '%s' while removing %s",
+				errPrefix, err, dir)
+		}
+	}
+	return nil
+}
+
 // CopyFile runs cp src dest in the shell
 func CopyFile(src string, dest string, errPrefix ErrPrefix) error {
 	var cpErr error
@@ -87,8 +125,8 @@ func GetMatchingFilenamesFromDir(
 }
 
 // CopyFilesToDir copies files in filelist from srcDir to destDir
-// It expects srcDir to be already present, destDir can be created with
-// prefixes on demand.
+// It expects srcDir to be already present, destDir can be created (with
+// parents) on demand.
 func CopyFilesToDir(fileList []string, srcDir string, destDir string,
 	retainInSrc bool,
 	errPrefix ErrPrefix) error {
@@ -101,9 +139,8 @@ func CopyFilesToDir(fileList []string, srcDir string, destDir string,
 		return nil
 	}
 
-	if err := RunSystemCmd("mkdir", "-p", destDir); err != nil {
-		return fmt.Errorf("%sError '%s' trying to create directory %s with prefixes",
-			errPrefix, err, destDir)
+	if err := MaybeCreateDirWithParents(destDir, errPrefix); err != nil {
+		return err
 	}
 
 	cmd := "cp"
@@ -132,23 +169,6 @@ func CheckPath(path string, checkDir bool, checkWritable bool) error {
 
 	if checkWritable && unix.Access(path, unix.W_OK) != nil {
 		return fmt.Errorf("%s is not writable", path)
-	}
-	return nil
-}
-
-// CreateDirs creates the specified directories
-// It calls mkdir, it doesn't create prefixes.
-// cleanup indicates whether to cleanup existing directories
-func CreateDirs(dirs []string, cleanup bool, errPrefix ErrPrefix) error {
-	for _, dir := range dirs {
-		if cleanup {
-			if err := os.RemoveAll(dir); err != nil {
-				return fmt.Errorf("%sRemoving %s errored out with %s", errPrefix, dir, err)
-			}
-		}
-		if err := MaybeCreateDir(dir, errPrefix); err != nil {
-			return err
-		}
 	}
 	return nil
 }
