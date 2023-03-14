@@ -21,6 +21,8 @@ type Globals struct {
 // GlobalVar global variable exported for global flags
 var GlobalVar Globals
 
+type ErrPrefix string
+
 // RunSystemCmd runs a command on the shell and pipes to stdout and stderr
 func RunSystemCmd(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
@@ -36,38 +38,39 @@ func RunSystemCmd(name string, arg ...string) error {
 
 // MaybeCreateDir creates a directory with permissions 0775
 // Pre-existing directories are left untouched.
-func MaybeCreateDir(errorPrefix string, dirPath string) error {
+func MaybeCreateDir(dirPath string, errPrefix ErrPrefix) error {
 	err := os.Mkdir(dirPath, 0775)
 	if err != nil && !os.IsExist(err) {
-		return fmt.Errorf("%s: Error '%s' creating %s", errorPrefix, err, dirPath)
+		return fmt.Errorf("%s: Error '%s' creating %s", errPrefix, err, dirPath)
 	}
 	return nil
 }
 
 // CopyFile runs cp src dst in the shell
-func CopyFile(errorPrefix string, src string, dst string) error {
+func CopyFile(src string, dst string, errPrefix ErrPrefix) error {
 	var cpErr error
 	cpErr = RunSystemCmd("cp", src, dst)
 	if cpErr != nil {
-		return fmt.Errorf("%s: Error '%s' copying %s to %s", errorPrefix, cpErr, src, dst)
+		return fmt.Errorf("%s: Error '%s' copying %s to %s", errPrefix, cpErr, src, dst)
 	}
 	return nil
 }
 
 // GetMatchingFilenamesFromDir gets list of files matching the regex
-func GetMatchingFilenamesFromDir(errPrefix string,
-	dirPath string, regexString string) ([]string, error) {
+func GetMatchingFilenamesFromDir(
+	dirPath string, regexString string,
+	errPrefix ErrPrefix) ([]string, error) {
 	var fileNames []string
 	files, readDirErr := os.ReadDir(dirPath)
 	if readDirErr != nil {
-		retErr := fmt.Errorf("%s: util.GetMatchingFilenamesFromDir: os.ReadDir(%s) returned %s",
+		retErr := fmt.Errorf("%sutil.GetMatchingFilenamesFromDir: os.ReadDir(%s) returned %s",
 			errPrefix, dirPath, readDirErr)
 		return nil, retErr
 	}
 
 	matchRegexp, regexErr := regexp.Compile(regexString)
 	if regexErr != nil {
-		retErr := fmt.Errorf("%s: util.GetMatchingFilenamesFromDir: regexp.Compile(%s) returned %s",
+		retErr := fmt.Errorf("%sutil.GetMatchingFilenamesFromDir: regexp.Compile(%s) returned %s",
 			errPrefix, regexString, regexErr)
 		return nil, retErr
 	}
@@ -83,8 +86,10 @@ func GetMatchingFilenamesFromDir(errPrefix string,
 }
 
 // CopyFilesToDir copies files in filelist from src to dest dir, creates dest dir if it doesn't exist
-func CopyFilesToDir(errPrefix string, fileList []string, src string, dest string, retainInSrc bool) error {
-	creatErr := MaybeCreateDir(errPrefix, dest)
+func CopyFilesToDir(fileList []string, src string, dest string,
+	retainInSrc bool,
+	errPrefix ErrPrefix) error {
+	creatErr := MaybeCreateDir(dest, errPrefix)
 	if creatErr != nil {
 		return creatErr
 	}
@@ -95,7 +100,7 @@ func CopyFilesToDir(errPrefix string, fileList []string, src string, dest string
 	for _, file := range fileList {
 		fileErr := RunSystemCmd(cmd, "-f", filepath.Join(src, file), dest)
 		if fileErr != nil {
-			return fmt.Errorf("%s: copy/move file %s errored out with %s", errPrefix, file, fileErr)
+			return fmt.Errorf("%scopy/move file %s errored out with %s", errPrefix, file, fileErr)
 		}
 	}
 	return nil
@@ -121,14 +126,14 @@ func CheckPath(path string, checkDir bool, checkWritable bool) error {
 // CreateDirs creates the specified directories
 // It calls mkdir, it doesn't create prefixes.
 // cleanup indicates whether to cleanup existing directories
-func CreateDirs(errPrefix string, dirs []string, cleanup bool) error {
+func CreateDirs(dirs []string, cleanup bool, errPrefix ErrPrefix) error {
 	for _, dir := range dirs {
 		if cleanup {
 			if err := os.RemoveAll(dir); err != nil {
-				return fmt.Errorf("%s: Removing %s errored out with %s", errPrefix, dir, err)
+				return fmt.Errorf("%sRemoving %s errored out with %s", errPrefix, dir, err)
 			}
 		}
-		if err := MaybeCreateDir(errPrefix, dir); err != nil {
+		if err := MaybeCreateDir(dir, errPrefix); err != nil {
 			return err
 		}
 	}

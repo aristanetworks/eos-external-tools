@@ -13,7 +13,7 @@ import (
 )
 
 func fedoraMock(pkg string, arch string, srpmPath string) error {
-	errPrefix := fmt.Sprintf("fedoraMock(%s-%s): ", pkg, arch)
+	errPrefix := util.ErrPrefix(fmt.Sprintf("fedoraMock(%s-%s): ", pkg, arch))
 
 	var mockArgs []string
 
@@ -34,14 +34,20 @@ func fedoraMock(pkg string, arch string, srpmPath string) error {
 	return nil
 }
 
-func filterAndCopy(errPrefix string,
-	movePathMap map[string]string, srcPath string) error {
-	for destPath, regexStr := range movePathMap {
-		filenames, gmfdErr := util.GetMatchingFilenamesFromDir(errPrefix, srcPath, regexStr)
+// filterAndCopy copies files from srcDirPath to a specified
+// dstDirPath depending on filename.
+// movePathMap is a map from dstDirPath to regex.
+// We walk through all files in srcDirPath and see if any regex in the map matches.
+// If it matches, files are moved to the dstDirPath corresponding to the regex.
+// dstDirPath is created if it doesn't exist.
+func filterAndCopy(movePathMap map[string]string, srcDirPath string,
+	errPrefix util.ErrPrefix) error {
+	for dstDirPath, regexStr := range movePathMap {
+		filenames, gmfdErr := util.GetMatchingFilenamesFromDir(srcDirPath, regexStr, errPrefix)
 		if gmfdErr != nil {
 			return gmfdErr
 		}
-		if err := util.CopyFilesToDir(errPrefix, filenames, srcPath, destPath, true); err != nil {
+		if err := util.CopyFilesToDir(filenames, srcDirPath, dstDirPath, true, errPrefix); err != nil {
 			return err
 		}
 	}
@@ -52,7 +58,7 @@ func filterAndCopy(errPrefix string,
 func mock(repo string, pkgSpec manifest.Package, arch string) error {
 	pkg := pkgSpec.Name
 
-	errPrefix := fmt.Sprintf("impl.mock(%s-%s): ", pkg, arch)
+	errPrefix := util.ErrPrefix(fmt.Sprintf("impl.mock(%s-%s): ", pkg, arch))
 
 	pkgSrpmsDir := getPkgSrpmsDestDir(pkg)
 	if err := util.CheckPath(pkgSrpmsDir, true, false); err != nil {
@@ -60,7 +66,7 @@ func mock(repo string, pkgSpec manifest.Package, arch string) error {
 			errPrefix, pkgSrpmsDir)
 	}
 
-	srpmNames, gmfdErr := util.GetMatchingFilenamesFromDir(errPrefix, pkgSrpmsDir, "")
+	srpmNames, gmfdErr := util.GetMatchingFilenamesFromDir(pkgSrpmsDir, "", errPrefix)
 	if gmfdErr != nil {
 		return gmfdErr
 	}
@@ -76,7 +82,7 @@ func mock(repo string, pkgSpec manifest.Package, arch string) error {
 
 	// These should be created but not cleaned up
 	dirsToSetup := []string{getPkgWorkingDir(pkg)}
-	if err := util.CreateDirs(errPrefix, dirsToSetup, false); err != nil {
+	if err := util.CreateDirs(dirsToSetup, false, errPrefix); err != nil {
 		return err
 	}
 
@@ -85,7 +91,7 @@ func mock(repo string, pkgSpec manifest.Package, arch string) error {
 	mockResultsDir := getMockResultsDir(pkg, arch)
 	mockCfgDir := getMockCfgDir(pkg, arch)
 	dirsToWipeAndRecreate := []string{getPkgRpmsDestDir(pkg), mockBaseDir, mockResultsDir, mockCfgDir}
-	if err := util.CreateDirs(errPrefix, dirsToWipeAndRecreate, true); err != nil {
+	if err := util.CreateDirs(dirsToWipeAndRecreate, true, errPrefix); err != nil {
 		return err
 	}
 
@@ -101,7 +107,7 @@ func mock(repo string, pkgSpec manifest.Package, arch string) error {
 	// move out logs, srpm from resultdir to logs and scratch respectively
 	copyPathMap := make(map[string]string)
 	copyPathMap[pkgRpmsDestDir] = "(?i).*\\.(noarch|i686|x86_64|aarch64)\\.rpm"
-	copyErr := filterAndCopy(errPrefix, copyPathMap, mockResultsDir)
+	copyErr := filterAndCopy(copyPathMap, mockResultsDir, errPrefix)
 	if copyErr != nil {
 		return copyErr
 	}
@@ -126,10 +132,11 @@ func Mock(repo string, pkg string, arch string) error {
 		return loadManifestErr
 	}
 
+	errPrefix := util.ErrPrefix("impl.Mock")
 	// These should be created but not cleaned up
 	rpmsDestDir := getAllRpmsDestDir()
-	if dirCreateErr := util.MaybeCreateDir("impl.Mock", rpmsDestDir); dirCreateErr != nil {
-		return dirCreateErr
+	if err := util.MaybeCreateDir(rpmsDestDir, errPrefix); err != nil {
+		return err
 	}
 
 	var pkgSpecified bool = (pkg != "")

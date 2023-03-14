@@ -22,9 +22,10 @@ type MockCfgTemplateData struct {
 // This sets up the MockCfgTemplateData instance
 // for executing the template.
 // It also copies over any include files to the relevant directory.
-func setupTemplateData(errPrefix string,
+func setupTemplateData(
 	repo string, pkg string, arch string,
-	targetSpec manifest.Target) (
+	targetSpec manifest.Target,
+	errPrefix util.ErrPrefix) (
 	MockCfgTemplateData, error) {
 
 	var templateData MockCfgTemplateData
@@ -50,8 +51,7 @@ func setupTemplateData(errPrefix string,
 				fmt.Errorf("%sCannot find the include file specified in manifest %s", errPrefix, includeFileSrcPath)
 		}
 
-		if err := util.CopyFile(errPrefix,
-			includeFileSrcPath, mockCfgDir); err != nil {
+		if err := util.CopyFile(includeFileSrcPath, mockCfgDir, errPrefix); err != nil {
 			return MockCfgTemplateData{}, err
 		}
 
@@ -64,7 +64,7 @@ func setupTemplateData(errPrefix string,
 func createMockCfgFile(repo string, pkgSpec manifest.Package, arch string) error {
 	pkg := pkgSpec.Name
 
-	errPrefix := fmt.Sprintf("impl.createMockCfgFile(%s): ", pkg)
+	errPrefix := util.ErrPrefix(fmt.Sprintf("impl.createMockCfgFile(%s): ", pkg))
 
 	targetValid := false
 	var targetSpec manifest.Target
@@ -76,8 +76,7 @@ func createMockCfgFile(repo string, pkgSpec manifest.Package, arch string) error
 		return fmt.Errorf("%sTarget %s not found in manifest", errPrefix, arch)
 	}
 
-	templateData, stErr := setupTemplateData(errPrefix,
-		repo, pkg, arch, targetSpec)
+	templateData, stErr := setupTemplateData(repo, pkg, arch, targetSpec, errPrefix)
 	if stErr != nil {
 		return stErr
 	}
