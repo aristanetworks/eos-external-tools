@@ -35,19 +35,23 @@ func fedoraMock(pkg string, arch string, srpmPath string) error {
 }
 
 // filterAndCopy copies files from srcDirPath to a specified
-// dstDirPath depending on filename.
-// movePathMap is a map from dstDirPath to regex.
+// destDirPath depending on filename.
+// movePathMap is a map from destDirPath to regex.
 // We walk through all files in srcDirPath and see if any regex in the map matches.
-// If it matches, files are moved to the dstDirPath corresponding to the regex.
-// dstDirPath is created if it doesn't exist.
+// If it matches, files are moved to the destDirPath corresponding to the regex.
+// destDirPath is created if it doesn't exist.
 func filterAndCopy(movePathMap map[string]string, srcDirPath string,
 	errPrefix util.ErrPrefix) error {
-	for dstDirPath, regexStr := range movePathMap {
+	for destDirPath, regexStr := range movePathMap {
 		filenames, gmfdErr := util.GetMatchingFilenamesFromDir(srcDirPath, regexStr, errPrefix)
 		if gmfdErr != nil {
 			return gmfdErr
 		}
-		if err := util.CopyFilesToDir(filenames, srcDirPath, dstDirPath, true, errPrefix); err != nil {
+		if err := util.RunSystemCmd("mkdir", "-p", destDirPath); err != nil {
+			return fmt.Errorf("%sError '%s' trying to create directory %s with prefixes",
+				errPrefix, err, destDirPath)
+		}
+		if err := util.CopyFilesToDir(filenames, srcDirPath, destDirPath, true, errPrefix); err != nil {
 			return err
 		}
 	}
