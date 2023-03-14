@@ -13,9 +13,9 @@ import (
 )
 
 func createEmptyRpmbuildDir(
-	errPrefix,
 	pkg string,
-	subdirs []string) error {
+	subdirs []string,
+	errPrefix util.ErrPrefix) error {
 
 	rpmbuildDir := getRpmbuildDir(pkg)
 	var dirsToCreate []string
@@ -24,26 +24,26 @@ func createEmptyRpmbuildDir(
 	for _, subdir := range subdirs {
 		dirsToCreate = append(dirsToCreate, filepath.Join(rpmbuildDir, subdir))
 	}
-	return util.CreateDirs(errPrefix, dirsToCreate, true)
+	return util.CreateDirs(dirsToCreate, true, errPrefix)
 }
 
 func installUpstreamSrpm(
-	errPrefix string,
 	pkgSpec *manifest.Package,
-	downloadedSources []string) error {
+	downloadedSources []string,
+	errPrefix util.ErrPrefix) error {
 
 	var pkg string = pkgSpec.Name
 	if len(downloadedSources) != 1 {
-		return fmt.Errorf("%s: For building SRPMs, we expect exactly one upstream source to be specified", errPrefix)
+		return fmt.Errorf("%sFor building SRPMs, we expect exactly one upstream source to be specified", errPrefix)
 	}
 
 	upstreamSrpmFile := downloadedSources[0]
 	if !strings.HasSuffix(upstreamSrpmFile, ".src.rpm") {
-		return fmt.Errorf("%s: Upstream SRPM file %s doesn't have valid extension", errPrefix, upstreamSrpmFile)
+		return fmt.Errorf("%sUpstream SRPM file %s doesn't have valid extension", errPrefix, upstreamSrpmFile)
 	}
 
 	// Cleanup and (re)create rpmbuild directory
-	if err := createEmptyRpmbuildDir(errPrefix, pkg, nil); err != nil {
+	if err := createEmptyRpmbuildDir(pkg, nil, errPrefix); err != nil {
 		return err
 	}
 
@@ -53,7 +53,7 @@ func installUpstreamSrpm(
 		"-i", upstreamSrpmFile)
 
 	if rpmInstErr != nil {
-		return fmt.Errorf("%s: Error '%s' installing upstream SRPM file %s", errPrefix, rpmInstErr, upstreamSrpmFile)
+		return fmt.Errorf("%sError '%s' installing upstream SRPM file %s", errPrefix, rpmInstErr, upstreamSrpmFile)
 	}
 
 	pathsToCheck := []string{
@@ -62,15 +62,16 @@ func installUpstreamSrpm(
 	}
 	for _, path := range pathsToCheck {
 		if pathErr := util.CheckPath(path, true, false); pathErr != nil {
-			return fmt.Errorf("%s: %s not found after installing upstream SRPM : %s",
+			return fmt.Errorf("%s%s not found after installing upstream SRPM : %s",
 				errPrefix, path, pathErr)
 		}
 	}
 	return nil
 }
 
-func copySourcesAndSpecFile(errPrefix string,
-	pkgSpec *manifest.Package, srcDir string, extraSources *[]string) error {
+func copySourcesAndSpecFile(
+	pkgSpec *manifest.Package, srcDir string, extraSources *[]string,
+	errPrefix util.ErrPrefix) error {
 	pkg := pkgSpec.Name
 	rpmbuildDir := getRpmbuildDir(pkg)
 	rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
@@ -78,7 +79,7 @@ func copySourcesAndSpecFile(errPrefix string,
 
 	if extraSources != nil {
 		for _, extraSource := range *extraSources {
-			if err := util.CopyFile(errPrefix, extraSource, rpmbuildSourcesDir); err != nil {
+			if err := util.CopyFile(extraSource, rpmbuildSourcesDir, errPrefix); err != nil {
 				return err
 			}
 		}
@@ -87,29 +88,30 @@ func copySourcesAndSpecFile(errPrefix string,
 	for _, source := range pkgSpec.Source {
 		srcPath := filepath.Join(srcDir, source)
 		if util.CheckPath(srcPath, false, false) != nil {
-			return fmt.Errorf("%s: Source %s not found in %s", errPrefix, source, srcDir)
+			return fmt.Errorf("%sSource %s not found in %s", errPrefix, source, srcDir)
 		}
-		if err := util.CopyFile(errPrefix, srcPath, rpmbuildSourcesDir); err != nil {
+		if err := util.CopyFile(srcPath, rpmbuildSourcesDir, errPrefix); err != nil {
 			return err
 		}
 	}
 
 	// Copy spec file
 	specFilePath := filepath.Join(srcDir, pkgSpec.SpecFile)
-	if err := util.CopyFile(errPrefix, specFilePath, rpmbuildSpecsDir); err != nil {
+	if err := util.CopyFile(specFilePath, rpmbuildSpecsDir, errPrefix); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func buildModifiedSrpm(errPrefix string, pkg string, specFile string) error {
+func buildModifiedSrpm(pkg string, specFile string,
+	errPrefix util.ErrPrefix) error {
 	rpmbuildDir := getRpmbuildDir(pkg)
 	specFilePath := filepath.Join(rpmbuildDir, "SPECS", specFile)
 	rpmbuildErr := util.RunSystemCmd("rpmbuild", "--define", fmt.Sprintf("_topdir %s", rpmbuildDir),
 		"-bs", specFilePath)
 	if rpmbuildErr != nil {
-		return fmt.Errorf("%s: rpmbuild -bs failed", errPrefix)
+		return fmt.Errorf("%srpmbuild -bs failed", errPrefix)
 	}
 	return nil
 }
@@ -119,14 +121,14 @@ func createSrpm(repo string, pkgSpec manifest.Package) error {
 	repoSrcDir := getRepoSrcDir(repo)
 	pkg := pkgSpec.Name
 
-	errPrefix := fmt.Sprintf("impl.createSrpm(%s)", pkg)
+	errPrefix := util.ErrPrefix(fmt.Sprintf("impl.createSrpm(%s): ", pkg))
 
 	// These should be cleaned up and re-created
 	pkgSrpmsDestDir := getPkgSrpmsDestDir(pkg)
 	pkgWorkingDir := getPkgWorkingDir(pkg)
 	downloadDir := getDownloadDir(pkg)
 	setupDirs := []string{pkgWorkingDir, pkgSrpmsDestDir, downloadDir}
-	if err := util.CreateDirs(errPrefix, setupDirs, true); err != nil {
+	if err := util.CreateDirs(setupDirs, true, errPrefix); err != nil {
 		return err
 	}
 
@@ -135,7 +137,7 @@ func createSrpm(repo string, pkgSpec manifest.Package) error {
 	for _, upstreamSrc := range pkgSpec.UpstreamSrc {
 		downloaded, downloadError := util.Download(upstreamSrc, downloadDir, repoSrcDir)
 		if downloadError != nil {
-			return fmt.Errorf("%s: Error '%s' downloading %s", errPrefix, downloadError, upstreamSrc)
+			return fmt.Errorf("%sError '%s' downloading %s", errPrefix, downloadError, upstreamSrc)
 		}
 		downloadedSources = append(downloadedSources, filepath.Join(downloadDir, downloaded))
 	}
@@ -145,45 +147,44 @@ func createSrpm(repo string, pkgSpec manifest.Package) error {
 	if pkgSpec.Type == "srpm" {
 		// Install the upstream SRPM, which creates an rpmbuild directory for us
 		// with the necessary upstream sources
-		if err := installUpstreamSrpm(errPrefix, &pkgSpec, downloadedSources); err != nil {
+		if err := installUpstreamSrpm(&pkgSpec, downloadedSources, errPrefix); err != nil {
 			return err
 		}
 	} else if pkgSpec.Type == "tarball" {
 		// Create an empty rpmbuild directory tree with the required subdirs
 		subdirsToSetup := []string{"SOURCES", "SPECS"}
-		if err := createEmptyRpmbuildDir(errPrefix, pkg, subdirsToSetup); err != nil {
+		if err := createEmptyRpmbuildDir(pkg, subdirsToSetup, errPrefix); err != nil {
 			return err
 		}
 		extraSources = &downloadedSources
 	} else {
-		return fmt.Errorf("%s: Invalid type %s in manifest", errPrefix, pkgSpec.Type)
+		return fmt.Errorf("%sInvalid type %s in manifest", errPrefix, pkgSpec.Type)
 	}
 
 	// Now copy all the sources and spec file mentioned in the manifest file
 	// to the the rpmbuild SOURCES subdir and SPECS subdir.
-	if err := copySourcesAndSpecFile(errPrefix,
-		&pkgSpec, repoSrcDir, extraSources); err != nil {
+	if err := copySourcesAndSpecFile(&pkgSpec, repoSrcDir, extraSources,
+		errPrefix); err != nil {
 		return err
 	}
 
 	// Now build the modified SRPM
-	if buildErr := buildModifiedSrpm(errPrefix, pkg, pkgSpec.SpecFile); buildErr != nil {
+	if buildErr := buildModifiedSrpm(pkg, pkgSpec.SpecFile, errPrefix); buildErr != nil {
 		return buildErr
 	}
 
 	// Copy newly built SRPM to dest dir
 	srpmsRpmbuildDir := getSrpmsRpmbuildDir(pkg)
 	if util.CheckPath(srpmsRpmbuildDir, true, false) != nil {
-		return fmt.Errorf("%s: SRPMS directory %s not found after build", errPrefix, srpmsRpmbuildDir)
+		return fmt.Errorf("%sSRPMS directory %s not found after build", errPrefix, srpmsRpmbuildDir)
 	}
-	filenames, gmfdErr := util.GetMatchingFilenamesFromDir(errPrefix, srpmsRpmbuildDir, "")
+	filenames, gmfdErr := util.GetMatchingFilenamesFromDir(srpmsRpmbuildDir, "", errPrefix)
 	if gmfdErr != nil {
 		return gmfdErr
 	}
 	if copyErr := util.CopyFilesToDir(
-		errPrefix,
 		filenames, srpmsRpmbuildDir, pkgSrpmsDestDir,
-		true); copyErr != nil {
+		true, errPrefix); copyErr != nil {
 		return copyErr
 	}
 	return nil
@@ -210,7 +211,7 @@ func CreateSrpm(repo string, pkg string) error {
 
 	// These should be created but not cleaned up
 	srpmsDestDir := getAllSrpmsDestDir()
-	if err := util.MaybeCreateDir("impl.CreateSrpm", srpmsDestDir); err != nil {
+	if err := util.MaybeCreateDir(srpmsDestDir, "impl.CreateSrpm: "); err != nil {
 		return err
 	}
 
