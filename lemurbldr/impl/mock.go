@@ -5,6 +5,7 @@ package impl
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -46,10 +47,6 @@ func filterAndCopy(movePathMap map[string]string, srcDirPath string,
 		filenames, gmfdErr := util.GetMatchingFilenamesFromDir(srcDirPath, regexStr, errPrefix)
 		if gmfdErr != nil {
 			return gmfdErr
-		}
-		if err := util.RunSystemCmd("mkdir", "-p", destDirPath); err != nil {
-			return fmt.Errorf("%sError '%s' trying to create directory %s with prefixes",
-				errPrefix, err, destDirPath)
 		}
 		if err := util.CopyFilesToDir(filenames, srcDirPath, destDirPath, true, errPrefix); err != nil {
 			return err
@@ -94,9 +91,20 @@ func mock(repo string, pkgSpec manifest.Package, arch string) error {
 	mockBaseDir := getMockBaseDir(pkg, arch)
 	mockResultsDir := getMockResultsDir(pkg, arch)
 	mockCfgDir := getMockCfgDir(pkg, arch)
-	dirsToWipeAndRecreate := []string{getPkgRpmsDestDir(pkg), mockBaseDir, mockResultsDir, mockCfgDir}
+	dirsToWipeAndRecreate := []string{mockBaseDir, mockResultsDir, mockCfgDir}
 	if err := util.CreateDirs(dirsToWipeAndRecreate, true, errPrefix); err != nil {
 		return err
+	}
+
+	// Wipe a few more dirs that could be stale
+	// They are created later on after fedoraMock
+	rpmArchs := []string{arch, "noarch"}
+	for _, rpmArch := range rpmArchs {
+		dirToCleanup := getPkgRpmsDestDir(pkg, rpmArch)
+		if err := os.RemoveAll(dirToCleanup); err != nil {
+			return fmt.Errorf("%sError '%s' trying to delete %s",
+				errPrefix, err, dirToCleanup)
+		}
 	}
 
 	if mcgErr := createMockCfgFile(repo, pkgSpec, arch); mcgErr != nil {
@@ -107,10 +115,13 @@ func mock(repo string, pkgSpec manifest.Package, arch string) error {
 		return fmErr
 	}
 
-	pkgRpmsDestDir := getPkgRpmsDestDir(pkg)
-	// move out logs, srpm from resultdir to logs and scratch respectively
+	// Copy built RPMs out to DestDir/RPMS/<rpmArch>/<pkg>/foo.<rpmArch>.rpm
 	copyPathMap := make(map[string]string)
-	copyPathMap[pkgRpmsDestDir] = "(?i).*\\.(noarch|i686|x86_64|aarch64)\\.rpm"
+	for _, rpmArch := range rpmArchs {
+		pkgRpmsDestDirForArch := getPkgRpmsDestDir(pkg, rpmArch)
+		rpmArchFilenameRegex := ".+\\.%s\\.rpm$"
+		copyPathMap[pkgRpmsDestDirForArch] = fmt.Sprintf(rpmArchFilenameRegex, rpmArch)
+	}
 	copyErr := filterAndCopy(copyPathMap, mockResultsDir, errPrefix)
 	if copyErr != nil {
 		return copyErr
@@ -134,13 +145,6 @@ func Mock(repo string, pkg string, arch string) error {
 	repoManifest, loadManifestErr := manifest.LoadManifest(repo)
 	if loadManifestErr != nil {
 		return loadManifestErr
-	}
-
-	errPrefix := util.ErrPrefix("impl.Mock")
-	// These should be created but not cleaned up
-	rpmsDestDir := getAllRpmsDestDir()
-	if err := util.MaybeCreateDir(rpmsDestDir, errPrefix); err != nil {
-		return err
 	}
 
 	var pkgSpecified bool = (pkg != "")

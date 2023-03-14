@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -16,9 +17,22 @@ import (
 	"lemurbldr/testutil"
 )
 
-func testMock(t *testing.T, pkgName string, quiet bool) {
-	args := []string{"mock", "--target", "x86_64", "--repo", pkgName}
+type ExpectedRpmFile struct {
+	arch string
+	name string
+}
+
+func testMock(t *testing.T, destDir string,
+	repoName string, expectedPkgName string,
+	quiet bool,
+	expectedFiles []ExpectedRpmFile) {
+	args := []string{"mock", "--target", "x86_64", "--repo", repoName}
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
+	for _, expectedFile := range expectedFiles {
+		fileAbsPath := filepath.Join(destDir, "RPMS",
+			expectedFile.arch, expectedPkgName, expectedFile.name)
+		assert.FileExists(t, fileAbsPath)
+	}
 }
 
 func TestMock(t *testing.T) {
@@ -35,12 +49,13 @@ func TestMock(t *testing.T) {
 	}
 	defer os.RemoveAll(destDir)
 
-	baseName := "mrtparse-1"
+	repoName := "mrtparse-1"
+	expectedPkgName := "mrtparse"
 	viper.Set("WorkingDir", workingDir)
 	viper.Set("SrcDir", "testData")
 	viper.Set("DestDir", destDir)
 	viper.Set("MockCfgTemplate", "/usr/share/mock.cfg.template")
-	args := []string{"createSrpm", "--repo", baseName}
+	args := []string{"createSrpm", "--repo", repoName}
 	rootCmd.SetArgs(args)
 
 	cmdErr := rootCmd.Execute()
@@ -49,8 +64,8 @@ func TestMock(t *testing.T) {
 
 	t.Logf("WorkingDir: %s", workingDir)
 	t.Log("Test mock from SRPM")
-	testMock(t, baseName, false)
-
-	t.Log("Test mock from SRPM quiet")
-	testMock(t, baseName, true)
+	expectedRpmFiles := []ExpectedRpmFile{
+		{"noarch", "python3-mrtparse-2.0.1-eng.noarch.rpm"},
+	}
+	testMock(t, destDir, repoName, expectedPkgName, false, expectedRpmFiles)
 }

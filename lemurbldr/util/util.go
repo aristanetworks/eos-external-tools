@@ -87,7 +87,8 @@ func GetMatchingFilenamesFromDir(
 }
 
 // CopyFilesToDir copies files in filelist from srcDir to destDir
-// It expects destDir to be already present.
+// It expects srcDir to be already present, destDir can be created with
+// prefixes on demand.
 func CopyFilesToDir(fileList []string, srcDir string, destDir string,
 	retainInSrc bool,
 	errPrefix ErrPrefix) error {
@@ -96,9 +97,13 @@ func CopyFilesToDir(fileList []string, srcDir string, destDir string,
 			errPrefix, srcDir, err)
 	}
 
-	if err := CheckPath(destDir, true, true); err != nil {
-		return fmt.Errorf("%s: Expected directory %s to be present and writable. (%s)",
-			errPrefix, destDir, err)
+	if len(fileList) == 0 {
+		return nil
+	}
+
+	if err := RunSystemCmd("mkdir", "-p", destDir); err != nil {
+		return fmt.Errorf("%sError '%s' trying to create directory %s with prefixes",
+			errPrefix, err, destDir)
 	}
 
 	cmd := "cp"
