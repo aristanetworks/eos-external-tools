@@ -32,8 +32,8 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 
 	cmdErr := testutil.RunCmd(t, rootCmd, args, quiet, expectSuccess)
 	if expectSuccess {
-		dstPath := filepath.Join(workingDir, pkg)
-		assert.DirExists(t, dstPath)
+		destPath := filepath.Join(workingDir, pkg)
+		assert.DirExists(t, destPath)
 	} else {
 		t.Log("Expecting failure.")
 		assert.ErrorContains(t, cmdErr, expectedErr)

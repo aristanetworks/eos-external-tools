@@ -10,9 +10,9 @@ import (
 	"lemurbldr/util"
 )
 
-// Clone git clones the repository pointed by repoURL to a new directory under
-// named by pkg under dstBasePath. force indicates whether to overwrite an
-// existing directory
+// Clone git clones the repository pointed by repoURL to a new directory
+// named repo under SrcDir.
+// force indicates it is okay to overwrite an existing directory
 func Clone(repoURL string, repo string, force bool) error {
 	if err := CheckEnv(); err != nil {
 		return err

@@ -21,6 +21,7 @@ type Globals struct {
 // GlobalVar global variable exported for global flags
 var GlobalVar Globals
 
+// ErrPrefix is a container type for error prefix strings.
 type ErrPrefix string
 
 // RunSystemCmd runs a command on the shell and pipes to stdout and stderr
@@ -46,12 +47,12 @@ func MaybeCreateDir(dirPath string, errPrefix ErrPrefix) error {
 	return nil
 }
 
-// CopyFile runs cp src dst in the shell
-func CopyFile(src string, dst string, errPrefix ErrPrefix) error {
+// CopyFile runs cp src dest in the shell
+func CopyFile(src string, dest string, errPrefix ErrPrefix) error {
 	var cpErr error
-	cpErr = RunSystemCmd("cp", src, dst)
+	cpErr = RunSystemCmd("cp", src, dest)
 	if cpErr != nil {
-		return fmt.Errorf("%s: Error '%s' copying %s to %s", errPrefix, cpErr, src, dst)
+		return fmt.Errorf("%s: Error '%s' copying %s to %s", errPrefix, cpErr, src, dest)
 	}
 	return nil
 }
@@ -85,20 +86,27 @@ func GetMatchingFilenamesFromDir(
 	return fileNames, nil
 }
 
-// CopyFilesToDir copies files in filelist from src to dest dir, creates dest dir if it doesn't exist
-func CopyFilesToDir(fileList []string, src string, dest string,
+// CopyFilesToDir copies files in filelist from srcDir to destDir
+// It expects destDir to be already present.
+func CopyFilesToDir(fileList []string, srcDir string, destDir string,
 	retainInSrc bool,
 	errPrefix ErrPrefix) error {
-	creatErr := MaybeCreateDir(dest, errPrefix)
-	if creatErr != nil {
-		return creatErr
+	if err := CheckPath(srcDir, true, false); err != nil {
+		return fmt.Errorf("%s: Expected directory %s to be present. (%s)",
+			errPrefix, srcDir, err)
 	}
+
+	if err := CheckPath(destDir, true, true); err != nil {
+		return fmt.Errorf("%s: Expected directory %s to be present and writable. (%s)",
+			errPrefix, destDir, err)
+	}
+
 	cmd := "cp"
 	if !retainInSrc {
 		cmd = "mv"
 	}
 	for _, file := range fileList {
-		fileErr := RunSystemCmd(cmd, "-f", filepath.Join(src, file), dest)
+		fileErr := RunSystemCmd(cmd, "-f", filepath.Join(srcDir, file), destDir)
 		if fileErr != nil {
 			return fmt.Errorf("%scopy/move file %s errored out with %s", errPrefix, file, fileErr)
 		}

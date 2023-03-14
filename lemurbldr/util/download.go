@@ -40,12 +40,12 @@ func Download(srcURL string, targetDir string, srcDir string) (string, error) {
 		if uri.Scheme != "http" && uri.Scheme != "https" {
 			return "", fmt.Errorf("util.download: Unsupported URL scheme. (Supported: file, http, https")
 		}
-		dstPath := filepath.Join(targetDir, filename)
+		destPath := filepath.Join(targetDir, filename)
 
 		var file *os.File
-		file, createErr := os.Create(dstPath)
+		file, createErr := os.Create(destPath)
 		if createErr != nil {
-			return "", fmt.Errorf("util.download: Error creating %s", dstPath)
+			return "", fmt.Errorf("util.download: Error creating %s", destPath)
 		}
 		defer file.Close()
 
