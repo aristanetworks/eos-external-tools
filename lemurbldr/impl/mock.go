@@ -13,11 +13,23 @@ import (
 )
 
 type mockBuilder struct {
-	pkg        string
-	repo       string
-	targetSpec *manifest.Target
-	errPrefix  util.ErrPrefix
-	srpmPath   string
+	pkg           string
+	repo          string
+	targetSpec    *manifest.Target
+	noCheck       bool
+	errPrefixBase util.ErrPrefix
+	errPrefix     util.ErrPrefix
+	srpmPath      string
+}
+
+func (bldr *mockBuilder) setupStageErrPrefix(stage string) {
+	if stage == "" {
+		bldr.errPrefix = util.ErrPrefix(
+			fmt.Sprintf("%s: ", bldr.errPrefixBase))
+	} else {
+		bldr.errPrefix = util.ErrPrefix(
+			fmt.Sprintf("%s-%s: ", bldr.errPrefixBase, stage))
+	}
 }
 
 func (bldr *mockBuilder) fetchSrpm() error {
@@ -68,7 +80,7 @@ func (bldr *mockBuilder) createCfg() error {
 		bldr.pkg,
 		bldr.repo,
 		bldr.targetSpec,
-		util.ErrPrefix(fmt.Sprintf("mockCfgBuilder(%s-%s", bldr.pkg, bldr.targetSpec.Name)),
+		bldr.errPrefix,
 		nil,
 	}
 
@@ -84,31 +96,61 @@ func (bldr *mockBuilder) createCfg() error {
 	return nil
 }
 
-func (bldr *mockBuilder) runFedoraMock() error {
+func (bldr *mockBuilder) fmInit() error {
+	return nil
+}
+
+func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
+	cfgArg := "--root=" + getMockCfgPath(bldr.pkg, bldr.targetSpec.Name)
 	arch := bldr.targetSpec.Name
-
-	var mockArgs []string
-
-	mockResultsDir := getMockResultsDir(bldr.pkg, arch)
 	targetArg := "--target=" + arch
-	cfgArg := "--root=" + getMockCfgPath(bldr.pkg, arch)
-	mockArgs = append(mockArgs,
-		fmt.Sprintf("--resultdir=%s", mockResultsDir),
-		targetArg,
-		cfgArg,
-		bldr.srpmPath)
+	resultArg := "--resultdir=" + getMockResultsDir(bldr.pkg, arch)
 
-	if util.GlobalVar.Quiet {
-		mockArgs = append(mockArgs, "--quiet")
+	baseArgs := []string{
+		cfgArg,
+		targetArg,
+		resultArg,
 	}
+	if util.GlobalVar.Quiet {
+		baseArgs = append(baseArgs, "--quiet")
+	}
+
+	mockArgs := append(baseArgs, extraArgs...)
+	mockArgs = append(mockArgs, bldr.srpmPath)
 
 	mockErr := util.RunSystemCmd("mock", mockArgs...)
-
 	if mockErr != nil {
-		return fmt.Errorf("%sfedora mock %s on arch %s errored out with %s",
-			bldr.errPrefix, bldr.pkg, arch, mockErr)
+		return fmt.Errorf("%smock %s errored out with %s",
+			bldr.errPrefix, strings.Join(mockArgs, " "), mockErr)
+	}
+	return nil
+}
+
+// This runs fedora mock in different stages:
+// init, installdeps, build
+// the spilit is to easily identify what failed in case it fails.
+func (bldr *mockBuilder) runFedoraMockStages() error {
+
+	bldr.setupStageErrPrefix("chroot-init")
+	if err := bldr.runMockCmd([]string{"--init"}); err != nil {
+		return err
 	}
 
+	bldr.setupStageErrPrefix("installdeps")
+	if err := bldr.runMockCmd([]string{"--installdeps"}); err != nil {
+		return err
+	}
+
+	bldr.setupStageErrPrefix("build")
+	buildArgs := []string{"--no-clean", "--rebuild"}
+	if bldr.noCheck {
+		buildArgs = append(buildArgs, "--nocheck")
+	}
+	if err := bldr.runMockCmd(buildArgs); err != nil {
+		return err
+	}
+
+	bldr.setupStageErrPrefix("")
 	return nil
 }
 
@@ -133,25 +175,30 @@ func (bldr *mockBuilder) copyResultsToDestDir() error {
 // This is the entry point to mockBuilder
 // It runs the stages to build the RPMS from a modified SRPM built previously.
 // It expects the SRPM to be already present in <DestDir>/SRPMS/<package>/
-// Stages: Fetch SRPM, Clean, Create Mock Configuration, Run Fedora Mock,
+// Stages: Fetch SRPM, Clean, Create Mock Configuration,
+// Run Fedora Mock(has substages),
 // CopyResultsToDestDir
 func (bldr *mockBuilder) runStages() error {
+	bldr.setupStageErrPrefix("fetchSrpm")
 	if err := bldr.fetchSrpm(); err != nil {
 		return err
 	}
 
+	bldr.setupStageErrPrefix("clean")
 	if err := bldr.clean(); err != nil {
 		return err
 	}
 
+	bldr.setupStageErrPrefix("createCfg")
 	if err := bldr.createCfg(); err != nil {
 		return err
 	}
 
-	if err := bldr.runFedoraMock(); err != nil {
+	if err := bldr.runFedoraMockStages(); err != nil {
 		return err
 	}
 
+	bldr.setupStageErrPrefix("copyResultsToDestDir")
 	if err := bldr.copyResultsToDestDir(); err != nil {
 		return err
 	}
@@ -162,7 +209,7 @@ func (bldr *mockBuilder) runStages() error {
 // Mock calls fedora mock to build the RPMS for the specified target
 // from the already built SRPMs and places the results in
 // <DestDir>/RPMS/<rpmArch>/<package>/
-func Mock(repo string, pkg string, arch string) error {
+func Mock(repo string, pkg string, arch string, noCheck bool) error {
 	if err := CheckEnv(); err != nil {
 		return err
 	}
@@ -186,9 +233,11 @@ func Mock(repo string, pkg string, arch string) error {
 		}
 		found = true
 
-		errPrefix := util.ErrPrefix(fmt.Sprintf(
-			"mockBuilder(%s-%s): ",
+		errPrefixBase := util.ErrPrefix(fmt.Sprintf(
+			"mockBuilder(%s-%s)",
 			thisPkgName, arch))
+		errPrefix := util.ErrPrefix(fmt.Sprintf(
+			"%s: ", errPrefixBase))
 
 		targetValid := false
 		var targetSpec manifest.Target
@@ -207,8 +256,10 @@ func Mock(repo string, pkg string, arch string) error {
 			thisPkgName,
 			repo,
 			&targetSpec,
+			noCheck,
+			errPrefixBase,
 			errPrefix,
-			"",
+			"", // srpmPath
 		}
 		if err := bldr.runStages(); err != nil {
 			return err
