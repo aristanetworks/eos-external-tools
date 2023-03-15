@@ -17,10 +17,17 @@ type mockBuilder struct {
 	pkg           string
 	repo          string
 	targetSpec    *manifest.Target
+	onlyCreateCfg bool
 	noCheck       bool
 	errPrefixBase util.ErrPrefix
 	errPrefix     util.ErrPrefix
 	srpmPath      string
+}
+
+// MockExtraCmdlineArgs is a bundle of extra args for impl.Mock
+type MockExtraCmdlineArgs struct {
+	NoCheck       bool
+	OnlyCreateCfg bool
 }
 
 func (bldr *mockBuilder) log(format string, a ...any) {
@@ -85,11 +92,11 @@ func (bldr *mockBuilder) createCfg() error {
 	bldr.log("starting")
 
 	cfgBldr := mockCfgBuilder{
-		bldr.pkg,
-		bldr.repo,
-		bldr.targetSpec,
-		bldr.errPrefix,
-		nil,
+		pkg:          bldr.pkg,
+		repo:         bldr.repo,
+		targetSpec:   bldr.targetSpec,
+		errPrefix:    bldr.errPrefix,
+		templateData: nil,
 	}
 
 	if err := cfgBldr.populateTemplateData(); err != nil {
@@ -106,11 +113,7 @@ func (bldr *mockBuilder) createCfg() error {
 	return nil
 }
 
-func (bldr *mockBuilder) fmInit() error {
-	return nil
-}
-
-func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
+func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 	cfgArg := "--root=" + getMockCfgPath(bldr.pkg, bldr.targetSpec.Name)
 	arch := bldr.targetSpec.Name
 	targetArg := "--target=" + arch
@@ -127,7 +130,11 @@ func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
 
 	mockArgs := append(baseArgs, extraArgs...)
 	mockArgs = append(mockArgs, bldr.srpmPath)
+	return mockArgs
+}
 
+func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
+	mockArgs := bldr.mockArgs(extraArgs)
 	mockErr := util.RunSystemCmd("mock", mockArgs...)
 	if mockErr != nil {
 		return fmt.Errorf("%smock %s errored out with %s",
@@ -209,6 +216,13 @@ func (bldr *mockBuilder) runStages() error {
 	if err := bldr.createCfg(); err != nil {
 		return err
 	}
+	if bldr.onlyCreateCfg {
+		bldr.setupStageErrPrefix("")
+		mockArgs := bldr.mockArgs([]string{"[<extra-args>] [<sub-cmd>]"})
+		bldr.log("Mock config has been created. If you want to run mock natively use: 'mock %s'",
+			strings.Join(mockArgs, " "))
+		return nil
+	}
 
 	if err := bldr.runFedoraMockStages(); err != nil {
 		return err
@@ -225,7 +239,7 @@ func (bldr *mockBuilder) runStages() error {
 // Mock calls fedora mock to build the RPMS for the specified target
 // from the already built SRPMs and places the results in
 // <DestDir>/RPMS/<rpmArch>/<package>/
-func Mock(repo string, pkg string, arch string, noCheck bool) error {
+func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) error {
 	if err := CheckEnv(); err != nil {
 		return err
 	}
@@ -269,13 +283,14 @@ func Mock(repo string, pkg string, arch string, noCheck bool) error {
 		}
 
 		bldr := &mockBuilder{
-			thisPkgName,
-			repo,
-			&targetSpec,
-			noCheck,
-			errPrefixBase,
-			errPrefix,
-			"", // srpmPath
+			pkg:           thisPkgName,
+			repo:          repo,
+			targetSpec:    &targetSpec,
+			onlyCreateCfg: extraArgs.OnlyCreateCfg,
+			noCheck:       extraArgs.NoCheck,
+			errPrefixBase: errPrefixBase,
+			errPrefix:     errPrefix,
+			srpmPath:      "",
 		}
 		if err := bldr.runStages(); err != nil {
 			return err

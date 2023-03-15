@@ -11,9 +11,10 @@ import (
 
 var arch string
 var noCheck bool
+var onlyCreateCfg bool
 
 var mockCmd = &cobra.Command{
-	Use:   "mock -t <arch> -r <repo> [-p <package>] [--nocheck]",
+	Use:   "mock -t <arch> -r <repo> [-p <package>] ([--nocheck] | [--only-create-cfg]) ",
 	Short: "Build RPMs from SRPM.",
 	Long: `RPMS are built from the SRPM built by createSrpm. It is expected to find the corresponding SRPMS in <DestDir>/SRPMS/<package>.
 	The results are made available in <DestDir>/RPMS/<package>.
@@ -23,7 +24,10 @@ var mockCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
-		err := impl.Mock(repo, pkg, arch, noCheck)
+		extraArgs := impl.MockExtraCmdlineArgs{
+			NoCheck:       noCheck,
+			OnlyCreateCfg: onlyCreateCfg}
+		err := impl.Mock(repo, pkg, arch, extraArgs)
 		return err
 	},
 }
@@ -32,7 +36,8 @@ func init() {
 	mockCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
 	mockCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
 	mockCmd.Flags().StringVarP(&arch, "target", "t", "", "target architecture for the RPM (REQUIRED)")
-	mockCmd.Flags().BoolVar(&noCheck, "noCheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
+	mockCmd.Flags().BoolVar(&onlyCreateCfg, "only-create-cfg", false, "Just create mock configuration, don't run mock (OPTIONAL)")
+	mockCmd.Flags().BoolVar(&noCheck, "nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
 	mockCmd.MarkFlagRequired("repo")
 	mockCmd.MarkFlagRequired("target")
 	rootCmd.AddCommand(mockCmd)

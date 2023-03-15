@@ -292,10 +292,9 @@ func CreateSrpm(repo string, pkg string) error {
 		found = true
 		errPrefixBase := util.ErrPrefix(fmt.Sprintf("srpmBuilder(%s)", thisPkgName))
 		bldr := srpmBuilder{
-			&pkgSpec, repo,
-			errPrefixBase,
-			"",
-			[]string{},
+			pkgSpec:       &pkgSpec,
+			repo:          repo,
+			errPrefixBase: errPrefixBase,
 		}
 		bldr.setupStageErrPrefix("")
 		if err := bldr.runStages(); err != nil {
