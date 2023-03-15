@@ -182,18 +182,28 @@ func (bldr *srpmBuilder) prepAndPatchUpstream() error {
 	return nil
 }
 
-func (bldr *srpmBuilder) build() error {
+func (bldr *srpmBuilder) build(prep bool) error {
 	bldr.log("starting")
 	pkg := bldr.pkgSpec.Name
 	rpmbuildDir := getRpmbuildDir(pkg)
 	specsDir := filepath.Join(rpmbuildDir, "SPECS")
 	specFile := filepath.Join(specsDir, bldr.pkgSpec.SpecFile)
+
+	var rpmbuildType string
+	if prep {
+		// prep build to verify patches apply cleanly
+		rpmbuildType = "-bp"
+	} else {
+		// build SRPM
+		rpmbuildType = "-bs"
+	}
 	rpmbuildArgs := []string{
-		"-bs",
+		rpmbuildType,
 		"--define", fmt.Sprintf("_topdir %s", rpmbuildDir),
 		specFile}
+
 	if err := util.RunSystemCmd("rpmbuild", rpmbuildArgs...); err != nil {
-		return fmt.Errorf("%srpmbuild -bs failed", bldr.errPrefix)
+		return fmt.Errorf("%sfailed")
 	}
 	bldr.log("succesful")
 	return nil
@@ -249,8 +259,13 @@ func (bldr *srpmBuilder) runStages() error {
 		return err
 	}
 
-	bldr.setupStageErrPrefix("build")
-	if err := bldr.build(); err != nil {
+	bldr.setupStageErrPrefix("build-prep")
+	if err := bldr.build(true); err != nil {
+		return err
+	}
+
+	bldr.setupStageErrPrefix("build-srpm")
+	if err := bldr.build(false); err != nil {
 		return err
 	}
 
