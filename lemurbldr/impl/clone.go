@@ -5,6 +5,7 @@ package impl
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"lemurbldr/util"
@@ -39,5 +40,6 @@ func Clone(repoURL string, repo string, force bool) error {
 			repoURL, repoSrcDir, cloneErr)
 	}
 
+	log.Println("SUCCESS: clone")
 	return nil
 }

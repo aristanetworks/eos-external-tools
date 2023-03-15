@@ -5,6 +5,7 @@ package impl
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,8 +17,24 @@ import (
 type srpmBuilder struct {
 	pkgSpec                   *manifest.Package
 	repo                      string
+	errPrefixBase             util.ErrPrefix
 	errPrefix                 util.ErrPrefix
 	downloadedUpstreamSources []string // List of full paths
+}
+
+func (bldr *srpmBuilder) log(format string, a ...any) {
+	newformat := fmt.Sprintf("%s%s", bldr.errPrefix, format)
+	log.Printf(newformat, a...)
+}
+
+func (bldr *srpmBuilder) setupStageErrPrefix(stage string) {
+	if stage == "" {
+		bldr.errPrefix = util.ErrPrefix(
+			fmt.Sprintf("%s: ", bldr.errPrefixBase))
+	} else {
+		bldr.errPrefix = util.ErrPrefix(
+			fmt.Sprintf("%s-%s: ", bldr.errPrefixBase, stage))
+	}
 }
 
 func (bldr *srpmBuilder) clean() error {
@@ -110,6 +127,8 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 // If upstream source is tarball, the directories are created in this method
 // and the tarball is copied to SOURCES.
 func (bldr *srpmBuilder) prepAndPatchUpstream() error {
+	bldr.log("starting")
+
 	// First fetch upstream source
 	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
 	if err := util.MaybeCreateDirWithParents(downloadDir, bldr.errPrefix); err != nil {
@@ -159,10 +178,12 @@ func (bldr *srpmBuilder) prepAndPatchUpstream() error {
 		return err
 	}
 
+	bldr.log("successful")
 	return nil
 }
 
 func (bldr *srpmBuilder) build() error {
+	bldr.log("starting")
 	pkg := bldr.pkgSpec.Name
 	rpmbuildDir := getRpmbuildDir(pkg)
 	specsDir := filepath.Join(rpmbuildDir, "SPECS")
@@ -174,10 +195,12 @@ func (bldr *srpmBuilder) build() error {
 	if err := util.RunSystemCmd("rpmbuild", rpmbuildArgs...); err != nil {
 		return fmt.Errorf("%srpmbuild -bs failed", bldr.errPrefix)
 	}
+	bldr.log("succesful")
 	return nil
 }
 
 func (bldr *srpmBuilder) copyResultsToDestDir() error {
+	bldr.log("starting")
 	pkg := bldr.pkgSpec.Name
 
 	// Copy newly built SRPM to dest dir
@@ -206,6 +229,7 @@ func (bldr *srpmBuilder) copyResultsToDestDir() error {
 		true, bldr.errPrefix); err != nil {
 		return err
 	}
+	bldr.log("successful")
 	return nil
 }
 
@@ -214,22 +238,27 @@ func (bldr *srpmBuilder) copyResultsToDestDir() error {
 // Stages: Clean, PrepAndPathUpstream, Build, CopyResultsToDestDir
 func (bldr *srpmBuilder) runStages() error {
 	// Clean stale directories for this package in preparation
-	// for fresh rebuild.`
+	// for fresh rebuild.
+	bldr.setupStageErrPrefix("clean")
 	if err := bldr.clean(); err != nil {
 		return err
 	}
 
+	bldr.setupStageErrPrefix("prepAndPatchUpstream")
 	if err := bldr.prepAndPatchUpstream(); err != nil {
 		return err
 	}
 
+	bldr.setupStageErrPrefix("build")
 	if err := bldr.build(); err != nil {
 		return err
 	}
 
+	bldr.setupStageErrPrefix("copyResultsToDestDir")
 	if err := bldr.copyResultsToDestDir(); err != nil {
 		return err
 	}
+	bldr.setupStageErrPrefix("")
 
 	return nil
 }
@@ -261,11 +290,14 @@ func CreateSrpm(repo string, pkg string) error {
 			continue
 		}
 		found = true
+		errPrefixBase := util.ErrPrefix(fmt.Sprintf("srpmBuilder(%s)", thisPkgName))
 		bldr := srpmBuilder{
 			&pkgSpec, repo,
-			util.ErrPrefix(fmt.Sprintf("srpmBuilder(%s): ", thisPkgName)),
+			errPrefixBase,
+			"",
 			[]string{},
 		}
+		bldr.setupStageErrPrefix("")
 		if err := bldr.runStages(); err != nil {
 			return err
 		}
@@ -274,6 +306,7 @@ func CreateSrpm(repo string, pkg string) error {
 	if !found {
 		return fmt.Errorf("impl.CreateSrpm: Invalid package name %s specified", pkg)
 	}
+	log.Println("SUCCESS: createSrpm")
 
 	return nil
 }
