@@ -4,7 +4,7 @@
 package cmd
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 
@@ -17,7 +17,7 @@ var checkenvCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 		if err = impl.CheckEnv(); err == nil {
-			fmt.Println("Environment looks OK!")
+			log.Println("SUCCESS: checkenv")
 		}
 		return err
 	},

@@ -4,15 +4,17 @@
 package main
 
 import (
-	"lemurbldr/cmd"
+	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 
-	"os"
-	"path/filepath"
+	"lemurbldr/cmd"
 )
 
 func main() {
+	log.SetOutput(os.Stdout)
 	viper.SetEnvPrefix("lemurbldr")
 	homeDir := os.Getenv("HOME")
 	viper.SetDefault("SrcDir", filepath.Join(homeDir, "lemurbldr-src"))

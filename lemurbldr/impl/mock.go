@@ -5,6 +5,7 @@ package impl
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -20,6 +21,11 @@ type mockBuilder struct {
 	errPrefixBase util.ErrPrefix
 	errPrefix     util.ErrPrefix
 	srpmPath      string
+}
+
+func (bldr *mockBuilder) log(format string, a ...any) {
+	newformat := fmt.Sprintf("%s%s", bldr.errPrefix, format)
+	log.Printf(newformat, a...)
 }
 
 func (bldr *mockBuilder) setupStageErrPrefix(stage string) {
@@ -76,6 +82,8 @@ func (bldr *mockBuilder) clean() error {
 }
 
 func (bldr *mockBuilder) createCfg() error {
+	bldr.log("starting")
+
 	cfgBldr := mockCfgBuilder{
 		bldr.pkg,
 		bldr.repo,
@@ -93,6 +101,8 @@ func (bldr *mockBuilder) createCfg() error {
 	if err := cfgBldr.createMockCfgFile(); err != nil {
 		return err
 	}
+
+	bldr.log("successful")
 	return nil
 }
 
@@ -132,23 +142,29 @@ func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
 func (bldr *mockBuilder) runFedoraMockStages() error {
 
 	bldr.setupStageErrPrefix("chroot-init")
+	bldr.log("starting")
 	if err := bldr.runMockCmd([]string{"--init"}); err != nil {
 		return err
 	}
+	bldr.log("succesful")
 
 	bldr.setupStageErrPrefix("installdeps")
+	bldr.log("starting")
 	if err := bldr.runMockCmd([]string{"--installdeps"}); err != nil {
 		return err
 	}
+	bldr.log("succesful")
 
 	bldr.setupStageErrPrefix("build")
 	buildArgs := []string{"--no-clean", "--rebuild"}
 	if bldr.noCheck {
 		buildArgs = append(buildArgs, "--nocheck")
 	}
+	bldr.log("starting")
 	if err := bldr.runMockCmd(buildArgs); err != nil {
 		return err
 	}
+	bldr.log("succesful")
 
 	bldr.setupStageErrPrefix("")
 	return nil
@@ -270,5 +286,6 @@ func Mock(repo string, pkg string, arch string, noCheck bool) error {
 		return fmt.Errorf("impl.Mock: Invalid package name %s specified", pkg)
 	}
 
+	log.Println("SUCCESS: mock")
 	return nil
 }
