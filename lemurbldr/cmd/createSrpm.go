@@ -9,9 +9,11 @@ import (
 	"lemurbldr/impl"
 )
 
+var skipBuildPrep bool
+
 // createSrpmCmd represents the createSrpm command
 var createSrpmCmd = &cobra.Command{
-	Use:   "createSrpm -r <repo> [-p <package>]",
+	Use:   "createSrpm -r <repo> [-p <package>] [--skip-build-prep]",
 	Short: "Build modified SRPM",
 	Long: `A new SRPM is built based on the manifest, spec file and sources specified.
 The sources are expected to be already available in <SrcDir>/<repo>.
@@ -22,7 +24,10 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
-		err := impl.CreateSrpm(repo, pkg)
+		extraArgs := impl.CreateSrpmExtraCmdlineArgs{
+			SkipBuildPrep: skipBuildPrep,
+		}
+		err := impl.CreateSrpm(repo, pkg, extraArgs)
 		return err
 	},
 }
@@ -30,6 +35,7 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 func init() {
 	createSrpmCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
 	createSrpmCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
+	createSrpmCmd.Flags().BoolVar(&skipBuildPrep, "skip-build-prep", false, "Skips build-prep for cases where build-prep requires dependencies not in container(OPTIONAL)")
 	createSrpmCmd.MarkFlagRequired("repo")
 	rootCmd.AddCommand(createSrpmCmd)
 }
