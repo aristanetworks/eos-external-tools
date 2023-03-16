@@ -20,11 +20,12 @@ type MockCfgTemplateData struct {
 }
 
 type mockCfgBuilder struct {
-	pkg          string
-	repo         string
-	targetSpec   *manifest.Target
-	errPrefix    util.ErrPrefix
-	templateData *MockCfgTemplateData
+	pkg               string
+	repo              string
+	isPkgSubdirInRepo bool
+	targetSpec        *manifest.Target
+	errPrefix         util.ErrPrefix
+	templateData      *MockCfgTemplateData
 }
 
 // populateTemplateData sets up the MockCfgTemplateData instance named templateData
@@ -70,9 +71,14 @@ func (cfgBldr *mockCfgBuilder) prep() error {
 	}
 
 	for _, includeFile := range cfgBldr.targetSpec.Include {
-		if err := copyFromRepoSrcDir(cfgBldr.repo, includeFile,
-			mockCfgDir,
-			cfgBldr.errPrefix); err != nil {
+		pkgDirInRepo := getPkgDirInRepo(cfgBldr.repo, cfgBldr.pkg, cfgBldr.isPkgSubdirInRepo)
+		includeFilePath := filepath.Join(pkgDirInRepo, includeFile)
+		if err := util.CheckPath(includeFilePath, false, false); err != nil {
+			return fmt.Errorf("%sinclude file %s not found in repo",
+				cfgBldr.errPrefix, pkgDirInRepo)
+		}
+		if err := util.CopyToDestDir(
+			includeFilePath, mockCfgDir, cfgBldr.errPrefix); err != nil {
 			return err
 		}
 	}

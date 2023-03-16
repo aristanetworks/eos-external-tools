@@ -5,7 +5,6 @@ package impl
 
 import (
 	"fmt"
-	"path/filepath"
 	"text/template"
 
 	"github.com/spf13/viper"
@@ -51,15 +50,6 @@ func CheckEnv() error {
 
 	if failed {
 		return fmt.Errorf("Environment check failed:%s", aggError)
-	}
-	return nil
-}
-
-func checkRepo(repo string) error {
-	srcDir := viper.GetString("SrcDir")
-	repoSrcDir := filepath.Join(srcDir, repo)
-	if err := util.CheckPath(repoSrcDir, true, false); err != nil {
-		return fmt.Errorf("repo-dir %s not found(in SrcDir): %s", repoSrcDir, err)
 	}
 	return nil
 }

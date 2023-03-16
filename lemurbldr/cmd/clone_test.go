@@ -4,7 +4,7 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,10 +33,10 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 	cmdErr := testutil.RunCmd(t, rootCmd, args, quiet, expectSuccess)
 	if expectSuccess {
 		destPath := filepath.Join(workingDir, pkg)
-		assert.DirExists(t, destPath)
+		require.DirExists(t, destPath)
 	} else {
 		t.Log("Expecting failure.")
-		assert.ErrorContains(t, cmdErr, expectedErr)
+		require.ErrorContains(t, cmdErr, expectedErr)
 	}
 }
 

@@ -100,20 +100,20 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 
 	// Now copy tarball upstream sources to SOURCES
 	rpmbuildDir := getRpmbuildDir(bldr.pkgSpec.Name)
-	sourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
-	if err := util.MaybeCreateDirWithParents(sourcesDir, bldr.errPrefix); err != nil {
+	rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
+	if err := util.MaybeCreateDirWithParents(rpmbuildSourcesDir, bldr.errPrefix); err != nil {
 		return err
 	}
 
 	for _, upstreamSourceFilePath := range bldr.downloadedUpstreamSources {
-		if err := util.CopyFile(upstreamSourceFilePath, sourcesDir,
+		if err := util.CopyToDestDir(upstreamSourceFilePath, rpmbuildSourcesDir,
 			bldr.errPrefix); err != nil {
 			return err
 		}
 	}
 
-	specsDir := filepath.Join(rpmbuildDir, "SPECS")
-	if err := util.MaybeCreateDirWithParents(specsDir, bldr.errPrefix); err != nil {
+	rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
+	if err := util.MaybeCreateDirWithParents(rpmbuildSpecsDir, bldr.errPrefix); err != nil {
 		return err
 	}
 
@@ -129,15 +129,20 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 func (bldr *srpmBuilder) prepAndPatchUpstream() error {
 	bldr.log("starting")
 
+	repo := bldr.repo
+	pkg := bldr.pkgSpec.Name
+	isPkgSubdirInRepo := bldr.pkgSpec.Subdir
+
 	// First fetch upstream source
 	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
 	if err := util.MaybeCreateDirWithParents(downloadDir, bldr.errPrefix); err != nil {
 		return err
 	}
 
-	repoSrcDir := getRepoSrcDir(bldr.repo)
 	for _, upstreamSrc := range bldr.pkgSpec.UpstreamSrc {
-		downloaded, downloadError := util.Download(upstreamSrc, downloadDir, repoSrcDir)
+		downloaded, downloadError := download(upstreamSrc, downloadDir,
+			repo, pkg, isPkgSubdirInRepo,
+			bldr.errPrefix)
 		if downloadError != nil {
 			return fmt.Errorf("%sError '%s' downloading %s",
 				bldr.errPrefix, downloadError, upstreamSrc)
@@ -160,20 +165,22 @@ func (bldr *srpmBuilder) prepAndPatchUpstream() error {
 	}
 
 	// Now copy all sources
-	rpmbuildDir := getRpmbuildDir(bldr.pkgSpec.Name)
-	sourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
-	for _, sourceFile := range bldr.pkgSpec.Source {
-		if err := copyFromRepoSrcDir(bldr.repo, sourceFile,
-			sourcesDir,
-			bldr.errPrefix); err != nil {
-			return err
-		}
+	rpmbuildDir := getRpmbuildDir(pkg)
+	rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
+	repoSourcesDir := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
+	if err := util.CopyToDestDir(
+		repoSourcesDir+"/*",
+		rpmbuildSourcesDir,
+		bldr.errPrefix); err != nil {
+		return err
 	}
 
 	// Now copy the spec file
-	specsDir := filepath.Join(rpmbuildDir, "SPECS")
-	if err := copyFromRepoSrcDir(bldr.repo, bldr.pkgSpec.SpecFile,
-		specsDir,
+	rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
+	repoSpecsDir := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
+	if err := util.CopyToDestDir(
+		repoSpecsDir+"/*",
+		rpmbuildSpecsDir,
 		bldr.errPrefix); err != nil {
 		return err
 	}
@@ -187,7 +194,12 @@ func (bldr *srpmBuilder) build(prep bool) error {
 	pkg := bldr.pkgSpec.Name
 	rpmbuildDir := getRpmbuildDir(pkg)
 	specsDir := filepath.Join(rpmbuildDir, "SPECS")
-	specFile := filepath.Join(specsDir, bldr.pkgSpec.SpecFile)
+	specFiles, _ := filepath.Glob(filepath.Join(specsDir, "*"))
+	if len(specFiles) != 1 {
+		return fmt.Errorf("%sNo/multiple spec files %s in %s",
+			bldr.errPrefix, strings.Join(specFiles, ","), specsDir)
+	}
+	specFile := specFiles[0]
 
 	var rpmbuildType string
 	if prep {
@@ -203,7 +215,7 @@ func (bldr *srpmBuilder) build(prep bool) error {
 		specFile}
 
 	if err := util.RunSystemCmd("rpmbuild", rpmbuildArgs...); err != nil {
-		return fmt.Errorf("%sfailed")
+		return fmt.Errorf("%sfailed", bldr.errPrefix)
 	}
 	bldr.log("succesful")
 	return nil
@@ -220,23 +232,27 @@ func (bldr *srpmBuilder) copyResultsToDestDir() error {
 			bldr.errPrefix, srpmsRpmbuildDir)
 	}
 
-	filenames, gmfdErr := util.GetMatchingFilenamesFromDir(
-		srpmsRpmbuildDir, ".*\\.src\\.rpm",
-		bldr.errPrefix)
-	if gmfdErr != nil {
-		return gmfdErr
-	}
-
+	globPattern := filepath.Join(srpmsRpmbuildDir, "/*.src.rpm")
+	filenames, _ := filepath.Glob(globPattern)
 	numSrpmsBuilt := len(filenames)
-	if len(filenames) != 1 {
-		return fmt.Errorf("%s Expected 1 .src.rpm file in %s after rpmbuild, but found %d",
-			bldr.errPrefix, srpmsRpmbuildDir, numSrpmsBuilt)
+	if numSrpmsBuilt == 0 {
+		return fmt.Errorf("%sNo .src.rpm was found in %s",
+			bldr.errPrefix, srpmsRpmbuildDir)
+	}
+	if numSrpmsBuilt > 1 {
+		return fmt.Errorf("%sMultiple .src.rpm files %s found in %s, only one was expected",
+			bldr.errPrefix, strings.Join(filenames, ","),
+			srpmsRpmbuildDir)
 	}
 
 	pkgSrpmsDestDir := getPkgSrpmsDestDir(pkg)
-	if err := util.CopyFilesToDir(
-		filenames, srpmsRpmbuildDir, pkgSrpmsDestDir,
-		true, bldr.errPrefix); err != nil {
+	if err := util.MaybeCreateDirWithParents(
+		pkgSrpmsDestDir, bldr.errPrefix); err != nil {
+		return nil
+	}
+	if err := util.CopyToDestDir(
+		filenames[0], pkgSrpmsDestDir,
+		bldr.errPrefix); err != nil {
 		return err
 	}
 	bldr.log("successful")
@@ -288,7 +304,8 @@ func CreateSrpm(repo string, pkg string) error {
 	}
 
 	// Error out early if source is not available.
-	if err := checkRepo(repo); err != nil {
+	if err := checkRepo(repo, "", false,
+		util.ErrPrefix("srpmBuilder: ")); err != nil {
 		return err
 	}
 
@@ -312,6 +329,10 @@ func CreateSrpm(repo string, pkg string) error {
 			errPrefixBase: errPrefixBase,
 		}
 		bldr.setupStageErrPrefix("")
+		// Error out early if pkg-specific repo is not sane
+		if err := checkRepo(repo, thisPkgName, pkgSpec.Subdir, bldr.errPrefix); err != nil {
+			return err
+		}
 		if err := bldr.runStages(); err != nil {
 			return err
 		}
