@@ -47,11 +47,11 @@ type Manifest struct {
 	Package []Package `yaml:"package"`
 }
 
-// LoadManifest loads the manifest file for the super-package pkg to memory and
+// LoadManifest loads the manifest file for the repo to memory and
 // returns the data structure
-func LoadManifest(pkg string) (*Manifest, error) {
+func LoadManifest(repo string) (*Manifest, error) {
 	basePath := viper.GetString("SrcDir")
-	srcPath := filepath.Join(basePath, pkg)
+	srcPath := filepath.Join(basePath, repo)
 	_, statErr := os.Stat(srcPath)
 	if statErr != nil {
 		if os.IsNotExist(statErr) {
@@ -67,7 +67,7 @@ func LoadManifest(pkg string) (*Manifest, error) {
 	}
 
 	var manifest Manifest
-	parseErr := yaml.Unmarshal(yamlContents, &manifest)
+	parseErr := yaml.UnmarshalStrict(yamlContents, &manifest)
 	if parseErr != nil {
 		return nil, fmt.Errorf("manifest.GetManifest: Error %s parsing yaml file %s", parseErr, yamlPath)
 	}
