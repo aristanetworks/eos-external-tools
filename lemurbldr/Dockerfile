@@ -3,7 +3,7 @@ FROM rockylinux:9.0.20220720 AS base
 RUN dnf install -y epel-release-9* git-2.* jq-1.* \
     openssl-3.* python3-pip-21.* python3-pyyaml-5.* \
     rpmdevtools-9.* sudo-1.*  && \
-    dnf install -y mock-3.* && \
+    dnf install -y mock-3.* automake-1.16.* && \
     dnf install -y wget-1.21.* && dnf clean all
 RUN useradd -s /bin/bash lemurbldr-robot -u 10001 -U -p "$(openssl passwd -1 lemurbldr-robot)" && \
     useradd -s /bin/bash mockbuild -p "$(openssl passwd -1 mockbuild)" && \
