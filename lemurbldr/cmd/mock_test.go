@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"lemurbldr/testutil"
 )
@@ -31,7 +31,7 @@ func testMock(t *testing.T, destDir string,
 	for _, expectedFile := range expectedFiles {
 		fileAbsPath := filepath.Join(destDir, "RPMS",
 			expectedFile.arch, expectedPkgName, expectedFile.name)
-		assert.FileExists(t, fileAbsPath)
+		require.FileExists(t, fileAbsPath)
 	}
 }
 
@@ -59,7 +59,7 @@ func TestMock(t *testing.T) {
 	rootCmd.SetArgs(args)
 
 	cmdErr := rootCmd.Execute()
-	assert.NoError(t, cmdErr)
+	require.NoError(t, cmdErr)
 	defer viper.Reset()
 
 	t.Logf("WorkingDir: %s", workingDir)

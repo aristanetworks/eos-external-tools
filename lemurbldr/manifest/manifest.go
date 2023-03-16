@@ -34,10 +34,9 @@ type Target struct {
 // a dependency order to be maintained.
 type Package struct {
 	Name        string   `yaml:"name"`
+	Subdir      bool     `yaml:"subdir"`
 	UpstreamSrc []string `yaml:"upstream"`
 	Type        string   `yaml:"type"`
-	SpecFile    string   `yaml:"spec"`
-	Source      []string `yaml:"source"`
 	Target      []Target `yaml:"target"`
 }
 

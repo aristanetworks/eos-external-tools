@@ -5,7 +5,7 @@ package testutil
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -51,7 +51,7 @@ func RunCmd(t *testing.T, rootCmd *cobra.Command, args []string, quiet bool, exp
 
 	if expectSuccess {
 		t.Log("Expecting success.")
-		assert.NoError(t, cmdErr)
+		require.NoError(t, cmdErr)
 		if quiet {
 			checkAndCleanupQuiet(t)
 		}
@@ -72,6 +72,12 @@ func checkAndCleanupQuiet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Empty(t, out)
+	require.Empty(t, out)
 	os.Stdout = rescueStdout
+}
+
+// CheckEnv panics if the test hasn't setup the environment correctly
+func CheckEnv(t *testing.T, rootCmd *cobra.Command) {
+	_ = RunCmd(t, rootCmd, []string{"checkenv"}, false, true)
+	t.Log("Test environment fine")
 }

@@ -18,26 +18,26 @@ func Clone(repoURL string, repo string, force bool) error {
 	if err := CheckEnv(); err != nil {
 		return err
 	}
-	repoSrcDir := getRepoSrcDir(repo)
+	repoDir := getRepoDir(repo)
 
-	if util.CheckPath(repoSrcDir, false, false) == nil && !force {
-		return fmt.Errorf("impl.Clone: %s already exists, use --force to overwrite", repoSrcDir)
+	if util.CheckPath(repoDir, false, false) == nil && !force {
+		return fmt.Errorf("impl.Clone: %s already exists, use --force to overwrite", repoDir)
 	}
 
-	if rmErr := os.RemoveAll(repoSrcDir); rmErr != nil {
+	if rmErr := os.RemoveAll(repoDir); rmErr != nil {
 		return rmErr
 	}
 
 	var cloneErr error
 	if util.GlobalVar.Quiet {
-		cloneErr = util.RunSystemCmd("git", "clone", "--quiet", repoURL, repoSrcDir)
+		cloneErr = util.RunSystemCmd("git", "clone", "--quiet", repoURL, repoDir)
 	} else {
-		cloneErr = util.RunSystemCmd("git", "clone", repoURL, repoSrcDir)
+		cloneErr = util.RunSystemCmd("git", "clone", repoURL, repoDir)
 	}
 
 	if cloneErr != nil {
 		return fmt.Errorf("impl.Clone: Cloning %s to %s errored out with %s",
-			repoURL, repoSrcDir, cloneErr)
+			repoURL, repoDir, cloneErr)
 	}
 
 	log.Println("SUCCESS: clone")

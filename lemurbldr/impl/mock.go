@@ -14,14 +14,15 @@ import (
 )
 
 type mockBuilder struct {
-	pkg           string
-	repo          string
-	targetSpec    *manifest.Target
-	onlyCreateCfg bool
-	noCheck       bool
-	errPrefixBase util.ErrPrefix
-	errPrefix     util.ErrPrefix
-	srpmPath      string
+	pkg               string
+	repo              string
+	isPkgSubdirInRepo bool
+	targetSpec        *manifest.Target
+	onlyCreateCfg     bool
+	noCheck           bool
+	errPrefixBase     util.ErrPrefix
+	errPrefix         util.ErrPrefix
+	srpmPath          string
 }
 
 // MockExtraCmdlineArgs is a bundle of extra args for impl.Mock
@@ -52,20 +53,19 @@ func (bldr *mockBuilder) fetchSrpm() error {
 			bldr.errPrefix, pkgSrpmsDir)
 	}
 
-	srpmNames, gmfdErr := util.GetMatchingFilenamesFromDir(pkgSrpmsDir, "", bldr.errPrefix)
-	if gmfdErr != nil {
-		return gmfdErr
+	filesInPkgSrpmsDir, _ := filepath.Glob(filepath.Join(pkgSrpmsDir, "*"))
+	numFilesInPkgSrpmsDir := len(filesInPkgSrpmsDir)
+	var srpmPath string
+	if numFilesInPkgSrpmsDir == 0 {
+		return fmt.Errorf("%sFound no files in  %s, expected to find input .src.rpm file here",
+			bldr.errPrefix, pkgSrpmsDir)
 	}
-	if numMatched := len(srpmNames); numMatched != 1 {
-		return fmt.Errorf("%sFound %d files in %s, expected (only) one .src.rpm file",
-			bldr.errPrefix, numMatched, pkgSrpmsDir)
+	if srpmPath = filesInPkgSrpmsDir[0]; numFilesInPkgSrpmsDir > 1 || !strings.HasSuffix(srpmPath, ".src.rpm") {
+		return fmt.Errorf("%sFound files %s in %s, expected only one .src.rpm file",
+			bldr.errPrefix,
+			strings.Join(filesInPkgSrpmsDir, ","), pkgSrpmsDir)
 	}
 
-	srpmName := srpmNames[0]
-	srpmPath := filepath.Join(pkgSrpmsDir, srpmName)
-	if !strings.HasSuffix(srpmName, ".src.rpm") {
-		return fmt.Errorf("%sFile %s found, but expected a .src.rpm file here", bldr.errPrefix, srpmPath)
-	}
 	bldr.srpmPath = srpmPath
 	return nil
 }
@@ -92,11 +92,12 @@ func (bldr *mockBuilder) createCfg() error {
 	bldr.log("starting")
 
 	cfgBldr := mockCfgBuilder{
-		pkg:          bldr.pkg,
-		repo:         bldr.repo,
-		targetSpec:   bldr.targetSpec,
-		errPrefix:    bldr.errPrefix,
-		templateData: nil,
+		pkg:               bldr.pkg,
+		repo:              bldr.repo,
+		isPkgSubdirInRepo: bldr.isPkgSubdirInRepo,
+		targetSpec:        bldr.targetSpec,
+		errPrefix:         bldr.errPrefix,
+		templateData:      nil,
 	}
 
 	if err := cfgBldr.populateTemplateData(); err != nil {
@@ -182,13 +183,14 @@ func (bldr *mockBuilder) copyResultsToDestDir() error {
 	arch := bldr.targetSpec.Name
 
 	mockResultsDir := getMockResultsDir(bldr.pkg, arch)
-	copyPathMap := make(map[string]string)
+	pathMap := make(map[string]string)
 	for _, rpmArch := range bldr.rpmArchs() {
 		pkgRpmsDestDirForArch := getPkgRpmsDestDir(bldr.pkg, rpmArch)
-		rpmArchFilenameRegex := ".+\\.%s\\.rpm$"
-		copyPathMap[pkgRpmsDestDirForArch] = fmt.Sprintf(rpmArchFilenameRegex, rpmArch)
+		globPattern := filepath.Join(mockResultsDir,
+			fmt.Sprintf("*.%s.rpm", rpmArch))
+		pathMap[pkgRpmsDestDirForArch] = globPattern
 	}
-	copyErr := filterAndCopy(copyPathMap, mockResultsDir, bldr.errPrefix)
+	copyErr := filterAndCopy(pathMap, bldr.errPrefix)
 	if copyErr != nil {
 		return copyErr
 	}
@@ -245,7 +247,8 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 	}
 
 	// Error out early if source is not available.
-	if err := checkRepo(repo); err != nil {
+	if err := checkRepo(repo, "", false,
+		util.ErrPrefix("mockBuilder: ")); err != nil {
 		return err
 	}
 
@@ -283,14 +286,15 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		}
 
 		bldr := &mockBuilder{
-			pkg:           thisPkgName,
-			repo:          repo,
-			targetSpec:    &targetSpec,
-			onlyCreateCfg: extraArgs.OnlyCreateCfg,
-			noCheck:       extraArgs.NoCheck,
-			errPrefixBase: errPrefixBase,
-			errPrefix:     errPrefix,
-			srpmPath:      "",
+			pkg:               thisPkgName,
+			repo:              repo,
+			isPkgSubdirInRepo: pkgSpec.Subdir,
+			targetSpec:        &targetSpec,
+			onlyCreateCfg:     extraArgs.OnlyCreateCfg,
+			noCheck:           extraArgs.NoCheck,
+			errPrefixBase:     errPrefixBase,
+			errPrefix:         errPrefix,
+			srpmPath:          "",
 		}
 		if err := bldr.runStages(); err != nil {
 			return err

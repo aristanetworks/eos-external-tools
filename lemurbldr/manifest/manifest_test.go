@@ -4,7 +4,7 @@
 package manifest
 
 import (
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -15,8 +15,8 @@ import (
 
 func testLoad(t *testing.T, pkg string) {
 	manifest, err := LoadManifest(pkg)
-	assert.NoError(t, err)
-	assert.NotNil(t, manifest)
+	require.NoError(t, err)
+	require.NotNil(t, manifest)
 }
 
 func TestManifest(t *testing.T) {

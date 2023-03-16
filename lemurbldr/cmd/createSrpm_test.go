@@ -9,32 +9,14 @@ import (
 	"testing"
 
 	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"lemurbldr/testutil"
 )
 
-func testCreateSrpm(t *testing.T, workingDir string, destDir string, srcDir string,
+func testCreateSrpm(t *testing.T,
 	repoName string, expectedPkgName string, quiet bool,
 	expectedFiles []string) {
-	viper.Set("SrcDir", srcDir)
-	viper.Set("WorkingDir", workingDir)
-	viper.Set("DestDir", destDir)
-	defer viper.Reset()
-
-	expectedSrpmDestDir := filepath.Join(destDir, "SRPMS", expectedPkgName)
-
-	args := []string{"createSrpm", "--repo", repoName}
-	testutil.RunCmd(t, rootCmd, args, quiet, true)
-
-	assert.DirExists(t, expectedSrpmDestDir)
-	for _, filename := range expectedFiles {
-		path := filepath.Join(expectedSrpmDestDir, filename)
-		assert.FileExists(t, path)
-	}
-}
-
-func TestCreateSrpm(t *testing.T) {
 	t.Log("Create temporary working directory")
 	workingDir, err := os.MkdirTemp("", "createSrpm-wd-test")
 	if err != nil {
@@ -49,15 +31,38 @@ func TestCreateSrpm(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(destDir)
-	t.Logf("DestDirDir: %s", destDir)
 
+	srcDir := "testData" // repos in testData subdir
+
+	t.Logf("DestDirDir: %s", destDir)
+	viper.Set("SrcDir", srcDir)
+	viper.Set("WorkingDir", workingDir)
+	viper.Set("DestDir", destDir)
+	defer viper.Reset()
+
+	testutil.CheckEnv(t, rootCmd)
+
+	expectedSrpmDestDir := filepath.Join(destDir, "SRPMS", expectedPkgName)
+	args := []string{"createSrpm", "--repo", repoName}
+	testutil.RunCmd(t, rootCmd, args, quiet, true)
+
+	require.DirExists(t, expectedSrpmDestDir)
+	for _, filename := range expectedFiles {
+		path := filepath.Join(expectedSrpmDestDir, filename)
+		require.FileExists(t, path)
+	}
+}
+
+func TestCreateSrpmFromSrpm(t *testing.T) {
 	t.Log("Test createSrpm from SRPM")
-	testCreateSrpm(t, workingDir, destDir, "testData",
+	testCreateSrpm(t,
 		"debugedit-1", "debugedit", false,
 		[]string{"debugedit-5.0-eng.src.rpm"})
+}
 
+func TestCreateSrpmFromTarball(t *testing.T) {
 	t.Log("Test createSrpm from tarball")
-	testCreateSrpm(t, workingDir, destDir, "testData",
+	testCreateSrpm(t,
 		"mrtparse-1", "mrtparse", true,
 		[]string{"mrtparse-2.0.1-eng.src.rpm"})
 }
