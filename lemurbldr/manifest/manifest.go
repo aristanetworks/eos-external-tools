@@ -33,11 +33,12 @@ type Target struct {
 // But each git repo can have multiple packages if there is
 // a dependency order to be maintained.
 type Package struct {
-	Name        string   `yaml:"name"`
-	Subdir      bool     `yaml:"subdir"`
-	UpstreamSrc []string `yaml:"upstream"`
-	Type        string   `yaml:"type"`
-	Target      []Target `yaml:"target"`
+	Name            string   `yaml:"name"`
+	Subdir          bool     `yaml:"subdir"`
+	RpmReleaseMacro string   `yaml:"release"`
+	UpstreamSrc     []string `yaml:"upstream"`
+	Type            string   `yaml:"type"`
+	Target          []Target `yaml:"target"`
 }
 
 // Manifest spec

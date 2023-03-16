@@ -65,7 +65,7 @@ func TestMock(t *testing.T) {
 	t.Logf("WorkingDir: %s", workingDir)
 	t.Log("Test mock from SRPM")
 	expectedRpmFiles := []ExpectedRpmFile{
-		{"noarch", "python3-mrtparse-2.0.1-eng.noarch.rpm"},
+		{"noarch", "python3-mrtparse-2.0.1-Ar.1.noarch.rpm"},
 	}
 	testMock(t, destDir, repoName, expectedPkgName, false, expectedRpmFiles)
 }
