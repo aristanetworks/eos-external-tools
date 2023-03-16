@@ -17,9 +17,15 @@ import (
 type srpmBuilder struct {
 	pkgSpec                   *manifest.Package
 	repo                      string
+	skipBuildPrep             bool
 	errPrefixBase             util.ErrPrefix
 	errPrefix                 util.ErrPrefix
 	downloadedUpstreamSources []string // List of full paths
+}
+
+// CreateSrpmExtraCmdlineArgs is a bundle of extra args for impl.CreateSrpm
+type CreateSrpmExtraCmdlineArgs struct {
+	SkipBuildPrep bool
 }
 
 func (bldr *srpmBuilder) log(format string, a ...any) {
@@ -275,9 +281,11 @@ func (bldr *srpmBuilder) runStages() error {
 		return err
 	}
 
-	bldr.setupStageErrPrefix("build-prep")
-	if err := bldr.build(true); err != nil {
-		return err
+	if !bldr.skipBuildPrep {
+		bldr.setupStageErrPrefix("build-prep")
+		if err := bldr.build(true); err != nil {
+			return err
+		}
 	}
 
 	bldr.setupStageErrPrefix("build-srpm")
@@ -298,7 +306,7 @@ func (bldr *srpmBuilder) runStages() error {
 // The packages(SRPMs) are specified in the manifest.
 // If a pkg is specified, only it is built. Otherwise, we walk over all the packages
 // in the manifest and build them.
-func CreateSrpm(repo string, pkg string) error {
+func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) error {
 	if err := CheckEnv(); err != nil {
 		return err
 	}
@@ -326,6 +334,7 @@ func CreateSrpm(repo string, pkg string) error {
 		bldr := srpmBuilder{
 			pkgSpec:       &pkgSpec,
 			repo:          repo,
+			skipBuildPrep: extraArgs.SkipBuildPrep,
 			errPrefixBase: errPrefixBase,
 		}
 		bldr.setupStageErrPrefix("")
