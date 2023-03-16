@@ -17,6 +17,7 @@ type mockBuilder struct {
 	pkg               string
 	repo              string
 	isPkgSubdirInRepo bool
+	rpmReleaseMacro   string
 	targetSpec        *manifest.Target
 	onlyCreateCfg     bool
 	noCheck           bool
@@ -120,11 +121,24 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 	targetArg := "--target=" + arch
 	resultArg := "--resultdir=" + getMockResultsDir(bldr.pkg, arch)
 
+	macros := map[string]string{
+		"release": bldr.rpmReleaseMacro,
+	}
+
+	var defineArgs []string
+	for macro, macroVal := range macros {
+		defineArg := []string{"--define",
+			fmt.Sprintf("%s %s", macro, macroVal),
+		}
+		defineArgs = append(defineArgs, defineArg...)
+	}
+
 	baseArgs := []string{
 		cfgArg,
 		targetArg,
 		resultArg,
 	}
+	baseArgs = append(baseArgs, defineArgs...)
 	if util.GlobalVar.Quiet {
 		baseArgs = append(baseArgs, "--quiet")
 	}
@@ -289,6 +303,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			pkg:               thisPkgName,
 			repo:              repo,
 			isPkgSubdirInRepo: pkgSpec.Subdir,
+			rpmReleaseMacro:   pkgSpec.RpmReleaseMacro,
 			targetSpec:        &targetSpec,
 			onlyCreateCfg:     extraArgs.OnlyCreateCfg,
 			noCheck:           extraArgs.NoCheck,

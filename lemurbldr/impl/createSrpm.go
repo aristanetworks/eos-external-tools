@@ -215,9 +215,15 @@ func (bldr *srpmBuilder) build(prep bool) error {
 		// build SRPM
 		rpmbuildType = "-bs"
 	}
+
+	if bldr.pkgSpec.RpmReleaseMacro == "" {
+		return fmt.Errorf("%sfailed: release not specified in manifest",
+			bldr.errPrefix)
+	}
 	rpmbuildArgs := []string{
 		rpmbuildType,
 		"--define", fmt.Sprintf("_topdir %s", rpmbuildDir),
+		"--define", fmt.Sprintf("release %s", bldr.pkgSpec.RpmReleaseMacro),
 		specFile}
 
 	if err := util.RunSystemCmd("rpmbuild", rpmbuildArgs...); err != nil {
