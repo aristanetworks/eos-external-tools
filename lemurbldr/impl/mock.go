@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"lemurbldr/manifest"
+	"lemurbldr/repoconfig"
 	"lemurbldr/util"
 )
 
@@ -19,11 +20,16 @@ type mockBuilder struct {
 	isPkgSubdirInRepo bool
 	rpmReleaseMacro   string
 	targetSpec        *manifest.Target
-	onlyCreateCfg     bool
-	noCheck           bool
-	errPrefixBase     util.ErrPrefix
-	errPrefix         util.ErrPrefix
-	srpmPath          string
+
+	onlyCreateCfg bool
+	noCheck       bool
+
+	dnfRepoConfig *repoconfig.DnfReposConfig
+
+	errPrefixBase util.ErrPrefix
+	errPrefix     util.ErrPrefix
+
+	srpmPath string
 }
 
 // MockExtraCmdlineArgs is a bundle of extra args for impl.Mock
@@ -97,6 +103,7 @@ func (bldr *mockBuilder) createCfg() error {
 		repo:              bldr.repo,
 		isPkgSubdirInRepo: bldr.isPkgSubdirInRepo,
 		targetSpec:        bldr.targetSpec,
+		dnfRepoConfig:     bldr.dnfRepoConfig,
 		errPrefix:         bldr.errPrefix,
 		templateData:      nil,
 	}
@@ -266,6 +273,11 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		return err
 	}
 
+	dnfRepoConfig, dnfRepoConfigErr := repoconfig.LoadDnfRepoConfig()
+	if dnfRepoConfigErr != nil {
+		return dnfRepoConfigErr
+	}
+
 	repoManifest, loadManifestErr := manifest.LoadManifest(repo)
 	if loadManifestErr != nil {
 		return loadManifestErr
@@ -307,6 +319,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			targetSpec:        &targetSpec,
 			onlyCreateCfg:     extraArgs.OnlyCreateCfg,
 			noCheck:           extraArgs.NoCheck,
+			dnfRepoConfig:     dnfRepoConfig,
 			errPrefixBase:     errPrefixBase,
 			errPrefix:         errPrefix,
 			srpmPath:          "",

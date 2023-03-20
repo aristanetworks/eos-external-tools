@@ -51,10 +51,13 @@ func TestMock(t *testing.T) {
 
 	repoName := "mrtparse-1"
 	expectedPkgName := "mrtparse"
+	SetViperDefaults()
 	viper.Set("WorkingDir", workingDir)
 	viper.Set("SrcDir", "testData")
 	viper.Set("DestDir", destDir)
-	viper.Set("MockCfgTemplate", "/usr/share/mock.cfg.template")
+	viper.Set("DnfRepoHost",
+		"https://artifactory-mirrors-px.infra.corp.arista.io")
+
 	args := []string{"createSrpm", "--repo", repoName}
 	rootCmd.SetArgs(args)
 

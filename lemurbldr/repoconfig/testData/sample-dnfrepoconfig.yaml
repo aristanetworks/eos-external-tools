@@ -1,0 +1,4 @@
+---
+repo:
+  repo1:
+    baseurl: "{{.Host}}/bar-{{.Version}}/{{.Arch}}/"

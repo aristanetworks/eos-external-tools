@@ -10,8 +10,8 @@ package:
         include:
           - a.tpl
         repo:
-          - name: bar
-            baseurl: http://bar/el7/RPMS
+          - name: BaseOS
+            version: foo/bar
   - name: tcpdump
     upstream:
       - http://foo/tcpdump.src.rpm
@@ -21,5 +21,5 @@ package:
         include:
           - a.tpl
         repo:
-          - name: bar
-            baseurl: http://bar/el7/RPMS
+          - name: AppStream
+            version: foo
