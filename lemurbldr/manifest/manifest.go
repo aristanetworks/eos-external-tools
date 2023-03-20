@@ -17,7 +17,7 @@ import (
 // mock cfg dnf.conf is generated from this
 type Repo struct {
 	Name    string `yaml:"name"`
-	BaseURL string `yaml:"baseurl"`
+	Version string `yaml:"version"`
 }
 
 // Target spec
@@ -56,21 +56,21 @@ func LoadManifest(repo string) (*Manifest, error) {
 	_, statErr := os.Stat(srcPath)
 	if statErr != nil {
 		if os.IsNotExist(statErr) {
-			return nil, fmt.Errorf("manifest.GetManifest: No repo has been cloned to %s", srcPath)
+			return nil, fmt.Errorf("manifest.LoadManifest: No repo has been cloned to %s", srcPath)
 		}
-		return nil, fmt.Errorf("manifest.GetManifest: os.Stat on %s returned %s", srcPath, statErr)
+		return nil, fmt.Errorf("manifest.LoadManifest: os.Stat on %s returned %s", srcPath, statErr)
 	}
 
 	yamlPath := filepath.Join(srcPath, "lemurbldr.yaml")
 	yamlContents, readErr := ioutil.ReadFile(yamlPath)
 	if readErr != nil {
-		return nil, fmt.Errorf("manifest.GetManifest: ioutil.ReadFile on %s returned %s", yamlPath, readErr)
+		return nil, fmt.Errorf("manifest.LoadManifest: ioutil.ReadFile on %s returned %s", yamlPath, readErr)
 	}
 
 	var manifest Manifest
 	parseErr := yaml.UnmarshalStrict(yamlContents, &manifest)
 	if parseErr != nil {
-		return nil, fmt.Errorf("manifest.GetManifest: Error %s parsing yaml file %s", parseErr, yamlPath)
+		return nil, fmt.Errorf("manifest.LoadManifest: Error parsing yaml file %s: %s", yamlPath, parseErr)
 	}
 	return &manifest, nil
 }

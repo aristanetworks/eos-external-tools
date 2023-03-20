@@ -50,31 +50,33 @@ jobs:
           go vet ./...
           test -z $(gofmt -l .)
 
-  dockerbuild:
-    name: Dockerfile build without publish
-
-    # Run this only after gobuild succeeds
-    needs: gobuild
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup buildx with docker-container driver
-        uses: docker/setup-buildx-action@v2
-
-      - name: Docker build
-        uses: docker/build-push-action@v3
-        with:
-          # Dockerfile is within subdirectory
-          context: "{{defaultContext}}"
-          file: lemurbldr/Dockerfile
-
-          # GIT_AUTH_TOKEN is unset for non-default context
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
-
-          load: true
-          tags: ${{ env.TEST_TAG }}
-          target: builder
-      - name: Test privileged
-        run: |
-          docker run --rm --privileged \
-          ${{ env.TEST_TAG }} sh -c 'go test ./... -tags=privileged'
+#  Disable since self-hosted runners on aristanetworks org
+#  seem to be busted
+#  dockerbuild:
+#    name: Dockerfile build without publish
+#
+#    # Run this only after gobuild succeeds
+#    needs: gobuild
+#    runs-on: self-hosted
+#    steps:
+#      - name: Setup buildx with docker-container driver
+#        uses: docker/setup-buildx-action@v2
+#
+#      - name: Docker build
+#        uses: docker/build-push-action@v3
+#        with:
+#          # Dockerfile is within subdirectory
+#          context: "{{defaultContext}}"
+#          file: lemurbldr/Dockerfile
+#
+#          # GIT_AUTH_TOKEN is unset for non-default context
+#          secrets: |
+#            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+#
+#          load: true
+#          tags: ${{ env.TEST_TAG }}
+#          target: builder
+#      - name: Test privileged
+#        run: |
+#          docker run --rm --privileged \
+#          ${{ env.TEST_TAG }} sh -c 'go test ./... -tags=privileged'

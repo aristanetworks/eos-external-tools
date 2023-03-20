@@ -9,13 +9,20 @@ import (
 	"path/filepath"
 
 	"lemurbldr/manifest"
+	"lemurbldr/repoconfig"
 	"lemurbldr/util"
 )
+
+// RepoData holds dnf repo name and baseurl for mock.cfg generation
+type RepoData struct {
+	Name    string
+	BaseURL string
+}
 
 // MockCfgTemplateData is used to execute the mock config template
 type MockCfgTemplateData struct {
 	DefaultCommonCfg map[string]string
-	Repo             []manifest.Repo
+	Repo             []RepoData
 	Includes         []string
 }
 
@@ -24,6 +31,7 @@ type mockCfgBuilder struct {
 	repo              string
 	isPkgSubdirInRepo bool
 	targetSpec        *manifest.Target
+	dnfRepoConfig     *repoconfig.DnfReposConfig
 	errPrefix         util.ErrPrefix
 	templateData      *MockCfgTemplateData
 }
@@ -42,7 +50,21 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 	}
 
 	for _, repoSpecifiedInManifest := range cfgBldr.targetSpec.Repo {
-		cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoSpecifiedInManifest)
+		baseURL, err := cfgBldr.dnfRepoConfig.BaseURL(
+			repoSpecifiedInManifest.Name,
+			arch,
+			repoSpecifiedInManifest.Version,
+			cfgBldr.errPrefix)
+
+		if err != nil {
+			return fmt.Errorf("%sError deriving baseURL: %s",
+				cfgBldr.errPrefix, err)
+		}
+		repoData := RepoData{
+			Name:    repoSpecifiedInManifest.Name,
+			BaseURL: baseURL,
+		}
+		cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoData)
 	}
 
 	mockCfgDir := getMockCfgDir(pkg, arch)

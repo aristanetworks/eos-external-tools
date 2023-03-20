@@ -60,14 +60,10 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".lemurbldr" (without extension).
-		viper.AddConfigPath(home)
+		viper.AddConfigPath("/etc/lemurbldr")
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".lemurbldr")
+		viper.SetConfigName(".viper")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

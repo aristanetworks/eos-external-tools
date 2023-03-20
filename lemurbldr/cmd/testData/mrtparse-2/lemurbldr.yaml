@@ -11,7 +11,7 @@ package:
         include:
           - a.tpl
         repo:
-          - name: os
-            baseurl: http://dl.rockylinux.org/pub/rocky/$releasever/BaseOS/$basearch/os/
-          - name: appstream
-            baseurl: http://dl.rockylinux.org/pub/rocky/$releasever/AppStream/$basearch/os/
+          - name: BaseOS
+            version: "artifactory/alma-linux/9.1"
+          - name: AppStream
+            version: "artifactory/alma-linux/9.1"

@@ -1,0 +1,6 @@
+---
+repo:
+  AppStream:
+    baseurl: "{{.Host}}/{{.Version}}/AppStream/{{.Arch}}/os/"
+  BaseOS:
+    baseurl: "{{.Host}}/{{.Version}}/BaseOS/{{.Arch}}/os/"
