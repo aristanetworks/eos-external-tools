@@ -6,12 +6,11 @@ package:
     upstream:
       - file:///mrtparse-2.0.1.tar.gz
     type: tarball
-    target:
-      - name: x86_64
-        include:
-          - a.tpl
-        repo:
-          - name: BaseOS
-            version: "artifactory/alma-linux/9.1"
-          - name: AppStream
-            version: "artifactory/alma-linux/9.1"
+    build:
+      include:
+        - a.tpl
+      repo:
+        - name: BaseOS
+          version: "artifactory/alma-linux/9.1"
+        - name: AppStream
+          version: "artifactory/alma-linux/9.1"

@@ -18,8 +18,9 @@ type mockBuilder struct {
 	pkg               string
 	repo              string
 	isPkgSubdirInRepo bool
+	arch              string
+	buildSpec         *manifest.Build
 	rpmReleaseMacro   string
-	targetSpec        *manifest.Target
 
 	onlyCreateCfg bool
 	noCheck       bool
@@ -78,7 +79,7 @@ func (bldr *mockBuilder) fetchSrpm() error {
 }
 
 func (bldr *mockBuilder) rpmArchs() []string {
-	return []string{"noarch", bldr.targetSpec.Name}
+	return []string{"noarch", bldr.arch}
 }
 
 func (bldr *mockBuilder) clean() error {
@@ -87,7 +88,7 @@ func (bldr *mockBuilder) clean() error {
 		dirs = append(dirs, getPkgRpmsDestDir(bldr.pkg, rpmArch))
 	}
 
-	arch := bldr.targetSpec.Name
+	arch := bldr.arch
 	dirs = append(dirs, getMockBaseDir(bldr.pkg, arch))
 	if err := util.RemoveDirs(dirs, bldr.errPrefix); err != nil {
 		return err
@@ -102,7 +103,8 @@ func (bldr *mockBuilder) createCfg() error {
 		pkg:               bldr.pkg,
 		repo:              bldr.repo,
 		isPkgSubdirInRepo: bldr.isPkgSubdirInRepo,
-		targetSpec:        bldr.targetSpec,
+		arch:              bldr.arch,
+		buildSpec:         bldr.buildSpec,
 		dnfRepoConfig:     bldr.dnfRepoConfig,
 		errPrefix:         bldr.errPrefix,
 		templateData:      nil,
@@ -123,8 +125,8 @@ func (bldr *mockBuilder) createCfg() error {
 }
 
 func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
-	cfgArg := "--root=" + getMockCfgPath(bldr.pkg, bldr.targetSpec.Name)
-	arch := bldr.targetSpec.Name
+	arch := bldr.arch
+	cfgArg := "--root=" + getMockCfgPath(bldr.pkg, arch)
 	targetArg := "--target=" + arch
 	resultArg := "--resultdir=" + getMockResultsDir(bldr.pkg, arch)
 
@@ -201,7 +203,7 @@ func (bldr *mockBuilder) runFedoraMockStages() error {
 
 // Copy built RPMs out to DestDir/RPMS/<rpmArch>/<pkg>/foo.<rpmArch>.rpm
 func (bldr *mockBuilder) copyResultsToDestDir() error {
-	arch := bldr.targetSpec.Name
+	arch := bldr.arch
 
 	mockResultsDir := getMockResultsDir(bldr.pkg, arch)
 	pathMap := make(map[string]string)
@@ -298,25 +300,13 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		errPrefix := util.ErrPrefix(fmt.Sprintf(
 			"%s: ", errPrefixBase))
 
-		targetValid := false
-		var targetSpec manifest.Target
-		for _, targetSpec = range pkgSpec.Target {
-			if targetSpec.Name == arch {
-				targetValid = true
-				break
-			}
-		}
-
-		if !targetValid {
-			return fmt.Errorf("%sTarget %s not found in manifest", errPrefix, arch)
-		}
-
 		bldr := &mockBuilder{
 			pkg:               thisPkgName,
 			repo:              repo,
 			isPkgSubdirInRepo: pkgSpec.Subdir,
+			arch:              arch,
+			buildSpec:         &pkgSpec.Build,
 			rpmReleaseMacro:   pkgSpec.RpmReleaseMacro,
-			targetSpec:        &targetSpec,
 			onlyCreateCfg:     extraArgs.OnlyCreateCfg,
 			noCheck:           extraArgs.NoCheck,
 			dnfRepoConfig:     dnfRepoConfig,

@@ -20,10 +20,9 @@ type Repo struct {
 	Version string `yaml:"version"`
 }
 
-// Target spec
+// Build spec
 // mock cfg is generated for each target depending on this
-type Target struct {
-	Name    string   `yaml:"name"`
+type Build struct {
 	Include []string `yaml:"include"`
 	Repo    []Repo   `yaml:"repo"`
 }
@@ -38,7 +37,7 @@ type Package struct {
 	RpmReleaseMacro string   `yaml:"release"`
 	UpstreamSrc     []string `yaml:"upstream"`
 	Type            string   `yaml:"type"`
-	Target          []Target `yaml:"target"`
+	Build           Build    `yaml:"build"`
 }
 
 // Manifest spec
