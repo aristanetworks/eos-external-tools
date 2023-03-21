@@ -5,21 +5,15 @@ package:
     upstream:
       - http://foo/libpcap.src.rpm
     type: srpm
-    target:
-      - name: i686
-        include:
-          - a.tpl
-        repo:
-          - name: BaseOS
-            version: foo/bar
+    build:
+      repo:
+        - name: BaseOS
+          version: foo/bar
   - name: tcpdump
     upstream:
       - http://foo/tcpdump.src.rpm
     type: srpm
-    target:
-      - name: i686
-        include:
-          - a.tpl
-        repo:
-          - name: AppStream
-            version: foo
+    build:
+      repo:
+        - name: BaseOS
+          version: foo/bar

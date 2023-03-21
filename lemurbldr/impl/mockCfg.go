@@ -30,7 +30,8 @@ type mockCfgBuilder struct {
 	pkg               string
 	repo              string
 	isPkgSubdirInRepo bool
-	targetSpec        *manifest.Target
+	arch              string
+	buildSpec         *manifest.Build
 	dnfRepoConfig     *repoconfig.DnfReposConfig
 	errPrefix         util.ErrPrefix
 	templateData      *MockCfgTemplateData
@@ -41,7 +42,7 @@ type mockCfgBuilder struct {
 func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 
 	pkg := cfgBldr.pkg
-	arch := cfgBldr.targetSpec.Name
+	arch := cfgBldr.arch
 
 	cfgBldr.templateData = &MockCfgTemplateData{}
 	cfgBldr.templateData.DefaultCommonCfg = map[string]string{
@@ -49,7 +50,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 		"root":        getMockChrootDirName(pkg, arch),
 	}
 
-	for _, repoSpecifiedInManifest := range cfgBldr.targetSpec.Repo {
+	for _, repoSpecifiedInManifest := range cfgBldr.buildSpec.Repo {
 		baseURL, err := cfgBldr.dnfRepoConfig.BaseURL(
 			repoSpecifiedInManifest.Name,
 			arch,
@@ -75,7 +76,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 	// Includes in mock configuration will specify absolute paths.
 	// It is expected that includes are copied over to the
 	// same directory as the mock configuration file.
-	for _, includeFile := range cfgBldr.targetSpec.Include {
+	for _, includeFile := range cfgBldr.buildSpec.Include {
 		absoluteIncludeFilePathForMockCfg := filepath.Join(mockCfgDir, includeFile)
 		cfgBldr.templateData.Includes = append(cfgBldr.templateData.Includes,
 			absoluteIncludeFilePathForMockCfg)
@@ -86,13 +87,13 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 // Create mock configuration directory
 // Copy over any include files from source repo to mock configuration directory.
 func (cfgBldr *mockCfgBuilder) prep() error {
-	arch := cfgBldr.targetSpec.Name
+	arch := cfgBldr.arch
 	mockCfgDir := getMockCfgDir(cfgBldr.pkg, arch)
 	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.errPrefix); err != nil {
 		return err
 	}
 
-	for _, includeFile := range cfgBldr.targetSpec.Include {
+	for _, includeFile := range cfgBldr.buildSpec.Include {
 		pkgDirInRepo := getPkgDirInRepo(cfgBldr.repo, cfgBldr.pkg, cfgBldr.isPkgSubdirInRepo)
 		includeFilePath := filepath.Join(pkgDirInRepo, includeFile)
 		if err := util.CheckPath(includeFilePath, false, false); err != nil {
@@ -110,7 +111,7 @@ func (cfgBldr *mockCfgBuilder) prep() error {
 // This executes the mock configuration template with the templateData
 // seup previously and writes it to a file.
 func (cfgBldr *mockCfgBuilder) createMockCfgFile() error {
-	arch := cfgBldr.targetSpec.Name
+	arch := cfgBldr.arch
 	mockCfgPath := getMockCfgPath(cfgBldr.pkg, arch)
 	mockCfgFileHandle, createErr := os.Create(mockCfgPath)
 	if createErr != nil {
