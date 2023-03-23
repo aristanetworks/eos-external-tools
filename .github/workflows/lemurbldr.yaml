@@ -5,7 +5,7 @@ on:   # yamllint disable-line rule:truthy
       - 'main'
 
 env:
-  TEST_TAG: lemurbldr:test
+  TEST_TAG: eext:test
 
 jobs:
   gobuild:

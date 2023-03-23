@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"lemurbldr/testutil"
+	"code.arista.io/eos/tools/eext/testutil"
 )
 
 func testLoad(t *testing.T, pkg string) {

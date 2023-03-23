@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"lemurbldr/testutil"
+	"code.arista.io/eos/tools/eext/testutil"
 )
 
 func testClone(t *testing.T, force bool, quiet bool, workingDir string,

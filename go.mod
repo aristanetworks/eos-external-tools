@@ -1,4 +1,4 @@
-module lemurbldr
+module code.arista.io/eos/tools/eext
 
 go 1.18
 

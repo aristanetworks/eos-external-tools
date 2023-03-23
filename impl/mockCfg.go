@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"lemurbldr/manifest"
-	"lemurbldr/repoconfig"
-	"lemurbldr/util"
+	"code.arista.io/eos/tools/eext/manifest"
+	"code.arista.io/eos/tools/eext/repoconfig"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 // RepoData holds dnf repo name and baseurl for mock.cfg generation

@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"lemurbldr/manifest"
-	"lemurbldr/util"
+	"code.arista.io/eos/tools/eext/manifest"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 type srpmBuilder struct {

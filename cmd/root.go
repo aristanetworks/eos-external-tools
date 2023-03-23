@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"lemurbldr/util"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 var cfgFile string
@@ -19,7 +19,7 @@ var pkgName string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "lemurbldr",
+	Use:   "eext",
 	Short: "Build external packages for EOS",
 	Long: `Modified external packages for EOS Abuild can be specified using a git repository.
 The repository would have a manifest which specifies the upstream SRPM/tarball,
@@ -46,7 +46,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.lemurbldr.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eext.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
 
 	// Cobra also supports local flags, which will only run
@@ -61,7 +61,7 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	} else {
 
-		viper.AddConfigPath("/etc/lemurbldr")
+		viper.AddConfigPath("/etc/eext")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".viper")
 	}

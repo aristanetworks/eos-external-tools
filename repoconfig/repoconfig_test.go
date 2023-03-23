@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"lemurbldr/util"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 func TestRepoConfig(t *testing.T) {

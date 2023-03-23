@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
-	"lemurbldr/util"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 // DnfRepoConfig holds baseURL format template(/string)
