@@ -13,7 +13,7 @@ WORKDIR /home/lemurbldr-robot
 CMD ["bash"]
 
 FROM base as builder
-ARG LEMURBLDR_ROOT=lemurbldr
+ARG LEMURBLDR_ROOT=.
 ARG CFG_DIR=/usr/share/lemurbldr
 ARG MOCK_CFG_TEMPLATE=mock.cfg.template
 ARG REPO_CFG_FILE=dnfrepoconfig.yaml
