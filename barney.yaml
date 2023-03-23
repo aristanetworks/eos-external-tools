@@ -3,7 +3,7 @@ images:
 
   internal/alma-9.1-bootstrap:
     units:
-      - image: barney.ci/docker%image/quay.io/almalinuxorg/9-minimal//latest
+      - image: barney.ci/docker%image/docker.corp.arista.io/almalinuxorg/9-minimal//9.1-20230222
       - sources: []
         build: |
           mkdir -p /dest/etc
@@ -16,6 +16,22 @@ images:
                    --setopt=varsdir=/etc/dnf --releasever=9.1 install "$@"
           ' > /usr/bin/install-rpms
           chmod 755 /usr/bin/install-rpms
+          rm -rf /etc/yum.repos.d
+          mkdir -p /etc/yum.repos.d
+          echo '[epel]
+          baseurl=https://artifactory.infra.corp.arista.io/artifactory/centos-9-epel/x86_64/
+          enabled=1
+          gpgcheck=0
+          ' > /etc/yum.repos.d/epel.repo
+          echo '[BaseOS]
+          baseurl=https://artifactory.infra.corp.arista.io/artifactory/alma-linux/9.1/BaseOS/x86_64/os/
+          enabled=1
+          ' > /etc/yum.repos.d/BaseOS.repo
+          echo '[AppStream]
+          baseurl=https://artifactory.infra.corp.arista.io/artifactory/alma-linux/9.1/AppStream/x86_64/os/
+          enabled=1
+          ' > /etc/yum.repos.d/AppStream.repo
+          microdnf clean all # aajith
     entry:
       share-net: true
       mounts:
@@ -25,18 +41,13 @@ images:
       mutables:
         - /var/cache
         - /var/lib/dnf
-        - /etc
+        #- /etc # aajith
 
   base-image:
     units:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
         build: |
-          install-rpms basesystem coreutils gcc
+          install-rpms coreutils rpm-build rpmdevtools automake mock
 
-  test/myimage:
-    units:
-      - floor: .%myimage
-        sources: []
-        build: |
-          gcc --version > /dest/gcc-version
+
