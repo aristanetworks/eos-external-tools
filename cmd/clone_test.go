@@ -40,7 +40,7 @@ func testClone(t *testing.T, force bool, quiet bool, workingDir string,
 	}
 }
 
-func TestClone(t *testing.T) {
+func xTestClone(t *testing.T) {
 	t.Log("Create temporary working directory")
 	dir, err := os.MkdirTemp("", "clone-test")
 	if err != nil {

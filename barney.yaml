@@ -1,5 +1,8 @@
 ---
 # yamllint disable rule:line-length
+generators:
+  go: barney.ci/golang%generator
+
 images:
 
   internal/alma-9.1-bootstrap:
@@ -49,4 +52,42 @@ images:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
         build: |
-          install-rpms coreutils rpm-build rpmdevtools automake mock
+          install-rpms coreutils rpm rpm-build rpmdevtools automake mock
+
+  eext-buildfloor:
+    units:
+      - image: barney.ci/golang%toolchain
+      - image: barney.ci/alpine%pkg/gawk
+      - image: .%go/modules
+    entry:
+      mutables:
+        - /usr
+
+  eext-testfloor:
+    units:
+      - image: barney.ci/golang%toolchain
+      - image: .%go/modules
+      - image: .%base-image
+
+  eext:
+    units:
+      - image: .%base-image
+      - floor: .%eext-buildfloor
+        build: |
+          export COMMIT=$(echo $SRC_0 | awk -F '#' '{print substr($2, 1, 10)}')
+          export PKG=code.arista.io/eos/tools/eext
+          export LDFLAGS="-X ${PKG}.Version=${COMMIT}"
+          go build -o eext -ldflags "${LDFLAGS}" code.arista.io/eos/tools/eext
+          #mkdir -p $DESTDIR/usr/bin/
+          #cp eext $DESTDIR/usr/bin/
+          #chmod 755 $DESTDIR/usr/bin/eext
+          mkdir -p $DESTDIR/usr/share/eext
+          cp ./configfiles/*.* $DESTDIR/usr/share/eext/
+          chmod 655 $DESTDIR/usr/share/eext/*.*
+
+  eext-test:
+    units:
+      - floor: .%eext-testfloor
+        build: |
+          go test code.arista.io/eos/tools/eext/...
+          go test code.arista.io/eos/tools/eext/... -tags privileged
