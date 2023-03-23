@@ -1,4 +1,5 @@
-
+---
+# yamllint disable rule:line-length
 images:
 
   internal/alma-9.1-bootstrap:
@@ -41,7 +42,7 @@ images:
       mutables:
         - /var/cache
         - /var/lib/dnf
-        #- /etc # aajith
+        # - /etc # aajith
 
   base-image:
     units:
@@ -49,5 +50,3 @@ images:
         sources: []
         build: |
           install-rpms coreutils rpm-build rpmdevtools automake mock
-
-
