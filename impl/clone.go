@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"lemurbldr/util"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 // Clone git clones the repository pointed by repoURL to a new directory

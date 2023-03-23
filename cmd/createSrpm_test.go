@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
-	"lemurbldr/testutil"
+	"code.arista.io/eos/tools/eext/testutil"
 )
 
 func testCreateSrpm(t *testing.T,

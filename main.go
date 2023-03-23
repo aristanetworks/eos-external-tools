@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"lemurbldr/cmd"
+	"code.arista.io/eos/tools/eext/cmd"
 )
 
 func main() {

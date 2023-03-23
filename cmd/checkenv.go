@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"lemurbldr/impl"
+	"code.arista.io/eos/tools/eext/impl"
 )
 
 var checkenvCmd = &cobra.Command{
