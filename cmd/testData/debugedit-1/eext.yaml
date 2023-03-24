@@ -3,5 +3,5 @@ package:
   - name: debugedit
     release: Ar.2
     upstream:
-      - https://dl.rockylinux.org/pub/rocky/9/AppStream/source/tree/Packages/d/debugedit-5.0-3.el9.src.rpm
+      - file:///debugedit-5.0-3.el9.src.rpm
     type: srpm
