@@ -80,7 +80,7 @@ images:
           mkdir -p $DESTDIR/usr/share/eext
           cp -a ./configfiles $DESTDIR/usr/share/eext
     entry:
-      mutables:
+      mutables: &eext-mutables
         - /var/ext
         - /var/cache
         - /var/lib/mock
@@ -108,11 +108,7 @@ images:
       env:
         GOCACHE: /tmp/gocache
         GOMODCACHE: /go/pkg/mod
-      mutables:
-        - /var/cache
-        - /var/lib/mock
-        - /var/ext
-        - /var/tmp
+      mutables: *eext-mutables
       mounts:
         - source: /etc/resolv.conf
           target: /etc/resolv.conf
