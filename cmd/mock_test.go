@@ -56,7 +56,11 @@ func TestMock(t *testing.T) {
 	viper.Set("SrcDir", "testData")
 	viper.Set("DestDir", destDir)
 	viper.Set("DnfRepoHost",
-		"https://artifactory-mirrors-px.infra.corp.arista.io")
+		"https://artifactory.infra.corp.arista.io")
+	viper.Set("DnfRepoConfigFile",
+		"../configfiles/dnfrepoconfig.yaml")
+	viper.Set("MockCfgTemplate",
+		"../configfiles/mock.cfg.template")
 
 	args := []string{"createSrpm", "--repo", repoName}
 	rootCmd.SetArgs(args)

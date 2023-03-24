@@ -14,9 +14,6 @@ CMD ["bash"]
 
 FROM base as builder
 ARG EEXT_ROOT=.
-ARG CFG_DIR=/usr/share/eext
-ARG MOCK_CFG_TEMPLATE=mock.cfg.template
-ARG REPO_CFG_FILE=dnfrepoconfig.yaml
 USER root
 RUN dnf install -y golang-1.18.* && dnf clean all
 USER eext-robot
@@ -32,8 +29,6 @@ COPY ./${EEXT_ROOT}/util/ util/
 COPY ./${EEXT_ROOT}/testutil/ testutil/
 COPY ./${EEXT_ROOT}/manifest/ manifest/
 COPY ./${EEXT_ROOT}/repoconfig/ repoconfig/
-COPY ./${EEXT_ROOT}/configfiles/${MOCK_CFG_TEMPLATE} ${CFG_DIR}/${MOCK_CFG_TEMPLATE}
-COPY ./${EEXT_ROOT}/configfiles/${REPO_CFG_FILE} ${CFG_DIR}/${REPO_CFG_FILE}
 RUN go build -o  /home/eext-robot/bin/eext && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
@@ -42,9 +37,13 @@ RUN go build -o  /home/eext-robot/bin/eext && \
     test -z "$(gofmt -l .)"
 
 FROM base as deploy
+ARG EEXT_ROOT=.
+ARG CFG_DIR=/usr/share/eext
+ARG MOCK_CFG_TEMPLATE=mock.cfg.template
+ARG REPO_CFG_FILE=dnfrepoconfig.yaml
 COPY --from=builder /home/eext-robot/bin/eext /usr/bin/
-COPY --from=builder ${CFG_DIR}/${MOCK_CFG_TEMPLATE} ${CFG_DIR}/${MOCK_CFG_TEMPLATE}
-COPY --from=builder ${CFG_DIR}/${REPO_CFG_FILE} ${CFG_DIR}/${REPO_CFG_FILE}
+COPY ./${EEXT_ROOT}/configfiles/${MOCK_CFG_TEMPLATE} ${CFG_DIR}/${MOCK_CFG_TEMPLATE}
+COPY ./${EEXT_ROOT}/configfiles/${REPO_CFG_FILE} ${CFG_DIR}/${REPO_CFG_FILE}
 USER root
 RUN mkdir /var/eext && \
     chown  eext-robot /var/eext
