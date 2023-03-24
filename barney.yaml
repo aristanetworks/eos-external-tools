@@ -14,6 +14,10 @@ images:
           touch /dest/etc/resolv.conf
     finalizers:
       - |
+          export DNF_HOST="https://artifactory.infra.corp.arista.io/artifactory"
+          export DNF_ARCH="$(arch)"
+          export DNF_DISTRO_REPO="alma-linux/9.1"
+          export DNF_EPEL_REPO="centos-9-epel"
           echo '#!/bin/sh
           microdnf --assumeyes --installroot=/dest --noplugins --config=/etc/dnf/dnf.conf \
                    --setopt=cachedir=/var/cache/microdnf --setopt=reposdir=/etc/yum.repos.d \
@@ -22,19 +26,19 @@ images:
           chmod 755 /usr/bin/install-rpms
           rm -rf /etc/yum.repos.d
           mkdir -p /etc/yum.repos.d
-          echo '[epel]
-          baseurl=https://artifactory.infra.corp.arista.io/artifactory/centos-9-epel/x86_64/
+          echo "[epel]
+          baseurl=${DNF_HOST}/${DNF_EPEL_REPO}/${DNF_ARCH}/
           enabled=1
           gpgcheck=0
-          ' > /etc/yum.repos.d/epel.repo
-          echo '[BaseOS]
-          baseurl=https://artifactory.infra.corp.arista.io/artifactory/alma-linux/9.1/BaseOS/x86_64/os/
+          " > /etc/yum.repos.d/epel.repo
+          echo "[BaseOS]
+          baseurl=${DNF_HOST}/${DNF_DISTRO_REPO}/BaseOS/${DNF_ARCH}/os/
           enabled=1
-          ' > /etc/yum.repos.d/BaseOS.repo
-          echo '[AppStream]
-          baseurl=https://artifactory.infra.corp.arista.io/artifactory/alma-linux/9.1/AppStream/x86_64/os/
+          " > /etc/yum.repos.d/BaseOS.repo
+          echo "[AppStream]
+          baseurl=${DNF_HOST}/${DNF_DISTRO_REPO}/AppStream/${DNF_ARCH}/os/
           enabled=1
-          ' > /etc/yum.repos.d/AppStream.repo
+          " > /etc/yum.repos.d/AppStream.repo
           microdnf clean all # aajith
     entry:
       share-net: true
