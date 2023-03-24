@@ -23,9 +23,17 @@ func CheckEnv() error {
 
 	var aggError string
 	failed := false
-	if err := util.CheckPath(srcDir, true, false); err != nil {
-		aggError += fmt.Sprintf("\ntrouble with SrcDir: %s", err)
-		failed = true
+	if srcDir != "" {
+		if err := util.CheckPath(srcDir, true, false); err != nil {
+			aggError += fmt.Sprintf("\ntrouble with SrcDir: %s", err)
+			failed = true
+		}
+	} else {
+		if err := util.CheckPath("./eext.yaml", false, false); err != nil {
+			aggError += fmt.Sprintf("\nNo eext.yaml in current directory. " +
+				"SrcDir is unspecified, so it is expected  that no --repo will be specified, " +
+				"and that the sources are in current working directory.")
+		}
 	}
 
 	if err := util.CheckPath(workingDir, true, true); err != nil {

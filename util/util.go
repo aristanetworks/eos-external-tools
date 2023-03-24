@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 
 	"golang.org/x/sys/unix"
+
+	"github.com/spf13/viper"
 )
 
 // Globals type struct exported for global flags
@@ -110,4 +112,19 @@ func CopyToDestDir(
 		}
 	}
 	return nil
+}
+
+// GetRepoDir returns the path of the cloned source repo.
+// If repo is specified, it's subpath under SrcDir config is
+// returned.
+// If no repo is specfied, we return current working directory.
+func GetRepoDir(repo string) string {
+	var repoDir string
+	if repo != "" {
+		srcDir := viper.GetString("SrcDir")
+		repoDir = filepath.Join(srcDir, repo)
+	} else {
+		repoDir = "."
+	}
+	return repoDir
 }

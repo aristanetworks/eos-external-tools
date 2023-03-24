@@ -18,7 +18,7 @@ func Clone(repoURL string, repo string, force bool) error {
 	if err := CheckEnv(); err != nil {
 		return err
 	}
-	repoDir := getRepoDir(repo)
+	repoDir := util.GetRepoDir(repo)
 
 	if util.CheckPath(repoDir, false, false) == nil && !force {
 		return fmt.Errorf("impl.Clone: %s already exists, use --force to overwrite", repoDir)

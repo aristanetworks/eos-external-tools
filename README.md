@@ -13,6 +13,9 @@ these are checked in as a manifest file named `eext.yaml` in the root of the rep
 
 The tool expects all third party repos to be cloned under `SrcDir` configuration,
 it can be overridden with `EEXT_SRCDIR` environment variable.
+If no --repo argument is specified SrcDir is ignored, and it is assumed that
+that there is only one source repo and it is cloned in the current directory.
+
 The built SRPMs and RPMs are made available in subdirectories of `DestDir` configuration,
 it can be overridden with `EEXT_DESTDIR` environment variable.
 The tool uses `WorkingDir` configuration to keep intermediate results,
