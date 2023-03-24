@@ -39,7 +39,7 @@ images:
           baseurl=${DNF_HOST}/${DNF_DISTRO_REPO}/AppStream/${DNF_ARCH}/os/
           enabled=1
           " > /etc/yum.repos.d/AppStream.repo
-          microdnf clean all # aajith
+
     entry:
       share-net: true
       mounts:
@@ -49,53 +49,55 @@ images:
       mutables:
         - /var/cache
         - /var/lib/dnf
-        # - /etc # aajith
 
   base-image:
     units:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
+        build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock
+
+  go-binaries:
+    description: |
+      This image is a copy of .%go/static, but with /usr/bin
+      permissions changed to 0555, so that it can combine properly
+      with redhat-style images.
+    units:
+      - mappings:
+          /src/static: .%go/static
         build: |
-          install-rpms coreutils rpm rpm-build rpmdevtools automake mock
-
-  eext-buildfloor:
-    units:
-      - image: barney.ci/golang%toolchain
-      - image: barney.ci/alpine%pkg/gawk
-      - image: .%go/modules
-    entry:
-      mutables:
-        - /usr
-
-  eext-testfloor:
-    units:
-      - image: barney.ci/golang%toolchain
-      - image: .%go/modules
-      - image: .%base-image
+          mkdir -p /dest/usr
+          cp -a /src/static/usr/bin /dest/usr/bin
+          chmod 555 /dest/usr/bin
 
   eext:
     units:
       - image: .%base-image
-      - floor: .%eext-buildfloor
-        build: |
-          export COMMIT=$(echo $SRC_0 | awk -F '#' '{print substr($2, 1, 10)}')
-          export PKG=code.arista.io/eos/tools/eext
-          export LDFLAGS="-X ${PKG}.Version=${COMMIT}"
-          go build -o eext -ldflags "${LDFLAGS}" code.arista.io/eos/tools/eext
-          #mkdir -p $DESTDIR/usr/bin/
-          #cp eext $DESTDIR/usr/bin/
-          #chmod 755 $DESTDIR/usr/bin/eext
-          mkdir -p $DESTDIR/usr/share/eext
-          cp ./configfiles/*.* $DESTDIR/usr/share/eext/
-          chmod 655 $DESTDIR/usr/share/eext/*.*
+      - image: .%go-binaries
 
-  eext-test:
+  eext-testfloor:
+    units:
+      - image: .%go/modules
+      - build: |
+          mkdir -p /dest/var/cache/go
+          mkdir -p /dest/var/ext
+      - floor: .%internal/alma-9.1-bootstrap
+        sources: []
+        build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock golang
+    entry:
+      env:
+        GOCACHE: /tmp/gocache
+        GOMODCACHE: /go/pkg/mod
+      mutables:
+        - /var/cache/go
+        - /var/ext
+
+  test/eext:
     units:
       - floor: .%eext-testfloor
         build: |
           go test code.arista.io/eos/tools/eext/...
           go test code.arista.io/eos/tools/eext/... -tags privileged
-  
+
   bus:
     units:
       - image: barney.ci/barney%bus
