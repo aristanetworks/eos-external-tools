@@ -55,6 +55,9 @@ images:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
         build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock
+    entry:
+      mutables:
+        - /var/lib/mock
 
   go-binaries:
     description: |
@@ -73,6 +76,22 @@ images:
     units:
       - image: .%base-image
       - image: .%go-binaries
+      - build: |
+          mkdir -p $DESTDIR/usr/share/eext
+          cp -a ./configfiles $DESTDIR/usr/share/eext
+    entry:
+      mutables:
+        - /var/ext
+        - /var/cache
+        - /var/lib/mock
+        - /var/tmp
+      mounts:
+        - source: /etc/resolv.conf
+          target: /etc/resolv.conf
+          options: ro,bind
+      # We need access to artifactory.infra.corp.arista.io
+      # to make mock work
+      share-net: true
 
   eext-testfloor:
     units:
@@ -82,14 +101,25 @@ images:
           mkdir -p /dest/var/ext
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
-        build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock golang
+        build: |
+          install-rpms coreutils rpm rpm-build rpmdevtools automake mock golang
+          touch $DESTDIR/etc/resolv.conf
     entry:
       env:
         GOCACHE: /tmp/gocache
         GOMODCACHE: /go/pkg/mod
       mutables:
-        - /var/cache/go
+        - /var/cache
+        - /var/lib/mock
         - /var/ext
+        - /var/tmp
+      mounts:
+        - source: /etc/resolv.conf
+          target: /etc/resolv.conf
+          options: ro,bind
+      # We need access to artifactory.infra.corp.arista.io
+      # to make mock work
+      share-net: true
 
   test/eext:
     units:
