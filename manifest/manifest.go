@@ -6,11 +6,11 @@ package manifest
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
-	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+
+	"code.arista.io/eos/tools/eext/util"
 )
 
 // Repo spec
@@ -50,17 +50,9 @@ type Manifest struct {
 // LoadManifest loads the manifest file for the repo to memory and
 // returns the data structure
 func LoadManifest(repo string) (*Manifest, error) {
-	basePath := viper.GetString("SrcDir")
-	srcPath := filepath.Join(basePath, repo)
-	_, statErr := os.Stat(srcPath)
-	if statErr != nil {
-		if os.IsNotExist(statErr) {
-			return nil, fmt.Errorf("manifest.LoadManifest: No repo has been cloned to %s", srcPath)
-		}
-		return nil, fmt.Errorf("manifest.LoadManifest: os.Stat on %s returned %s", srcPath, statErr)
-	}
+	repoDir := util.GetRepoDir(repo)
 
-	yamlPath := filepath.Join(srcPath, "eext.yaml")
+	yamlPath := filepath.Join(repoDir, "eext.yaml")
 	yamlContents, readErr := ioutil.ReadFile(yamlPath)
 	if readErr != nil {
 		return nil, fmt.Errorf("manifest.LoadManifest: ioutil.ReadFile on %s returned %s", yamlPath, readErr)

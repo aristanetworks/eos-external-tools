@@ -13,10 +13,11 @@ var skipBuildPrep bool
 
 // createSrpmCmd represents the createSrpm command
 var createSrpmCmd = &cobra.Command{
-	Use:   "createSrpm -r <repo> [-p <package>] [--skip-build-prep]",
+	Use:   "createSrpm",
 	Short: "Build modified SRPM",
 	Long: `A new SRPM is built based on the manifest, spec file and sources specified.
-The sources are expected to be already available in <SrcDir>/<repo>.
+The sources are expected to be already available in <SrcDir>/<repo> if --repo <repo> is specified,
+otherwise sources are expected to be in current working directory.
 The results are made available in <DestDir>/SRPMS/<package>
 The manifest might specify only a single package per repo in the general case.
 In situations where multiple SRPMs need to be built in dependency order, the manifest might specify multple packages. The [ -p <package> ] can also be used to just build a specific package.
@@ -33,9 +34,8 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 }
 
 func init() {
-	createSrpmCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (REQUIRED)")
+	createSrpmCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (OPTIONAL)")
 	createSrpmCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
 	createSrpmCmd.Flags().BoolVar(&skipBuildPrep, "skip-build-prep", false, "Skips build-prep for cases where build-prep requires dependencies not in container(OPTIONAL)")
-	createSrpmCmd.MarkFlagRequired("repo")
 	rootCmd.AddCommand(createSrpmCmd)
 }

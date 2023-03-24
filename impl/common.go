@@ -19,13 +19,8 @@ import (
 
 // Path getters
 
-func getRepoDir(repo string) string {
-	srcDir := viper.GetString("SrcDir")
-	return filepath.Join(srcDir, repo)
-}
-
 func getPkgDirInRepo(repo string, pkg string, isPkgSubdirInRepo bool) string {
-	repoDir := getRepoDir(repo)
+	repoDir := util.GetRepoDir(repo)
 	var pkgDirInRepo string
 	if isPkgSubdirInRepo {
 		pkgDirInRepo = filepath.Join(repoDir, pkg)
@@ -105,7 +100,7 @@ func getPkgRpmsDestDir(pkg string, arch string) string {
 // checkRepo checks that a repo is sane.
 func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	errPrefix util.ErrPrefix) error {
-	repoDir := getRepoDir(repo)
+	repoDir := util.GetRepoDir(repo)
 	_ = util.RunSystemCmd("ls", "testData/", "-al")
 	if err := util.CheckPath(repoDir, true, false); err != nil {
 		return fmt.Errorf("%srepo-dir %s not found: %s",
