@@ -123,8 +123,3 @@ images:
         build: |
           go test code.arista.io/eos/tools/eext/...
           go test code.arista.io/eos/tools/eext/... -tags privileged
-
-  bus:
-    units:
-      - image: barney.ci/barney%bus
-      - image: barney.ci/alpine%pkg/vim
