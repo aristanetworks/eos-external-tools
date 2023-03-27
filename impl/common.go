@@ -201,11 +201,15 @@ func download(srcURL string, targetDir string,
 // Note that we make sure destDirPath is created with parents before copying.
 func filterAndCopy(pathMap map[string]string, errPrefix util.ErrPrefix) error {
 	for destDirPath, srcGlob := range pathMap {
-		if err := util.MaybeCreateDirWithParents(destDirPath, errPrefix); err != nil {
-			return err
-		}
-		if err := util.CopyToDestDir(srcGlob, destDirPath, errPrefix); err != nil {
-			return err
+		// Don't create arch directory unless there's RPMs to be copied.
+		filesToCopy, _ := filepath.Glob(srcGlob)
+		if filesToCopy != nil {
+			if err := util.MaybeCreateDirWithParents(destDirPath, errPrefix); err != nil {
+				return err
+			}
+			if err := util.CopyToDestDir(srcGlob, destDirPath, errPrefix); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
