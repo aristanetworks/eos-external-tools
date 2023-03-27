@@ -78,10 +78,12 @@ images:
       - image: .%go-binaries
       - build: |
           mkdir -p $DESTDIR/usr/share/eext
-          cp -a ./configfiles $DESTDIR/usr/share/eext
+          cp -a ./configfiles/* $DESTDIR/usr/share/eext
+          mkdir -p $DESTDIR/etc
+          touch $DESTDIR/etc/resolv.conf
     entry:
       mutables: &eext-mutables
-        - /var/ext
+        - /var/eext
         - /var/cache
         - /var/lib/mock
         - /var/tmp
