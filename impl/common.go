@@ -101,7 +101,6 @@ func getPkgRpmsDestDir(pkg string, arch string) string {
 func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	errPrefix util.ErrPrefix) error {
 	repoDir := util.GetRepoDir(repo)
-	_ = util.RunSystemCmd("ls", "testData/", "-al")
 	if err := util.CheckPath(repoDir, true, false); err != nil {
 		return fmt.Errorf("%srepo-dir %s not found: %s",
 			errPrefix, repoDir, err)
