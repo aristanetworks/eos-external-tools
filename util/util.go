@@ -9,20 +9,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
-
-	"golang.org/x/sys/unix"
 
 	"github.com/spf13/viper"
+	"golang.org/x/sys/unix"
 )
 
 // Globals type struct exported for global flags
 type Globals struct {
 	Quiet bool
-	Arch  string
 }
 
-// GlobalVar global variable exported for global flags
+// GlobalVar global variable exported for all global variables
 var GlobalVar Globals
 
 // ErrPrefix is a container type for error prefix strings.
@@ -129,17 +126,4 @@ func GetRepoDir(repo string) string {
 		repoDir = "."
 	}
 	return repoDir
-}
-
-// MaybeSetDefaultArch sets default architecture if command doesn't specify one
-func MaybeSetDefaultArch() error {
-	if GlobalVar.Arch == "" {
-		var output []byte
-		var err error
-		if output, err = exec.Command("arch").Output(); err != nil {
-			return fmt.Errorf("Running arch returned '%s'", err)
-		}
-		GlobalVar.Arch = strings.TrimRight(string(output), "\n")
-	}
-	return nil
 }

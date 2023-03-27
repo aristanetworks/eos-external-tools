@@ -9,8 +9,6 @@ import (
 	"code.arista.io/eos/tools/eext/impl"
 )
 
-var skipBuildPrep bool
-
 // createSrpmCmd represents the createSrpm command
 var createSrpmCmd = &cobra.Command{
 	Use:   "create-srpm",
@@ -26,7 +24,7 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
 		extraArgs := impl.CreateSrpmExtraCmdlineArgs{
-			SkipBuildPrep: skipBuildPrep,
+			SkipBuildPrep: commonArgs.skipBuildPrep,
 		}
 		err := impl.CreateSrpm(repo, pkg, extraArgs)
 		return err
@@ -36,6 +34,6 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 func init() {
 	createSrpmCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (OPTIONAL)")
 	createSrpmCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
-	createSrpmCmd.Flags().BoolVar(&skipBuildPrep, "skip-build-prep", false, "Skips build-prep for cases where build-prep requires dependencies not in container(OPTIONAL)")
+	createSrpmCmd.Flags().BoolVar(&commonArgs.skipBuildPrep, "skip-build-prep", false, "Skips build-prep for cases where build-prep requires dependencies not in container(OPTIONAL)")
 	rootCmd.AddCommand(createSrpmCmd)
 }

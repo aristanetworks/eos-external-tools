@@ -5,7 +5,24 @@ package cmd
 
 import (
 	"github.com/spf13/viper"
+	"os/exec"
+	"strings"
 )
+
+var commonArgs = struct {
+	skipBuildPrep bool
+	arch          string
+	noCheck       bool
+}{}
+
+func defaultArch() string {
+	var output []byte
+	var err error
+	if output, err = exec.Command("arch").Output(); err != nil {
+		panic(err)
+	}
+	return strings.TrimRight(string(output), "\n")
+}
 
 // SetViperDefaults sets defaults for viper configs
 func SetViperDefaults() {
