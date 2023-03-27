@@ -13,7 +13,7 @@ var skipBuildPrep bool
 
 // createSrpmCmd represents the createSrpm command
 var createSrpmCmd = &cobra.Command{
-	Use:   "createSrpm",
+	Use:   "create-srpm",
 	Short: "Build modified SRPM",
 	Long: `A new SRPM is built based on the manifest, spec file and sources specified.
 The sources are expected to be already available in <SrcDir>/<repo> if --repo <repo> is specified,

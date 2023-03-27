@@ -62,7 +62,7 @@ func TestMock(t *testing.T) {
 	viper.Set("MockCfgTemplate",
 		"../configfiles/mock.cfg.template")
 
-	args := []string{"createSrpm", "--repo", repoName}
+	args := []string{"create-srpm", "--repo", repoName}
 	rootCmd.SetArgs(args)
 
 	cmdErr := rootCmd.Execute()

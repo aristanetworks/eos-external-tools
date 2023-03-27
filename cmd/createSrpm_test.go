@@ -43,7 +43,7 @@ func testCreateSrpm(t *testing.T,
 	testutil.CheckEnv(t, rootCmd)
 
 	expectedSrpmDestDir := filepath.Join(destDir, "SRPMS", expectedPkgName)
-	args := []string{"createSrpm", "--repo", repoName}
+	args := []string{"create-srpm", "--repo", repoName}
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
 
 	require.DirExists(t, expectedSrpmDestDir)
