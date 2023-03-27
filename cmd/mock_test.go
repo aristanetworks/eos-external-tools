@@ -26,7 +26,7 @@ func testMock(t *testing.T, destDir string,
 	repoName string, expectedPkgName string,
 	quiet bool,
 	expectedFiles []ExpectedRpmFile) {
-	args := []string{"mock", "--target", "x86_64", "--repo", repoName}
+	args := []string{"mock", "--target", defaultArch(), "--repo", repoName}
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
 	for _, expectedFile := range expectedFiles {
 		fileAbsPath := filepath.Join(destDir, "RPMS",
