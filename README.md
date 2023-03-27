@@ -24,9 +24,8 @@ it can be overridden with `EEXT_WORKINGDIR` environment variable.
 
 Example usage:
 ```
-eext clone -r <repo-name> <repo-URL>
-eext createSrpm -r <repo-name>
-eext mock -r <repo-name> -t <target-arch>
+eext createSrpm [-r <repo-name>]
+eext mock [-r <repo-name>] -t <target-arch>
 ```
 
 Reach out to `eos-next@arista.com` if you have any questions.
