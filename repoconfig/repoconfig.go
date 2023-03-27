@@ -34,6 +34,13 @@ type DnfRepoURLData struct {
 	Version string
 }
 
+func baseArch(arch string) string {
+	if arch == "i686" {
+		return "x86_64"
+	}
+	return arch
+}
+
 // BaseURL generates baseURL for a particular repo
 // looking at the dnfrepo config file, arch and version
 func (r *DnfReposConfig) BaseURL(
@@ -49,7 +56,7 @@ func (r *DnfReposConfig) BaseURL(
 
 	data := DnfRepoURLData{
 		Host:    viper.GetString("DnfRepoHost"),
-		Arch:    arch,
+		Arch:    baseArch(arch),
 		Version: version,
 	}
 
