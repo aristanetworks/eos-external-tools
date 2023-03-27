@@ -200,7 +200,7 @@ func (bldr *srpmBuilder) build(prep bool) error {
 	pkg := bldr.pkgSpec.Name
 	rpmbuildDir := getRpmbuildDir(pkg)
 	specsDir := filepath.Join(rpmbuildDir, "SPECS")
-	specFiles, _ := filepath.Glob(filepath.Join(specsDir, "*"))
+	specFiles, _ := filepath.Glob(filepath.Join(specsDir, "*.spec"))
 	if len(specFiles) != 1 {
 		return fmt.Errorf("%sNo/multiple spec files %s in %s",
 			bldr.errPrefix, strings.Join(specFiles, ","), specsDir)
