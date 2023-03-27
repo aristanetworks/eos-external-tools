@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"code.arista.io/eos/tools/eext/impl"
+	"code.arista.io/eos/tools/eext/util"
 )
 
-var arch string
 var noCheck bool
 var onlyCreateCfg bool
 
@@ -27,17 +27,21 @@ var mockCmd = &cobra.Command{
 		extraArgs := impl.MockExtraCmdlineArgs{
 			NoCheck:       noCheck,
 			OnlyCreateCfg: onlyCreateCfg}
-		err := impl.Mock(repo, pkg, arch, extraArgs)
-		return err
+		if err := util.MaybeSetDefaultArch(); err != nil {
+			return err
+		}
+		if err := impl.Mock(repo, pkg, util.GlobalVar.Arch, extraArgs); err != nil {
+			return err
+		}
+		return nil
 	},
 }
 
 func init() {
 	mockCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (OPTIONAL)")
 	mockCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
-	mockCmd.Flags().StringVarP(&arch, "target", "t", "", "target architecture for the RPM (REQUIRED)")
+	mockCmd.Flags().StringVarP(&util.GlobalVar.Arch, "target", "t", "", "target architecture for the RPM (OPTIONAL)")
 	mockCmd.Flags().BoolVar(&onlyCreateCfg, "only-create-cfg", false, "Just create mock configuration, don't run mock (OPTIONAL)")
 	mockCmd.Flags().BoolVar(&noCheck, "nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
-	mockCmd.MarkFlagRequired("target")
 	rootCmd.AddCommand(mockCmd)
 }

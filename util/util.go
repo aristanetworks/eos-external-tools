@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/sys/unix"
 
@@ -18,6 +19,7 @@ import (
 // Globals type struct exported for global flags
 type Globals struct {
 	Quiet bool
+	Arch  string
 }
 
 // GlobalVar global variable exported for global flags
@@ -127,4 +129,17 @@ func GetRepoDir(repo string) string {
 		repoDir = "."
 	}
 	return repoDir
+}
+
+// MaybeSetDefaultArch sets default architecture if command doesn't specify one
+func MaybeSetDefaultArch() error {
+	if GlobalVar.Arch == "" {
+		var output []byte
+		var err error
+		if output, err = exec.Command("arch").Output(); err != nil {
+			return fmt.Errorf("Running arch returned '%s'", err)
+		}
+		GlobalVar.Arch = strings.TrimRight(string(output), "\n")
+	}
+	return nil
 }
