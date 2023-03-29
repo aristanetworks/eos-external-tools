@@ -7,7 +7,7 @@ images:
 
   internal/alma-9.1-bootstrap:
     units:
-      - image: barney.ci/docker%image/docker.corp.arista.io/almalinuxorg/9-minimal//9.1-20230222
+      - image: barney.ci/docker%image/quay.io/almalinuxorg/9-minimal//9.1-20230222
       - sources: []
         build: |
           mkdir -p /dest/etc
