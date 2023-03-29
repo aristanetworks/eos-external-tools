@@ -54,7 +54,7 @@ images:
     units:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
-        build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock
+        build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock python3-devel
     entry:
       mutables:
         - /var/lib/mock
