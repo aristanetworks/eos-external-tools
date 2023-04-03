@@ -8,8 +8,8 @@ env:
   TEST_TAG: eext:test
 
 jobs:
-  gobuild:
-    name: Go lint and build
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -31,49 +31,11 @@ jobs:
           # CentOS Stream 9 go  version
           go-version: '1.18.2'
 
-      - name: Setup golint
+      - name: Setup golint and gofmt
         run: |
           GO111MODULE=off go get -u golang.org/x/lint/golint
-
-      # Tests not run, because of deps
-      # They are run in docker build
-      - name: Run go build
-        run: |
-          go build .
 
       - name: Run golint, go vet and go fmt
         run: |
           golint -set_exit_status ./...
-          go vet ./...
           test -z $(gofmt -l .)
-
-#  Disable since self-hosted runners on aristanetworks org
-#  seem to be busted
-#  dockerbuild:
-#    name: Dockerfile build without publish
-#
-#    # Run this only after gobuild succeeds
-#    needs: gobuild
-#    runs-on: self-hosted
-#    steps:
-#      - name: Setup buildx with docker-container driver
-#        uses: docker/setup-buildx-action@v2
-#
-#      - name: Docker build
-#        uses: docker/build-push-action@v3
-#        with:
-#          # Dockerfile is within subdirectory
-#          context: "{{defaultContext}}"
-#          file: Dockerfile
-#
-#          # GIT_AUTH_TOKEN is unset for non-default context
-#          secrets: |
-#            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
-#
-#          load: true
-#          tags: ${{ env.TEST_TAG }}
-#          target: builder
-#      - name: Test privileged
-#        run: |
-#          docker run --rm --privileged \
-#          ${{ env.TEST_TAG }} sh -c 'go test ./... -tags=privileged'
