@@ -28,4 +28,3 @@ eext createSrpm [-r <repo-name>]
 eext mock [-r <repo-name>] -t <target-arch>
 ```
 
-Reach out to `eos-next@arista.com` if you have any questions.
