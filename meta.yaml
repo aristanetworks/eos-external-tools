@@ -1,2 +1,23 @@
 ---
 reponame: "code.arista.io/eos/tools/eext"
+description: >-
+  The eext tool builds RPMs from tarballs or SRPMs of third-party(external)
+  software. This is mainly intended to build RPMs for EOS/Abuild.
+
+users:
+  supervisor: rganesan@arista.com
+  maintainers:
+    - aajith@arista.com
+  watchers:
+    - navneet@arista.com
+
+x-bar:
+  version: production
+
+x-github-bridge:
+  reviews:
+    - image: test
+      events:
+        - type: pull_request
+        - type: push
+          branch-re: "^main$|^eos-trunk$|.*-rel$"
