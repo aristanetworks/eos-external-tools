@@ -14,13 +14,19 @@ import (
 	"code.arista.io/eos/tools/eext/util"
 )
 
+type upstreamSrcSpec struct {
+	sourceFile   string
+	sigFile      string
+	skipSigCheck bool
+}
+
 type srpmBuilder struct {
-	pkgSpec                   *manifest.Package
-	repo                      string
-	skipBuildPrep             bool
-	errPrefixBase             util.ErrPrefix
-	errPrefix                 util.ErrPrefix
-	downloadedUpstreamSources []string // List of full paths
+	pkgSpec       *manifest.Package
+	repo          string
+	skipBuildPrep bool
+	errPrefixBase util.ErrPrefix
+	errPrefix     util.ErrPrefix
+	upstreamSrc   []upstreamSrcSpec
 }
 
 // CreateSrpmExtraCmdlineArgs is a bundle of extra args for impl.CreateSrpm
@@ -61,21 +67,89 @@ func (bldr *srpmBuilder) clean() error {
 	return nil
 }
 
+// Fetch the upstream sources mentioned in the manifest.
+// Put them into downloadDir and populate bldr.upstreamSrc
+func (bldr *srpmBuilder) fetchUpstream() error {
+	bldr.log("starting")
+	repo := bldr.repo
+	pkg := bldr.pkgSpec.Name
+	isPkgSubdirInRepo := bldr.pkgSpec.Subdir
+
+	// First fetch upstream source
+	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
+
+	if err := util.MaybeCreateDirWithParents(downloadDir, bldr.errPrefix); err != nil {
+		return err
+	}
+
+	for _, upstreamSrcFromManifest := range bldr.pkgSpec.UpstreamSrc {
+		if upstreamSrcFromManifest.Source == "" {
+			return fmt.Errorf("%ssource not specified for upstream-sources entry",
+				bldr.errPrefix)
+		}
+
+		var downloadErr error
+		upstreamSrc := upstreamSrcSpec{}
+
+		// Download source
+		if upstreamSrc.sourceFile, downloadErr = download(
+			upstreamSrcFromManifest.Source,
+			downloadDir,
+			repo, pkg, isPkgSubdirInRepo,
+			bldr.errPrefix); downloadErr != nil {
+			return downloadErr
+		}
+
+		// Download signature if available.
+		if upstreamSrcFromManifest.Signature == "" {
+			if !strings.HasSuffix(
+				upstreamSrcFromManifest.Source, ".src.rpm") && !upstreamSrcFromManifest.SkipSigCheck {
+				return fmt.Errorf("%sNo signature specified for upstream-sources entry %s",
+					bldr.errPrefix, upstreamSrcFromManifest.Source)
+			}
+		} else if upstreamSrc.sigFile, downloadErr = download(
+			upstreamSrcFromManifest.Signature,
+			downloadDir,
+			repo, pkg, isPkgSubdirInRepo,
+			bldr.errPrefix); downloadErr != nil {
+			return downloadErr
+		}
+
+		upstreamSrc.skipSigCheck = upstreamSrcFromManifest.SkipSigCheck
+		bldr.upstreamSrc = append(bldr.upstreamSrc, upstreamSrc)
+	}
+
+	bldr.log("successful")
+	return nil
+}
+
+// installs upstream SRPM to create a rpmbuild tree
+// also checks upstream SRPM signature
 func (bldr *srpmBuilder) installUpstreamSrpm() error {
 
-	if len(bldr.downloadedUpstreamSources) != 1 {
+	if len(bldr.upstreamSrc) != 1 {
 		return fmt.Errorf("%sFor building SRPMs, we expect exactly one upstream source to be specified",
 			bldr.errPrefix)
 	}
 
-	upstreamSrpmFilePath := bldr.downloadedUpstreamSources[0]
+	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
+	upstreamSrc := &bldr.upstreamSrc[0]
+	upstreamSrpmFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+
 	if !strings.HasSuffix(upstreamSrpmFilePath, ".src.rpm") {
 		return fmt.Errorf("%sUpstream SRPM file %s doesn't have valid extension",
 			bldr.errPrefix, upstreamSrpmFilePath)
 	}
 
-	if err := util.VerifyRpmSignature(upstreamSrpmFilePath, bldr.errPrefix); err != nil {
-		return err
+	if upstreamSrc.sigFile != "" {
+		return fmt.Errorf("%sUnexpected: detached signature specified for SRPM",
+			bldr.errPrefix)
+	}
+
+	if !upstreamSrc.skipSigCheck {
+		if err := util.VerifyRpmSignature(upstreamSrpmFilePath, bldr.errPrefix); err != nil {
+			return err
+		}
 	}
 
 	rpmbuildDir := getRpmbuildDir(bldr.pkgSpec.Name)
@@ -106,6 +180,7 @@ func (bldr *srpmBuilder) installUpstreamSrpm() error {
 
 // Create rpmbuild tree similar to an SRPM install
 // for a SRPM build out of tarballs.
+// also checks tarball signature
 func (bldr *srpmBuilder) setupRpmbuildTree() error {
 
 	// Now copy tarball upstream sources to SOURCES
@@ -115,7 +190,19 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 		return err
 	}
 
-	for _, upstreamSourceFilePath := range bldr.downloadedUpstreamSources {
+	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
+	for _, upstreamSrc := range bldr.upstreamSrc {
+		upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+
+		if !upstreamSrc.skipSigCheck {
+			upstreamSigFilePath := filepath.Join(downloadDir, upstreamSrc.sigFile)
+			if err := util.VerifyTarballSignature(
+				upstreamSourceFilePath, upstreamSigFilePath,
+				bldr.errPrefix); err != nil {
+				return err
+			}
+		}
+
 		if err := util.CopyToDestDir(upstreamSourceFilePath, rpmbuildSourcesDir,
 			bldr.errPrefix); err != nil {
 			return err
@@ -130,7 +217,6 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 	return nil
 }
 
-// Download the upstream sources mentioned in the manifest.
 // Then, setup an rpmbuild directory for building the modified SRPM.
 // If upstream source is SRPM, installing the upstream SRPM will
 // do this automatically.
@@ -142,24 +228,6 @@ func (bldr *srpmBuilder) prepAndPatchUpstream() error {
 	repo := bldr.repo
 	pkg := bldr.pkgSpec.Name
 	isPkgSubdirInRepo := bldr.pkgSpec.Subdir
-
-	// First fetch upstream source
-	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
-	if err := util.MaybeCreateDirWithParents(downloadDir, bldr.errPrefix); err != nil {
-		return err
-	}
-
-	for _, upstreamSrc := range bldr.pkgSpec.UpstreamSrc {
-		downloaded, downloadError := download(upstreamSrc, downloadDir,
-			repo, pkg, isPkgSubdirInRepo,
-			bldr.errPrefix)
-		if downloadError != nil {
-			return fmt.Errorf("%sError '%s' downloading %s",
-				bldr.errPrefix, downloadError, upstreamSrc)
-		}
-		downladedFilePath := filepath.Join(downloadDir, downloaded)
-		bldr.downloadedUpstreamSources = append(bldr.downloadedUpstreamSources, downladedFilePath)
-	}
 
 	if bldr.pkgSpec.Type == "srpm" {
 		if err := bldr.installUpstreamSrpm(); err != nil {
@@ -277,12 +345,17 @@ func (bldr *srpmBuilder) copyResultsToDestDir() error {
 
 // This is the entry point to srpmBuilder
 // It runs the stages to build the modified SRPM
-// Stages: Clean, PrepAndPathUpstream, Build, CopyResultsToDestDir
+// Stages: Clean, FetchUpstream, PrepAndPatchUpstream, Build, CopyResultsToDestDir
 func (bldr *srpmBuilder) runStages() error {
 	// Clean stale directories for this package in preparation
 	// for fresh rebuild.
 	bldr.setupStageErrPrefix("clean")
 	if err := bldr.clean(); err != nil {
+		return err
+	}
+
+	bldr.setupStageErrPrefix("fetchUpstream")
+	if err := bldr.fetchUpstream(); err != nil {
 		return err
 	}
 
