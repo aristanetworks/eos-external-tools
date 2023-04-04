@@ -2,17 +2,19 @@
 package:
   - name: libpcap
     subdir: true
-    upstream:
-      - http://foo/libpcap.src.rpm
+    upstream-sources:
+      - source: http://foo/libpcap.src.rpm
+        skip-signature-check: true
     type: srpm
     build:
       repo:
         - name: BaseOS
           version: foo/bar
   - name: tcpdump
-    upstream:
-      - http://foo/tcpdump.src.rpm
-    type: srpm
+    upstream-sources:
+      - source: http://foo/tcpdump.tar.xz
+        signature: http://foo/tcpdump.tar.xz.sig
+    type: tarball
     build:
       repo:
         - name: BaseOS

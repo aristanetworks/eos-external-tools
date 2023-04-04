@@ -3,8 +3,9 @@
 package:
   - name: mrtparse
     release: Ar.1
-    upstream:
-      - file:///mrtparse-2.0.1.tar.gz
+    upstream-sources:
+      - source: file:///mrtparse-2.0.1.tar.gz
+        signature: file:///mrtparse-2.0.1.tar.gz.sig
     type: tarball
     build:
       include:

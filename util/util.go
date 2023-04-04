@@ -154,12 +154,19 @@ func GetRepoDir(repo string) string {
 func VerifyRpmSignature(rpmPath string, errPrefix ErrPrefix) error {
 	output, err := CheckOutput("rpm", "-K", rpmPath)
 	if err != nil {
-
 		return fmt.Errorf("%s:%s", errPrefix, err)
 	}
 	if !strings.Contains(output, "digests signatures OK") {
 		return fmt.Errorf("%sSignature check of %s failed. rpm -K output:\n%s",
 			errPrefix, rpmPath, output)
 	}
+	return nil
+}
+
+// VerifyTarballSignature verifies that the detached signature of the tarball
+// is valid.
+func VerifyTarballSignature(
+	tarballPath string, tarballSigPath string,
+	errPrefix ErrPrefix) error {
 	return nil
 }

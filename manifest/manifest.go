@@ -27,17 +27,26 @@ type Build struct {
 	Repo    []Repo   `yaml:"repo"`
 }
 
+// UpstreamSrc spec
+// Lists each source bundle(tarball/srpm) and
+// detached signature file for tarball.
+type UpstreamSrc struct {
+	Source       string `yaml:"source"`
+	Signature    string `yaml:"signature"`
+	SkipSigCheck bool   `yaml:"skip-signature-check"`
+}
+
 // Package spec
 // In the general case, there will only be one package/
 // But each git repo can have multiple packages if there is
 // a dependency order to be maintained.
 type Package struct {
-	Name            string   `yaml:"name"`
-	Subdir          bool     `yaml:"subdir"`
-	RpmReleaseMacro string   `yaml:"release"`
-	UpstreamSrc     []string `yaml:"upstream"`
-	Type            string   `yaml:"type"`
-	Build           Build    `yaml:"build"`
+	Name            string        `yaml:"name"`
+	Subdir          bool          `yaml:"subdir"`
+	RpmReleaseMacro string        `yaml:"release"`
+	UpstreamSrc     []UpstreamSrc `yaml:"upstream-sources"`
+	Type            string        `yaml:"type"`
+	Build           Build         `yaml:"build"`
 }
 
 // Manifest spec
