@@ -4,12 +4,14 @@
 package testutil
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 )
 
 var r, w, rescueStdout *(os.File)
@@ -74,6 +76,21 @@ func checkAndCleanupQuiet(t *testing.T) {
 	}
 	require.Empty(t, out)
 	os.Stdout = rescueStdout
+}
+
+// SetupViperConfig sets up the viper config for the test
+func SetupViperConfig(workingDir string, destDir string) {
+	viper.Set("WorkingDir", workingDir)
+	viper.Set("SrcDir", "testData")
+	viper.Set("DestDir", destDir)
+	viper.Set("DnfRepoHost",
+		"https://artifactory.infra.corp.arista.io")
+	viper.Set("DnfRepoConfigFile",
+		"../configfiles/dnfrepoconfig.yaml")
+	viper.Set("MockCfgTemplate",
+		"../configfiles/mock.cfg.template")
+	viper.Set("PkiPath",
+		"../pki")
 }
 
 // CheckEnv panics if the test hasn't setup the environment correctly

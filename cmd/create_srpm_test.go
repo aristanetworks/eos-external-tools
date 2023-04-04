@@ -32,12 +32,9 @@ func testCreateSrpm(t *testing.T,
 	}
 	defer os.RemoveAll(destDir)
 
-	srcDir := "testData" // repos in testData subdir
-
-	t.Logf("DestDirDir: %s", destDir)
-	viper.Set("SrcDir", srcDir)
-	viper.Set("WorkingDir", workingDir)
-	viper.Set("DestDir", destDir)
+	t.Logf("DestDir: %s", destDir)
+	SetViperDefaults()
+	testutil.SetupViperConfig(workingDir, destDir)
 	defer viper.Reset()
 
 	testutil.CheckEnv(t, rootCmd)
