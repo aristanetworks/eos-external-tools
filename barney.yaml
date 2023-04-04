@@ -125,3 +125,11 @@ images:
         build: |
           go test code.arista.io/eos/tools/eext/...
           go test code.arista.io/eos/tools/eext/... -tags privileged
+          go vet code.arista.io/eos/tools/eext/...
+          test -z "$(gofmt -l .)"
+
+  # go test runs on separate test-floor
+  # so validate build here
+  test/eext-build:
+    units:
+      - image: .%eext

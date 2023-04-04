@@ -226,7 +226,7 @@ func loadGpgKeys() error {
 	// Remove any stale keys from rpmdb
 	if _, err := util.CheckOutput("rpm", "-e", "gpg-pubkey", "--allmatches"); err != nil {
 		// Ignore error if no keys installed.
-		if !strings.Contains( err.Error(), "package gpg-pubkey is not installed" ) {
+		if !strings.Contains(err.Error(), "package gpg-pubkey is not installed") {
 			return fmt.Errorf("Error '%s' clearing gpg-pubkey from rpmdb", err)
 		}
 	}
