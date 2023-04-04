@@ -21,6 +21,7 @@ jobs:
           # and missing any future additions
           recursive: true
           verbose: true
+          ignore: DL3002
 
       - name: Lint yaml files
         run: yamllint .

@@ -5,20 +5,15 @@ RUN dnf install -y epel-release-9* git-2.* jq-1.* \
     rpmdevtools-9.* sudo-1.*  && \
     dnf install -y mock-3.* automake-1.16.* && \
     dnf install -y wget-1.21.* && dnf clean all
-RUN useradd -s /bin/bash eext-robot -u 10001 -U -p "$(openssl passwd -1 eext-robot)" && \
-    useradd -s /bin/bash mockbuild -p "$(openssl passwd -1 mockbuild)" && \
-    usermod -aG mock eext-robot
-USER eext-robot
-WORKDIR /home/eext-robot
+RUN useradd -s /bin/bash mockbuild -p "$(openssl passwd -1 mockbuild)"
 CMD ["bash"]
 
 FROM base as builder
 ARG EEXT_ROOT=.
 USER root
 RUN dnf install -y golang-1.18.* && dnf clean all
-USER eext-robot
 RUN mkdir -p src && mkdir -p bin
-WORKDIR /home/eext-robot/src
+WORKDIR /src 
 COPY ./${EEXT_ROOT}/go.mod ./
 COPY ./${EEXT_ROOT}/go.sum ./
 RUN go mod download
@@ -29,7 +24,7 @@ COPY ./${EEXT_ROOT}/util/ util/
 COPY ./${EEXT_ROOT}/testutil/ testutil/
 COPY ./${EEXT_ROOT}/manifest/ manifest/
 COPY ./${EEXT_ROOT}/repoconfig/ repoconfig/
-RUN go build -o  /home/eext-robot/bin/eext && \
+RUN go build -o  /bin/eext && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
     PATH="$PATH:$HOME/go/bin" golint -set_exit_status ./... && \
@@ -41,10 +36,6 @@ ARG EEXT_ROOT=.
 ARG CFG_DIR=/usr/share/eext
 ARG MOCK_CFG_TEMPLATE=mock.cfg.template
 ARG REPO_CFG_FILE=dnfrepoconfig.yaml
-COPY --from=builder /home/eext-robot/bin/eext /usr/bin/
+COPY --from=builder /bin/eext /usr/bin/
 COPY ./${EEXT_ROOT}/configfiles/${MOCK_CFG_TEMPLATE} ${CFG_DIR}/${MOCK_CFG_TEMPLATE}
 COPY ./${EEXT_ROOT}/configfiles/${REPO_CFG_FILE} ${CFG_DIR}/${REPO_CFG_FILE}
-USER root
-RUN mkdir /var/eext && \
-    chown  eext-robot /var/eext
-USER eext-robot
