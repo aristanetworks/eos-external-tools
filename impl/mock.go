@@ -265,7 +265,7 @@ func (bldr *mockBuilder) runStages() error {
 // from the already built SRPMs and places the results in
 // <DestDir>/RPMS/<rpmArch>/<package>/
 func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) error {
-	if err := CheckEnv(); err != nil {
+	if err := setup(); err != nil {
 		return err
 	}
 

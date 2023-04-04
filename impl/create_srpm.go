@@ -74,6 +74,10 @@ func (bldr *srpmBuilder) installUpstreamSrpm() error {
 			bldr.errPrefix, upstreamSrpmFilePath)
 	}
 
+	if err := util.VerifyRpmSignature(upstreamSrpmFilePath, bldr.errPrefix); err != nil {
+		return err
+	}
+
 	rpmbuildDir := getRpmbuildDir(bldr.pkgSpec.Name)
 	rpmInstArgs := []string{
 		"--define", fmt.Sprintf("_topdir %s", rpmbuildDir),
@@ -313,7 +317,7 @@ func (bldr *srpmBuilder) runStages() error {
 // If a pkg is specified, only it is built. Otherwise, we walk over all the packages
 // in the manifest and build them.
 func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) error {
-	if err := CheckEnv(); err != nil {
+	if err := setup(); err != nil {
 		return err
 	}
 

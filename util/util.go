@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 	"golang.org/x/sys/unix"
@@ -36,6 +37,25 @@ func RunSystemCmd(name string, arg ...string) error {
 	}
 	err := cmd.Run()
 	return err
+}
+
+// CheckOutput runs a command on the shell and returns stdout if it is successful
+// else it return the error
+func CheckOutput(name string, arg ...string) (
+	string, error) {
+	cmd := exec.Command(name, arg...)
+	output, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return string(output),
+				fmt.Errorf("Running '%s %s': exited with exit-code %d\nstderr:\n%s",
+					name, strings.Join(arg, " "), exitErr.ExitCode(), exitErr.Stderr)
+		}
+		return string(output),
+			fmt.Errorf("Running '%s %s' failed with '%s'",
+				name, strings.Join(arg, " "), err)
+	}
+	return string(output), nil
 }
 
 // CheckPath checks if path exists. It also optionally checks if it is a directory,
@@ -126,4 +146,20 @@ func GetRepoDir(repo string) string {
 		repoDir = "."
 	}
 	return repoDir
+}
+
+// VerifyRpmSignature verifies that the RPM specified at rpmPath
+// is signed with a valid key in the key ring and that the signatures
+// are valid.
+func VerifyRpmSignature(rpmPath string, errPrefix ErrPrefix) error {
+	output, err := CheckOutput("rpm", "-K", rpmPath)
+	if err != nil {
+
+		return fmt.Errorf("%s:%s", errPrefix, err)
+	}
+	if !strings.Contains(output, "digests signatures OK") {
+		return fmt.Errorf("%sSignature check of %s failed. rpm -K output:\n%s",
+			errPrefix, rpmPath, output)
+	}
+	return nil
 }

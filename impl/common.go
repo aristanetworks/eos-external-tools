@@ -213,3 +213,41 @@ func filterAndCopy(pathMap map[string]string, errPrefix util.ErrPrefix) error {
 	}
 	return nil
 }
+
+var gpgKeysLoaded = false
+
+func loadGpgKeys() error {
+	if gpgKeysLoaded {
+		return nil
+	}
+
+	// Remove any stale keys from rpmdb
+	if _, err := util.CheckOutput("rpm", "-e", "gpg-pubkey", "--allmatches"); err != nil {
+		// Ignore error if no keys installed.
+		if !strings.Contains( err.Error(), "package gpg-pubkey is not installed" ) {
+			return fmt.Errorf("Error '%s' clearing gpg-pubkey from rpmdb", err)
+		}
+	}
+
+	// Now add the keys
+	pkiPath := viper.GetString("PkiPath")
+	pubKeys, _ := filepath.Glob(filepath.Join(pkiPath, "*.pem"))
+	for _, pubKey := range pubKeys {
+		if err := util.RunSystemCmd("rpm", "--import", pubKey); err != nil {
+			return fmt.Errorf("Error '%s' importing %s to rpmdb", err, pubKey)
+		}
+	}
+
+	gpgKeysLoaded = true
+	return nil
+}
+
+func setup() error {
+	if err := CheckEnv(); err != nil {
+		return err
+	}
+	if err := loadGpgKeys(); err != nil {
+		return err
+	}
+	return nil
+}

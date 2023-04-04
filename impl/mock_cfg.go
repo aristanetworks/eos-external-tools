@@ -121,6 +121,9 @@ func (cfgBldr *mockCfgBuilder) createMockCfgFile() error {
 	defer mockCfgFileHandle.Close()
 
 	// parsedMockCfgTemplate is already expected to be setup
+	if parsedMockCfgTemplate == nil {
+		panic("parsedMockCfgTemplate is nil")
+	}
 	templateExecError := parsedMockCfgTemplate.Execute(mockCfgFileHandle, cfgBldr.templateData)
 	if templateExecError != nil {
 		return fmt.Errorf("%sError '%s' executing template with %s",

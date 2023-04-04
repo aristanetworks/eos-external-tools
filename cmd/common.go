@@ -43,4 +43,6 @@ func SetViperDefaults() {
 		"http://artifactory.infra.corp.arista.io")
 	viper.SetDefault("DnfRepoConfigFile",
 		"/usr/share/eext/dnfrepoconfig.yaml")
+	viper.SetDefault("PkiPath",
+		"/etc/pki/eext")
 }
