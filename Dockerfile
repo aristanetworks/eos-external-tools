@@ -39,3 +39,5 @@ ARG REPO_CFG_FILE=dnfrepoconfig.yaml
 COPY --from=builder /bin/eext /usr/bin/
 COPY ./${EEXT_ROOT}/configfiles/${MOCK_CFG_TEMPLATE} ${CFG_DIR}/${MOCK_CFG_TEMPLATE}
 COPY ./${EEXT_ROOT}/configfiles/${REPO_CFG_FILE} ${CFG_DIR}/${REPO_CFG_FILE}
+RUN mkdir -p /etc/pki/eext
+COPY ./${EEXT_ROOT}/pki/*.pem /etc/pki/eext/
