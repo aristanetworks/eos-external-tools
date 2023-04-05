@@ -5,7 +5,9 @@ package:
     release: Ar.1
     upstream-sources:
       - source: file:///mrtparse-2.0.1.tar.gz
-        signature: file:///mrtparse-2.0.1.tar.gz.sig
+        signature:
+          detached-sig: file:///mrtparse-2.0.1.tar.gz.sig
+          public-key: mrtparse/mrtparsePubKey.pem
     type: tarball
     build:
       include:

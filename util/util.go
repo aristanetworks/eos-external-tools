@@ -166,7 +166,41 @@ func VerifyRpmSignature(rpmPath string, errPrefix ErrPrefix) error {
 // VerifyTarballSignature verifies that the detached signature of the tarball
 // is valid.
 func VerifyTarballSignature(
-	tarballPath string, tarballSigPath string,
+	tarballPath string, tarballSigPath string, pubKeyPath string,
 	errPrefix ErrPrefix) error {
+	tmpDir, mkdtErr := os.MkdirTemp("", "eext-keyring")
+	if mkdtErr != nil {
+		return fmt.Errorf("%sError '%s'creating temp dir for keyring",
+			errPrefix, mkdtErr)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	keyRingPath := filepath.Join(tmpDir, "eext.gpg")
+	baseArgs := []string{
+		"--homedir", tmpDir,
+		"--no-default-keyring", "--keyring", keyRingPath}
+	gpgCmd := "gpg"
+
+	// Create keyring
+	createKeyRingCmdArgs := append(baseArgs, "--fingerprint")
+	if err := RunSystemCmd(gpgCmd, createKeyRingCmdArgs...); err != nil {
+		return fmt.Errorf("%sError '%s'creating keyring",
+			errPrefix, err)
+	}
+
+	// Import public key
+	importKeyCmdArgs := append(baseArgs, "--import", pubKeyPath)
+	if err := RunSystemCmd(gpgCmd, importKeyCmdArgs...); err != nil {
+		return fmt.Errorf("%sError '%s' importing public-key %s",
+			errPrefix, err, pubKeyPath)
+	}
+
+	verifySigArgs := append(baseArgs, "--verify", tarballSigPath, tarballPath)
+	if output, err := CheckOutput(gpgCmd, verifySigArgs...); err != nil {
+		return fmt.Errorf("%sError verifying signature %s for tarball %s with pubkey %s."+
+			"\ngpg --verify err: %sstdout:%s",
+			errPrefix, tarballSigPath, tarballPath, pubKeyPath, err, output)
+	}
+
 	return nil
 }

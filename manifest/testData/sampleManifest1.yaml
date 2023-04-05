@@ -4,7 +4,8 @@ package:
     subdir: true
     upstream-sources:
       - source: http://foo/libpcap.src.rpm
-        skip-signature-check: true
+        signature:
+          skip-check: true
     type: srpm
     build:
       repo:
@@ -13,7 +14,9 @@ package:
   - name: tcpdump
     upstream-sources:
       - source: http://foo/tcpdump.tar.xz
-        signature: http://foo/tcpdump.tar.xz.sig
+        signature:
+          detached-sig: http://foo/tcpdump.tar.xz.sig
+          public-key: mrtparse/mrtparsePubKey.pem
     type: tarball
     build:
       repo:

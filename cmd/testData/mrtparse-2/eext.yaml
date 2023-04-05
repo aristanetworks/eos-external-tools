@@ -5,7 +5,8 @@ package:
     subdir: true
     upstream-sources:
       - source: file:///mrtparse-2.0.1.tar.gz
-        skip-signature-check: true
+        signature:
+          skip-check: true
     type: tarball
     build:
       include:

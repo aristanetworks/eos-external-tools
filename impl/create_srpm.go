@@ -17,6 +17,7 @@ import (
 type upstreamSrcSpec struct {
 	sourceFile   string
 	sigFile      string
+	pubKeyPath   string
 	skipSigCheck bool
 }
 
@@ -91,6 +92,7 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 		var downloadErr error
 		upstreamSrc := upstreamSrcSpec{}
 
+		bldr.log("aajith: downloading %s", upstreamSrcFromManifest.Source)
 		// Download source
 		if upstreamSrc.sourceFile, downloadErr = download(
 			upstreamSrcFromManifest.Source,
@@ -99,23 +101,43 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 			bldr.errPrefix); downloadErr != nil {
 			return downloadErr
 		}
+		bldr.log("aajith: downloaded")
 
-		// Download signature if available.
-		if upstreamSrcFromManifest.Signature == "" {
-			if !strings.HasSuffix(
-				upstreamSrcFromManifest.Source, ".src.rpm") && !upstreamSrcFromManifest.SkipSigCheck {
-				return fmt.Errorf("%sNo signature specified for upstream-sources entry %s",
+		signatureSpec := upstreamSrcFromManifest.Signature
+		upstreamSrc.skipSigCheck = signatureSpec.SkipCheck
+
+		if bldr.pkgSpec.Type == "tarball" && !signatureSpec.SkipCheck {
+			if signatureSpec.DetachedSig == "" || signatureSpec.PubKey == "" {
+				return fmt.Errorf("%sNo detached-signature/public-key specified for upstream-sources entry %s",
 					bldr.errPrefix, upstreamSrcFromManifest.Source)
 			}
-		} else if upstreamSrc.sigFile, downloadErr = download(
-			upstreamSrcFromManifest.Signature,
-			downloadDir,
-			repo, pkg, isPkgSubdirInRepo,
-			bldr.errPrefix); downloadErr != nil {
-			return downloadErr
+			if upstreamSrc.sigFile, downloadErr = download(
+				signatureSpec.DetachedSig,
+				downloadDir,
+				repo, pkg, isPkgSubdirInRepo,
+				bldr.errPrefix); downloadErr != nil {
+				return downloadErr
+			}
+
+			pubKeyPath := filepath.Join(getDetachedSigDir(), signatureSpec.PubKey)
+			if pathErr := util.CheckPath(pubKeyPath, false, false); pathErr != nil {
+				return fmt.Errorf("%sCannot find public-key at path %s",
+					bldr.errPrefix, pubKeyPath)
+			}
+			upstreamSrc.pubKeyPath = pubKeyPath
+		} else if bldr.pkgSpec.Type == "srpm" {
+			// We don't expect SRPMs to have detached signature or
+			// to be validated with a public-key specified in manifest.
+			if signatureSpec.DetachedSig != "" {
+				return fmt.Errorf("%sUnexpected detached-sig specified for SRPM",
+					bldr.errPrefix)
+			}
+			if signatureSpec.PubKey != "" {
+				return fmt.Errorf("%sUnexpected public-key specified for SRPM",
+					bldr.errPrefix)
+			}
 		}
 
-		upstreamSrc.skipSigCheck = upstreamSrcFromManifest.SkipSigCheck
 		bldr.upstreamSrc = append(bldr.upstreamSrc, upstreamSrc)
 	}
 
@@ -197,7 +219,9 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 		if !upstreamSrc.skipSigCheck {
 			upstreamSigFilePath := filepath.Join(downloadDir, upstreamSrc.sigFile)
 			if err := util.VerifyTarballSignature(
-				upstreamSourceFilePath, upstreamSigFilePath,
+				upstreamSourceFilePath,
+				upstreamSigFilePath,
+				upstreamSrc.pubKeyPath,
 				bldr.errPrefix); err != nil {
 				return err
 			}

@@ -27,13 +27,20 @@ type Build struct {
 	Repo    []Repo   `yaml:"repo"`
 }
 
+// UpstreamSrcSignature specifies detached signature file for tarball
+// and specifies the public key to be used to verify the signature.
+type UpstreamSrcSignature struct {
+	DetachedSig string `yaml:"detached-sig"`
+	PubKey      string `yaml:"public-key"`
+	SkipCheck   bool   `yaml:"skip-check"`
+}
+
 // UpstreamSrc spec
 // Lists each source bundle(tarball/srpm) and
 // detached signature file for tarball.
 type UpstreamSrc struct {
-	Source       string `yaml:"source"`
-	Signature    string `yaml:"signature"`
-	SkipSigCheck bool   `yaml:"skip-signature-check"`
+	Source    string               `yaml:"source"`
+	Signature UpstreamSrcSignature `yaml:"signature"`
 }
 
 // Package spec

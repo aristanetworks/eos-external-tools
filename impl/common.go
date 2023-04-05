@@ -97,6 +97,16 @@ func getPkgRpmsDestDir(pkg string, arch string) string {
 	return filepath.Join(getAllRpmsDestDir(), arch, pkg)
 }
 
+func getRpmKeysDir() string {
+	pkiPath := viper.GetString("PkiPath")
+	return filepath.Join(pkiPath, "rpmkeys")
+}
+
+func getDetachedSigDir() string {
+	pkiPath := viper.GetString("PkiPath")
+	return filepath.Join(pkiPath, "trustedDetachedSigners")
+}
+
 // checkRepo checks that a repo is sane.
 func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	errPrefix util.ErrPrefix) error {
@@ -232,8 +242,7 @@ func loadGpgKeys() error {
 	}
 
 	// Now add the keys
-	pkiPath := viper.GetString("PkiPath")
-	pubKeys, _ := filepath.Glob(filepath.Join(pkiPath, "rpmkeys", "*.pem"))
+	pubKeys, _ := filepath.Glob(filepath.Join(getRpmKeysDir(), "*.pem"))
 	for _, pubKey := range pubKeys {
 		if err := util.RunSystemCmd("rpm", "--import", pubKey); err != nil {
 			return fmt.Errorf("Error '%s' importing %s to rpmdb", err, pubKey)
