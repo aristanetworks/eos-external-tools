@@ -6,3 +6,5 @@ repo:
     baseurl: "{{.Host}}/{{.Version}}/BaseOS/{{.Arch}}/os/"
   CRB:
     baseurl: "{{.Host}}/{{.Version}}/CRB/{{.Arch}}/os/"
+  epel:
+    baseurl: "{{.Host}}/{{.Version}}/{{.Arch}}/"
