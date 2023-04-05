@@ -233,7 +233,7 @@ func loadGpgKeys() error {
 
 	// Now add the keys
 	pkiPath := viper.GetString("PkiPath")
-	pubKeys, _ := filepath.Glob(filepath.Join(pkiPath, "*.pem"))
+	pubKeys, _ := filepath.Glob(filepath.Join(pkiPath, "rpmkeys", "*.pem"))
 	for _, pubKey := range pubKeys {
 		if err := util.RunSystemCmd("rpm", "--import", pubKey); err != nil {
 			return fmt.Errorf("Error '%s' importing %s to rpmdb", err, pubKey)

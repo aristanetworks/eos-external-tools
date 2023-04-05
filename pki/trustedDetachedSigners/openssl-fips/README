@@ -1,0 +1,6 @@
+The code-signing key for openssl-fips was downloaded from 
+pgp.mit.edu
+
+keyId: FA40E9E2
+fingerprint: 6260 5AA4 334A F9F0 DDE5 D349 D357 7507 FA40 E9E2
+As documented in https://www.openssl.org/docs/fips/UserGuide-2.0.pdf Appendix A

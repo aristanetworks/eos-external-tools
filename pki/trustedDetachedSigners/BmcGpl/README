@@ -1,0 +1,11 @@
+The code-signing key BmcGplPubKey.pem was obtained from the BMC SDK Vendor (Aspeed) and signed by their engineering team, Ryan Chen.
+
+Output of the verify the signing command:
+gpg --verify ast_sdk.v00.04.03.tar.bz2.sig ast_sdk.v00.04.03.tar.bz2
+gpg: Signature made Wed Mar  1 16:51:05 2023 PST
+gpg:                using RSA key E76602D1C980D6158184D4F599BCDEDE83F8ED11
+gpg: Good signature from "ryan_chen <ryan_chen@aspeedtech.com>" [unknown]
+gpg: WARNING: This key is not certified with a trusted signature!
+gpg:          There is no indication that the signature belongs to the owner.
+Primary key fingerprint: E766 02D1 C980 D615 8184  D4F5 99BC DEDE 83F8 ED11
+

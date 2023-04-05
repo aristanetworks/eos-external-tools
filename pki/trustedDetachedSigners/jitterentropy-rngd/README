@@ -1,0 +1,7 @@
+The code-signing key for jitterentropy-rngd was downloaded from
+pgp.mit.edu
+
+keyId: 326AC15B
+fingerprint: 3BCC 43D4 D2C8 7D17 84B6  9EE4 421E E936 326A C15B
+
+jitterentropy-rngd tarball and signature file were downloaded from http://www.chronox.de/jent.html

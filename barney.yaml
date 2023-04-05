@@ -77,7 +77,7 @@ images:
           mkdir -p $DESTDIR/usr/share/eext
           cp -a ./configfiles/* $DESTDIR/usr/share/eext
           mkdir -p $DESTDIR/etc/pki/eext
-          cp -a ./pki/*.pem $DESTDIR/etc/pki/eext
+          cp -a ./pki/* $DESTDIR/etc/pki/eext
           mkdir -p $DESTDIR/etc
           touch $DESTDIR/etc/resolv.conf
     entry:

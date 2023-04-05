@@ -1,0 +1,17 @@
+A search on the GPG MIT public key server like so:
+
+   https://pgp.mit.edu/pks/lookup?search=0xB34DBA77&op=vindex
+
+Revealed
+
+Type bits/keyID     cr. time   exp time   key expir
+pub  3072R/B34DBA77 2009-06-12            
+
+uid Andreas Steffen <andreas.steffen@strongswan.org>
+sig  sig3  B34DBA77 2009-06-12 __________ __________ [selfsig]
+
+Which when accessing the B34DBA77 keyID link:
+
+   http://pgp.mit.edu/pks/lookup?op=get&search=0xB34DBA77
+
+We get the correct key.

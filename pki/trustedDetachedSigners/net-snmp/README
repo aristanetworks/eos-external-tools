@@ -1,0 +1,10 @@
+This key was obtained from the SourceForge git repository
+representing the net-snmp project's website:
+git://git.code.sf.net/p/net-snmp/htdocs
+because the website itself does not support https,
+so there was no way to validate that the key is
+not modified in transit by just accessing the URL.
+
+I used Google Hangouts to speak with Wes Hardaker,
+who I've known for years, and he stated that he performed
+the commit to the repository that added this key.

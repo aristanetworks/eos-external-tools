@@ -1,0 +1,16 @@
+The code-signing key idutilsPubKey.pem was downloaded from:
+https://ftp.gnu.org/gnu/gnu-keyring.gpg
+
+and extracted with:
+gpg --no-default-keyring --keyring ~/tmp/gnu-keyring.gpg --export -a 69B44003 > idutilsPubKey.pem
+
+Then used to verify the signature:
+gpg --import idutilsPubKey.pem
+gpg --verify idutils-4.2.tar.gz.sig idutils-4.2.tar.gz
+
+Output of the verify command:
+gpg: Signature made Fri 04 Aug 2006 08:45:26 PM PDT using DSA key ID 69B44003
+gpg: Good signature from "Claudio Fontana (temp) <sick_soul@users.sourceforge.net>"
+gpg: WARNING: This key is not certified with a trusted signature!
+gpg:          There is no indication that the signature belongs to the owner.
+Primary key fingerprint: 2FFA 9AFC 5994 B8A1 8CC9  741A 2F77 71E4 69B4 4003

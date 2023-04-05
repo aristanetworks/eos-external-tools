@@ -1,0 +1,4 @@
+The ISC code-signing key mdounin-nginxPubKey.pem is downloaded from:
+http://nginx.org/keys/mdounin.key
+The ISC code-signing key pavlov-nginxPubKey.pem is downloaded from:
+http://nginx.org/keys/thresh.key

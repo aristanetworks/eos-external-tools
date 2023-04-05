@@ -1,0 +1,22 @@
+The latest "Google Inc. (Linux Packages Signing Authority)" key
+is available from https://dl.google.com/dl/linux/linux_signing_key.pub
+Apparently it is rotated annually.
+
+wget -O golangPubKey.pem https://dl.google.com/dl/linux/linux_signing_key.pub
+
+There are no links for the detached signatures for go releases from the main
+golang.org/dl page, and they don't appear to be well documented.
+However they are officially supported on an ongoing basis - see
+https://github.com/golang/go/issues/14739
+
+In summary, every https://dl.google.com/go/X linked from the download page
+(golang.org/dl) also has a corresponding detached signature available at
+https://dl.google.com/go/X.asc which can be verified with the
+linux_signing_key.pub in force when it was released.
+
+For golang in EOS, we fetch and build the goX.Y.Z.src.tar.gz sources.
+/src/golang/update-sources.sh takes care of downloading the current signing
+key, checking if it matches the one here (to detect when it was rotated),
+downloading and verifying the .tar.gz and .tar.gz.asc files.
+For good measure, the script also checks the sha256 can be found in the HTML
+for https://golang.org/dl/

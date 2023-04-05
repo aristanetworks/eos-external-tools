@@ -1,0 +1,3 @@
+The public key crosstool-ngPubKey.pem with shortKeyId 1F30EF2E is for crosstool-ng-1.25.0.tar.bz2
+The public key crosstool-ng-1.20PubKey.pem with shortKeyId A156D05D is for old release crosstool-ng-1.20.0.tar.bz2
+Both public key are acquired via "gpg --keyserver pgp.surfnet.nl --recv-keys A156D05D 1F30EF2E" as intructed from the official website https://crosstool-ng.github.io/docs/install/, the fingerprint of the PGP key has been verified.

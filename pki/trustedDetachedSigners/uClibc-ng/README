@@ -1,0 +1,2 @@
+The public key uClibc-ngPubKey.pem is acquired via the following command
+gpg --keyserver keyserver.ubuntu.com --recv-keys D2C17D67

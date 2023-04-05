@@ -1,0 +1,11 @@
+The Pgp public key used to sign the llvm-11.0.0 package is from
+https://releases.llvm.org/11.0.0/hans-gpg-key.asc
+
+The key used to sign llvm releases is not always the same, but seems to rotate
+between several people. The same key was used to sign the llvm 10.0.0 release, but
+not the 10.0.1 release. This key is used mainly to sign the .0.0 releases.
+
+After 11, the signed changed from hans to Tom Stellar. This key was not published
+by llvm explicitly, but is packaged into the signed SRPMs that el9 publishes,
+so the process for acquiring this key was to download a signed SRPM, verify it,
+then extract the key and submit it here.

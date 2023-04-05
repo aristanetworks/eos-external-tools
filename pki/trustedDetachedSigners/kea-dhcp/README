@@ -1,0 +1,4 @@
+To verify the tar file for kea we will use `gpg` with the following steps:
+- download the ISC code-signing key from "https://ftp.isc.org/isc/pgpkeys/codesign2021.txt"
+- `gpg --import KEYFILE` where KEYFILE is the ISC code-signing key.
+- `gpg --verify kea-<version>.tar.gz.<hash>.asc kea-<version>.tar.gz

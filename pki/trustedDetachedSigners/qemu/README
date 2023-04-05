@@ -1,0 +1,17 @@
+A search on the GPG MIT public key server like so:
+
+   http://pgp.mit.edu/pks/lookup?op=vindex&search=0x3353C9CEF108B584
+
+Revealed
+
+Type bits/keyID     cr. time   exp time   key expir
+pub  2048R/F108B584 2013-10-18            
+
+uid Michael Roth <mdroth@utexas.edu>
+sig  sig3  F108B584 2013-10-18 __________ __________ [selfsig]
+
+Which when accessing the F108B584 keyID link:
+
+   http://pgp.mit.edu/pks/lookup?op=get&search=0x3353C9CEF108B584
+
+We get the correct key.

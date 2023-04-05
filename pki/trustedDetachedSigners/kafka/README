@@ -1,0 +1,8 @@
+The code-signing key kafkaPubKey.pem is downloaded from:
+https://downloads.apache.org/kafka/KEYS
+
+pub   4096R/D0A67B5A 2015-09-09 [expires: 2019-09-09]
+uid       [ultimate] Chen (Gwen) Shapira <cshapi@gmail.com>
+sig 3        D0A67B5A 2015-09-09  Chen (Gwen) Shapira <cshapi@gmail.com>
+sub   4096R/12194DC8 2015-09-09 [expires: 2019-09-09]
+sig          D0A67B5A 2015-09-09  Chen (Gwen) Shapira <cshapi@gmail.com>

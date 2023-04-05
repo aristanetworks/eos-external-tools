@@ -1,0 +1,264 @@
+The keys in this directory are sourced either from the https enabled website of
+the developer (as determined by authorship of the release tag) or by searching
+for the author's email on the Ubuntu keyserver:
+
+https://keyserver.ubuntu.com/
+
+If keys are available from both sources, their full 128-bit fingerprints are
+verified to match using a python string comparison.
+
+The fingerprint is contained in the key details output by
+
+$ gpg --with-fingerprint --keyid-format long <keyfile>
+
+Once all keys are imported, it is possible to provide further details and
+verification regarding which keys have signed other keys in the ring
+
+$ gpg --with-sig-check --with-fingerprint --keyid-format long --list-keys <keyid>
+
+As an added level of verification, the fingerprints are checked to match those
+of the upstream signing key (via string comparison) contained in a CentOS or
+Fedora RPM whose signature we trust:
+
+$ mkdir tmp && cd tmp
+$ wget https://<srpm URL>
+$ rpm -K <srpm>
+$ rpm2cpio <srpm> | cpio -idmv
+$ gpg --with-fingerprint --keyid-format long <signing key>
+
+Unfortunately, it seems Fedora / Redhat is pretty bad about actually verifying
+upstream signatures. Therefore, the same thing is tried with the Debian source
+package downloaded from https://deb.debian.org. The authenticity of the Debian
+package itself is verified by the system keyring on my Debian machine:
+
+$ apt source <package name>
+$ gpg --no-default-keyring --keyring /usr/share/keyrings/debian-keyring.gpg --verify <package name>_<debian version>.dsc
+$ gpg --with-fingerprint --keyid-format long <package name>_<version>/debian/upstream/signing-key.asc
+
+Inclusion of RPM or Debian source URLs below imply that they contain a signing
+key with matching fingerprint. This means that the distribution has chosen to
+trust the key to some extent. Note that it does not matter if the package
+version is different, since we are only comparing the signing key, which should
+generally remain consistent across releases. In general, the latest packaged
+version is most likely to have the key.
+
+------------------------------------------------------------------------------
+busybox
+
+Release Tag: https://git.busybox.net/busybox/commit/?h=1_30_stable
+Author: Denys Vlasenko <vda.linux@googlemail.com>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=vda.linux%40googlemail.com&fingerprint=on&op=index
+Signing Key: https://busybox.net/~vda/vda_pubkey.gpg
+Key Details:
+
+pub  1024D/47B70C55ACC9965B 2006-12-12 Denis Vlasenko <vda.linux@googlemail.com>
+      Key fingerprint = C9E9 416F 76E6 10DB D09D  040F 47B7 0C55 ACC9 965B
+sub  1024g/00482E322C766641 2006-12-12
+
+Debian Package: http://deb.debian.org/debian/pool/main/b/busybox/busybox_1.30.1-6.debian.tar.xz
+
+--------------------------------------------------------------------------------
+dosfstools
+
+Release Tag: https://github.com/dosfstools/dosfstools/commit/820c2f90726db0468e0a684a5dc500fbde66466f
+Author: Andreas Bombe <aeb@debian.org>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=aeb%40debian.org&fingerprint=on&op=index
+Signing Key: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x72e5703144142eb6f6b44cbd1181703204880a44
+Key Details:
+
+Unfortunately, the 3164705B1DA31D4C subkey used to sign dosfsutils already
+expired in 2021-04-10. Note also that the current version of gnupg-2.0.22 on the
+user server fails to print the fingerprint for this key for some reason and I
+see a message like "gpg: can't handle public key algorithm 22" with -v. The
+below output is from gnupg-2.2.27 instead
+
+pub   rsa4096/7F6022516E869F64 2014-01-31 [SC] [expires: 2023-04-10]
+      Key fingerprint = 2571 4AEC DBFD ACEE 1CE9  5FE7 7F60 2251 6E86 9F64
+uid                           Andreas Bombe <aeb@debian.org>
+uid                           Andreas Bombe <andreas@activelow.net>
+uid                           Andreas Bombe <andreas@dd8ab.de>
+uid                           Andreas Bombe <andreas.bombe@mytum.de>
+uid                           Andreas Bombe <andreas.bombe@gmail.com>
+sub   rsa4096/3164705B1DA31D4C 2014-01-31 [S] [expired: 2021-04-10]
+sub   rsa4096/0890DE8408CA4ED9 2014-01-31 [E] [expired: 2021-04-10]
+
+This key is signed by lot of other keys, none of which are currently in our
+keyring.
+
+Debian Package: http://deb.debian.org/debian/pool/main/d/dosfstools/dosfstools_4.2-1.debian.tar.xz
+
+Andreas Bombe <aeb@debian.org> also signed the Debian package with the same key
+which is included in the Debian keyring.
+
+--------------------------------------------------------------------------------
+dropbear
+
+Release: https://hg.ucc.asn.au/dropbear/rev/DROPBEAR_2019.78
+Author: Matt Johnston <matt@ucc.asn.au>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=matt%40ucc.asn.au&fingerprint=on&op=index
+Signing Key: https://matt.ucc.asn.au/dropbear/releases/dropbear-key-2015.asc
+Key Details:
+
+pub  4096R/44931494F29C6773 2015-06-29 Dropbear SSH Release Signing <matt@ucc.asn.au>
+      Key fingerprint = F734 7EF2 EE2E 07A2 6762  8CA9 4493 1494 F29C 6773
+
+Debian Package: http://deb.debian.org/debian/pool/main/d/dropbear/dropbear_2020.81-3.debian.tar.xz
+
+--------------------------------------------------------------------------------
+e2fsprogs
+
+Release Tag: https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git/tag/?h=v1.43.3
+Author: Theodore Ts'o <tytso@mit.edu>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=tytso%40mit.edu&fingerprint=on&op=index
+Signing Key: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3ab057b7e78d945c8c5591fbd36f769bc11804f0
+Key Details:
+
+A key with matching fingerprint is also published at
+https://thunk.org/tytso/tytso-key.asc, but it is kind a beast. It contains
+additional keys not relevant to the signature on e2fsprogs and the
+F2F95956950D81A3 subkey used to actually sign the tarball expired in 2015 in
+that version.
+
+Instead, I've used just the D36F769BC11804F0 primary-key from the Ubuntu key
+server, which has renewed the F2F95956950D81A3 subkey until 2021-07-03. I guess
+that's better, even though it will expire again soon.
+
+pub  4096R/D36F769BC11804F0 2010-12-02 Theodore Ts'o <tytso@mit.edu>
+      Key fingerprint = 3AB0 57B7 E78D 945C 8C55  91FB D36F 769B C118 04F0
+uid                            Theodore Ts'o <tytso@google.com>
+uid                            Theodore Ts'o <tytso@debian.org>
+sub  4096R/06259228B59ED8DF 2014-01-29
+sub  4096R/D814B8F32F894C7A 2010-12-02
+sub  2048R/F2F95956950D81A3 2015-03-31 [expires: 2021-07-03]
+sub  2048R/F60754F903885799 2015-03-31 [expires: 2021-07-03]
+sub  2048R/465BBB8C3E430766 2015-03-31 [expires: 2021-07-03]
+
+The identity of Theodore Ts'o <tytso@mit.edu> is verified by:
+
+sig!         20D04E5A713660A7 2011-10-04  Junio C Hamano <gitster@pobox.com>
+sig!         80A77F6095CDE47E 2011-10-25  Stephen Hemminger (Microsoft corporate) <sthemmin@microsoft.com>
+sig!         A5526B9BB3CD4E6A 2011-10-27  Jean Delvare (kernel.org) <jdelvare@suse.de>
+sig!         38DBBDC86092693E 2011-11-10  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Debian Package: http://deb.debian.org/debian/pool/main/e/e2fsprogs/e2fsprogs_1.46.2-2.debian.tar.xz
+
+Theodore Ts'o <tytso@mit.edu> also signed the Debian package with the same key,
+which is included in the Debian keyring.
+
+-------------------------------------------------------------------------------
+flashrom
+
+Release Tag: https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/tags/v1.2
+
+We actually package v1.1, but that tag is commited by Nico Huber <nico.h@gmx.de>
+although it is still signed by David Hendricks <david.hendricks@gmail.com>.
+
+Author: David Hendricks (packaging key) <david.hendricks@gmail.com>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=david.hendricks%40gmail.com&fingerprint=on&op=index
+Signing Key: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x58a4868b25c7cfd662fb0132a3eb95b8d9780f68
+Key Details:
+
+pub  4096R/A3EB95B8D9780F68 2017-10-19 David Hendricks (packaging key) <david.hendricks@gmail.com>
+      Key fingerprint = 58A4 868B 25C7 CFD6 62FB  0132 A3EB 95B8 D978 0F68
+sub  4096R/85C4E5947A54A3B8 2017-10-19
+
+CentOS Package: https://download-ib01.fedoraproject.org/pub/epel/8/Everything/SRPMS/Packages/f/flashrom-1.2-4.el8.src.rpm
+
+-------------------------------------------------------------------------------
+i2c-tools
+
+Relase Tag: https://git.kernel.org/pub/scm/utils/i2c-tools/i2c-tools.git/commit/?h=v3.1.1&id=d58c9009c7dd774857140f7d4bc9ac5eb8ad38f0
+Author: Jean Delvare <jdelvare@suse.de>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=jdelvare%40suse.de&fingerprint=on&op=index
+Signing Key: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x7ca69f4460f1bdc41fd2c858a5526b9bb3cd4e6a
+Key Details:
+
+The developer's website http://jdelvare.nerim.net/ includes a fingerprint
+matching the key from the Ubuntu keyserver and the the following link
+to the (unreliable) MIT keyserver:
+
+http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xB3CD4E6A
+
+pub  4096R/A5526B9BB3CD4E6A 2011-10-19 Jean Delvare (kernel.org) <jdelvare@suse.de>
+      Key fingerprint = 7CA6 9F44 60F1 BDC4 1FD2  C858 A552 6B9B B3CD 4E6A
+sub  4096R/6ED9CDBC5FC07411 2011-10-19
+
+The identity of Jean Delvare (kernel.org) <jdelvare@suse.de> is verified by:
+
+sig!         38DBBDC86092693E 2011-10-26  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+sig!         D36F769BC11804F0 2011-12-06  Theodore Ts'o <tytso@mit.edu>
+
+No distributions were found to check the upstream signature for this package.
+
+-------------------------------------------------------------------------------
+kexec-tools
+
+Relase Tag: https://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git/tag/?h=v2.0.10
+Author: Simon Horman <horms@verge.net.au>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=horms%40verge.net.au&fingerprint=on&op=index
+Signing Key: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xe27cd9a1f5acc2ff4bfe7285d7cf64696a374fbe
+Key Details:
+
+pub  4096R/D7CF64696A374FBE 2011-11-28 Simon Horman <horms@debian.org>
+      Key fingerprint = E27C D9A1 F5AC C2FF 4BFE  7285 D7CF 6469 6A37 4FBE
+uid                            Simon Horman <simon@horms.net>
+uid                            Simon Horman <horms@verge.net.au>
+sub  4096R/85956CDD4FC77409 2011-11-28
+
+The identify of Simon Horman <horms@debian.org> is verified by:
+
+sig!         38DBBDC86092693E 2011-11-29  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+No distributions were found to check the upstream signature for this
+package. However, the above key for Simon Horman <horms@debian.org> is included
+in the Debian keyring.
+
+--------------------------------------------------------------------------------
+LVM2
+
+Release Tag: https://sourceware.org/git/?p=lvm2.git;a=commit;h=60bd9e8406ac28a04aa5e8165149f7a5d4f3265a
+Author: Marian Csontos <mcsontos@redhat.com>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=mcsontos%40redhat.com&fingerprint=on&op=index
+Signing Key: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xd501a478440ae2fd130a1be8b9112431e509039f
+Key Details:
+
+pub  4096R/B9112431E509039F 2018-06-07 Marian Csontos <mcsontos@redhat.com>
+      Key fingerprint = D501 A478 440A E2FD 130A  1BE8 B911 2431 E509 039F
+uid                            Marian Csontos <marian.csontos@gmail.com>
+sub  4096R/EC58B9103D4D1576 2018-06-07 [expires: 2022-06-10]
+
+Debian Package: http://deb.debian.org/debian/pool/main/l/lvm2/lvm2_2.03.11-2.1.debian.tar.xz
+
+--------------------------------------------------------------------------------
+pciutils
+
+Release Tag: https://git.kernel.org/pub/scm/utils/pciutils/pciutils.git/tag/?h=v3.3.0
+Author: Martin Mares <mj@ucw.cz>
+Keyserver Lookup: https://keyserver.ubuntu.com/pks/lookup?search=mj%40ucw.cz&fingerprint=on&op=index
+Signing Key: https://mj.ucw.cz/pgpkey.txt
+
+Key Details:
+
+pub  4096R/C28E7847ED70F82D 2011-10-06 Martin Mares <mj@ucw.cz>
+      Key fingerprint = 5558 F939 9CD7 8368 5055  3C6E C28E 7847 ED70 F82D
+uid                            [jpeg image of size 1055]
+sub  4096R/6AA4CE61B3CFED0D 2011-10-06 [expires: 2021-10-03]
+
+Debian Package: http://deb.debian.org/debian/pool/main/p/pciutils/pciutils_3.7.0-5.debian.tar.xz
+
+--------------------------------------------------------------------------------
+grub
+
+Release Tag: https://ftp.gnu.org/gnu/grub/grub-2.02.tar.gz
+Author: Vladimir 'phcoder' Serbinenko <phcoder@gmail.com>
+Signing KeyRing: https://ftp.gnu.org/gnu/gnu-keyring.gpg
+Extracting the Signing Key from command:
+$ wget https://ftp.gnu.org/gnu/gnu-keyring.gpg -O /tmp/gnu-keyring.gpg
+$ gpg --no-default-keyring --keyring /tmp/gnu-keyring.gpg --export -a E82E4209 > grubPubKey.pem
+
+Key Details:
+
+pub   dsa3072/35A93B74E82E4209 2009-11-07 [SC] [expired: 2014-11-06]
+      Key fingerprint = E53D 497F 3FA4 2AD8 C9B4  D1E8 35A9 3B74 E82E 4209
+      uid                            Vladimir 'phcoder' Serbinenko <phcoder@gmail.com>
+      sub   elg3072/B44263E753606891 2009-11-07 [E] [expired: 2014-11-06]
