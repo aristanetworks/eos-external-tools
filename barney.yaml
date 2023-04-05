@@ -54,7 +54,7 @@ images:
     units:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
-        build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock python3-devel
+        build: install-rpms coreutils rpm rpm-build rpmdevtools automake mock quilt git python3-devel
 
   go-binaries:
     description: |
@@ -104,7 +104,7 @@ images:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
         build: |
-          install-rpms coreutils rpm rpm-build rpmdevtools automake mock golang
+          install-rpms coreutils rpm rpm-build rpmdevtools automake mock quilt git golang
           touch $DESTDIR/etc/resolv.conf
     entry:
       env:
