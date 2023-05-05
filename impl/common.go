@@ -89,6 +89,14 @@ func getPkgSrpmsDestDir(pkg string) string {
 	return filepath.Join(getAllSrpmsDestDir(), pkg)
 }
 
+func getAllSrpmsDir() string {
+	return "/SRPMS"
+}
+
+func getPkgSrpmsDir(pkg string) string {
+	return filepath.Join(getAllSrpmsDir(), pkg)
+}
+
 func getAllRpmsDestDir() string {
 	return filepath.Join(viper.GetString("DestDir"), "RPMS")
 }

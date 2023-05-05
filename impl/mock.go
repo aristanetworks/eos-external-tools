@@ -55,23 +55,31 @@ func (bldr *mockBuilder) setupStageErrPrefix(stage string) {
 }
 
 func (bldr *mockBuilder) fetchSrpm() error {
-	pkgSrpmsDir := getPkgSrpmsDestDir(bldr.pkg)
-	if err := util.CheckPath(pkgSrpmsDir, true, false); err != nil {
-		return fmt.Errorf("%sDirectory %s not found, input .src.rpm is expected here",
-			bldr.errPrefix, pkgSrpmsDir)
+
+	pkgSrpmsDir := getPkgSrpmsDir(bldr.pkg)
+	pkgSrpmsDestDir := getPkgSrpmsDestDir(bldr.pkg)
+
+	var srpmDir string
+	if util.CheckPath(pkgSrpmsDir, true, false) == nil {
+		srpmDir = pkgSrpmsDir
+	} else if util.CheckPath(pkgSrpmsDestDir, true, false) == nil {
+		srpmDir = pkgSrpmsDestDir
+	} else {
+		return fmt.Errorf("%sExpected one of these directories to be present: %s:%s",
+			bldr.errPrefix, pkgSrpmsDir, pkgSrpmsDestDir)
 	}
 
-	filesInPkgSrpmsDir, _ := filepath.Glob(filepath.Join(pkgSrpmsDir, "*"))
+	filesInPkgSrpmsDir, _ := filepath.Glob(filepath.Join(srpmDir, "*"))
 	numFilesInPkgSrpmsDir := len(filesInPkgSrpmsDir)
 	var srpmPath string
 	if numFilesInPkgSrpmsDir == 0 {
 		return fmt.Errorf("%sFound no files in  %s, expected to find input .src.rpm file here",
-			bldr.errPrefix, pkgSrpmsDir)
+			bldr.errPrefix, srpmDir)
 	}
 	if srpmPath = filesInPkgSrpmsDir[0]; numFilesInPkgSrpmsDir > 1 || !strings.HasSuffix(srpmPath, ".src.rpm") {
 		return fmt.Errorf("%sFound files %s in %s, expected only one .src.rpm file",
 			bldr.errPrefix,
-			strings.Join(filesInPkgSrpmsDir, ","), pkgSrpmsDir)
+			strings.Join(filesInPkgSrpmsDir, ","), srpmDir)
 	}
 
 	bldr.srpmPath = srpmPath
