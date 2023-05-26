@@ -140,6 +140,8 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 
 	macros := map[string]string{
 		"release": bldr.rpmReleaseMacro,
+		// this macro ensures that static libraries are determinstic
+		"__brp_strip_static_archive": "/usr/lib/rpm/brp-strip-static-archive \"%{__strip} -D\"",
 	}
 
 	var defineArgs []string
@@ -167,11 +169,13 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 
 func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
 	mockArgs := bldr.mockArgs(extraArgs)
+	bldr.log("Running mock %s", strings.Join(mockArgs, " "))
 	mockErr := util.RunSystemCmd("mock", mockArgs...)
 	if mockErr != nil {
 		return fmt.Errorf("%smock %s errored out with %s",
 			bldr.errPrefix, strings.Join(mockArgs, " "), mockErr)
 	}
+	bldr.log("mock successful")
 	return nil
 }
 

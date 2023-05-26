@@ -2,6 +2,7 @@ config_opts['chroot_setup_cmd'] = "install bash bzip2 coreutils cpio diffutils r
 config_opts['package_manager'] = "dnf"
 config_opts['releasever'] = "9"
 config_opts['cleanup_on_failure'] = False
+config_opts['cleanup_on_success'] = False
 {{range $key,$val := .DefaultCommonCfg}}
 config_opts['{{$key}}'] = "{{$val}}"
 {{end}}
