@@ -1,10 +1,17 @@
 ---
 repo:
   AppStream:
-    baseurl: "{{.Host}}/{{.Version}}/AppStream/{{.Arch}}/os/"
+    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/AppStream/{{.Arch}}/os"
+
   BaseOS:
-    baseurl: "{{.Host}}/{{.Version}}/BaseOS/{{.Arch}}/os/"
+    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/BaseOS/{{.Arch}}/os"
+
   CRB:
-    baseurl: "{{.Host}}/{{.Version}}/CRB/{{.Arch}}/os/"
+    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/CRB/{{.Arch}}/os"
+
   epel:
     baseurl: "{{.Host}}/{{.Version}}/{{.Arch}}/"
+
+version-labels:
+  default: 9.1
+  latest: 9.2 # Don't use this if you want reproducible builds, this is just for experiments

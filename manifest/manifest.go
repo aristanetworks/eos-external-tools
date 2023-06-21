@@ -16,8 +16,9 @@ import (
 // Repo spec
 // mock cfg dnf.conf is generated from this
 type Repo struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
+	Name        string `yaml:"name"`
+	Version     string `yaml:"version"`
+	UseBaseArch bool   `yaml:"use-base-arch"`
 }
 
 // Build spec

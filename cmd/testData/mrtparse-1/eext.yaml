@@ -14,6 +14,6 @@ package:
         - a.tpl
       repo:
         - name: BaseOS
-          version: "artifactory/alma-linux/9.1"
+          version: 9.1
         - name: AppStream
-          version: "artifactory/alma-linux/9.1"
+          version: default

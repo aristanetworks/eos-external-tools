@@ -25,6 +25,7 @@ type DnfRepoConfig struct {
 // DnfReposConfig is a container for repo name to DnfRepoConfig
 type DnfReposConfig struct {
 	DnfRepoConfig map[string]*DnfRepoConfig `yaml:"repo"`
+	VersionLabels map[string]string         `yaml:"version-labels"`
 }
 
 // DnfRepoURLData is used to execute baseURLFormatTemplate
@@ -44,7 +45,7 @@ func baseArch(arch string) string {
 // BaseURL generates baseURL for a particular repo
 // looking at the dnfrepo config file, arch and version
 func (r *DnfReposConfig) BaseURL(
-	dnfRepoName string, arch string, version string,
+	dnfRepoName string, arch string, version string, useBaseArch bool,
 	errPrefix util.ErrPrefix) (
 	string, error) {
 
@@ -54,10 +55,24 @@ func (r *DnfReposConfig) BaseURL(
 			errPrefix, dnfRepoName)
 	}
 
+	var repoArch string
+	if useBaseArch {
+		repoArch = baseArch(arch)
+	} else {
+		repoArch = arch
+	}
+
+	// See if version specified in manifest is a label
+	// If it is, translate it into actual version number before deriving URL.
+	translatedVersion, isVersionLabel := r.VersionLabels[version]
+	if !isVersionLabel {
+		translatedVersion = version
+	}
+
 	data := DnfRepoURLData{
 		Host:    viper.GetString("DnfRepoHost"),
-		Arch:    baseArch(arch),
-		Version: version,
+		Arch:    repoArch,
+		Version: translatedVersion,
 	}
 
 	var buf bytes.Buffer

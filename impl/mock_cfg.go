@@ -55,6 +55,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 			repoSpecifiedInManifest.Name,
 			arch,
 			repoSpecifiedInManifest.Version,
+			repoSpecifiedInManifest.UseBaseArch,
 			cfgBldr.errPrefix)
 
 		if err != nil {

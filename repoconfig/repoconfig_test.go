@@ -4,11 +4,12 @@
 package repoconfig
 
 import (
-	"github.com/stretchr/testify/require"
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 
 	"code.arista.io/eos/tools/eext/util"
 )
@@ -32,10 +33,32 @@ func TestRepoConfig(t *testing.T) {
 	require.NotNil(t, reposConfig.DnfRepoConfig["repo1"].baseURLFormatTemplate)
 	t.Log("Load test passed")
 
-	t.Log("Testing BaseURL template")
-	baseURL, execErr := reposConfig.BaseURL("repo1", "x86_64", "123",
-		util.ErrPrefix("TestRepoConfig"))
-	require.NoError(t, execErr)
-	require.Equal(t, "http://foo.org/bar-123/x86_64/", baseURL)
+	t.Log("Testing BaseURL template with x86_64")
+
+	expectedVersionMap := map[string]string{
+		"123":    "123",
+		"latest": "999",
+	}
+
+	for _, arch := range []string{"x86_64", "aarch64", "i686"} {
+		for _, useBaseArch := range []bool{false, true} {
+			var expectedArch string
+			if arch == "i686" && useBaseArch {
+				expectedArch = "x86_64"
+			} else {
+				expectedArch = arch
+			}
+			for _, version := range []string{"123", "latest"} {
+				expectedVersion := expectedVersionMap[version]
+				expectedURL := fmt.Sprintf("http://foo.org/bar-%s/%s/",
+					expectedVersion, expectedArch)
+				baseURL, execErr := reposConfig.BaseURL("repo1",
+					arch, version, useBaseArch,
+					util.ErrPrefix("TestRepoConfig"))
+				require.NoError(t, execErr)
+				require.Equal(t, baseURL, expectedURL)
+			}
+		}
+	}
 	t.Log("BaseURL template test passed")
 }
