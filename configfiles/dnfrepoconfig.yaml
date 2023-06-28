@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 repo:
   AppStream:
     baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/AppStream/{{.Arch}}/os"
@@ -14,4 +15,5 @@ repo:
 
 version-labels:
   default: 9.1
-  latest: 9.2 # Don't use this if you want reproducible builds, this is just for experiments
+  # Don't use latest if you want reproducible builds, this is just for experiments
+  latest: 9.2
