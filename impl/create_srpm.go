@@ -92,7 +92,7 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 		var downloadErr error
 		upstreamSrc := upstreamSrcSpec{}
 
-		bldr.log("aajith: downloading %s", upstreamSrcFromManifest.Source)
+		bldr.log("downloading %s", upstreamSrcFromManifest.Source)
 		// Download source
 		if upstreamSrc.sourceFile, downloadErr = download(
 			upstreamSrcFromManifest.Source,
@@ -101,7 +101,7 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 			bldr.errPrefix); downloadErr != nil {
 			return downloadErr
 		}
-		bldr.log("aajith: downloaded")
+		bldr.log("downloaded")
 
 		signatureSpec := upstreamSrcFromManifest.Signature
 		upstreamSrc.skipSigCheck = signatureSpec.SkipCheck
