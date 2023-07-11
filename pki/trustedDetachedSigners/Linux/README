@@ -1,0 +1,6 @@
+linux
+Source: https://git.kernel.org/pub/scm/docs/kernel/pgpkeys.git/plain/keys/38DBBDC86092693E.asc
+Matches fingerprints on https://www.kernel.org/category/signatures.html
+
+linux-firmare
+Source: https://git.kernel.org/pub/scm/docs/kernel/pgpkeys.git/plain/keys/A31B6BD72486CFD6.asc
