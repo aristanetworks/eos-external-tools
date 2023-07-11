@@ -10,6 +10,9 @@ repo:
   CRB:
     baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/CRB/{{.Arch}}/os"
 
+  devel:
+    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/devel/{{.Arch}}/os"
+
   epel:
     baseurl: "{{.Host}}/{{.Version}}/{{.Arch}}/"
 
