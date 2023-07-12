@@ -191,12 +191,16 @@ func (bldr *mockBuilder) runFedoraMockStages() error {
 	}
 	bldr.log("succesful")
 
-	bldr.setupStageErrPrefix("installdeps")
-	bldr.log("starting")
-	if err := bldr.runMockCmd([]string{"--installdeps"}); err != nil {
-		return err
+	// installdeps seems to be broken when run for target i686
+	// Skip separate installdeps stage and run it as part of mock for i686
+	if bldr.arch != "i686" {
+		bldr.setupStageErrPrefix("installdeps")
+		bldr.log("starting")
+		if err := bldr.runMockCmd([]string{"--installdeps"}); err != nil {
+			return err
+		}
+		bldr.log("succesful")
 	}
-	bldr.log("succesful")
 
 	bldr.setupStageErrPrefix("build")
 	buildArgs := []string{"--no-clean", "--rebuild"}
