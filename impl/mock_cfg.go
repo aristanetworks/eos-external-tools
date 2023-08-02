@@ -17,6 +17,7 @@ import (
 type RepoData struct {
 	Name    string
 	BaseURL string
+	Enabled bool
 }
 
 // MockCfgTemplateData is used to execute the mock config template
@@ -65,6 +66,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 		repoData := RepoData{
 			Name:    repoSpecifiedInManifest.Name,
 			BaseURL: baseURL,
+			Enabled: true,
 		}
 		cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoData)
 	}

@@ -31,7 +31,7 @@ syslog_ident=mock
 [{{.Name}}]
 name = {{.Name}}
 baseurl = {{.BaseURL}}
-enabled = 1
+enabled = {{if .Enabled }}1{{else}}0{{end}}
 {{end}}
 """
 {{range .Includes}}
