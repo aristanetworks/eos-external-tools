@@ -33,7 +33,7 @@ type mockCfgBuilder struct {
 	isPkgSubdirInRepo bool
 	arch              string
 	buildSpec         *manifest.Build
-	dnfRepoConfig     *repoconfig.DnfReposConfig
+	dnfConfig         *repoconfig.DnfConfig
 	errPrefix         util.ErrPrefix
 	templateData      *MockCfgTemplateData
 }
@@ -50,25 +50,45 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 		"target_arch": arch,
 		"root":        getMockChrootDirName(pkg, arch),
 	}
+	for _, repoBundleSpecifiedInManifest := range cfgBldr.buildSpec.RepoBundle {
+		bundleName := repoBundleSpecifiedInManifest.Name
+		bundleVersion := repoBundleSpecifiedInManifest.Version
+		useBaseArch := repoBundleSpecifiedInManifest.UseBaseArch
+		forceEnabledRepos := repoBundleSpecifiedInManifest.Enable
+		forceDisabledRepos := repoBundleSpecifiedInManifest.Disable
 
-	for _, repoSpecifiedInManifest := range cfgBldr.buildSpec.Repo {
-		baseURL, err := cfgBldr.dnfRepoConfig.BaseURL(
-			repoSpecifiedInManifest.Name,
-			arch,
-			repoSpecifiedInManifest.Version,
-			repoSpecifiedInManifest.UseBaseArch,
-			cfgBldr.errPrefix)
+		bundleConfig, found := cfgBldr.dnfConfig.DnfRepoBundleConfig[bundleName]
+		if !found {
+			return fmt.Errorf("%sUnknown repo-bundle name %s",
+				cfgBldr.errPrefix, bundleName)
+		}
 
-		if err != nil {
-			return fmt.Errorf("%sError deriving baseURL: %s",
-				cfgBldr.errPrefix, err)
+		for repoName, _ := range bundleConfig.DnfRepoConfig {
+			baseURL, err := bundleConfig.BaseURL(
+				repoName,
+				arch,
+				bundleVersion,
+				useBaseArch,
+				cfgBldr.errPrefix)
+
+			if err != nil {
+				return fmt.Errorf("%sError deriving baseURL in bundle %s: %s",
+					cfgBldr.errPrefix, bundleName, err)
+			}
+
+			enabled, err := bundleConfig.Enabled(
+				repoName,
+				forceEnabledRepos,
+				forceDisabledRepos,
+				cfgBldr.errPrefix)
+
+			repoData := RepoData{
+				Name:    repoName,
+				BaseURL: baseURL,
+				Enabled: enabled,
+			}
+			cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoData)
 		}
-		repoData := RepoData{
-			Name:    repoSpecifiedInManifest.Name,
-			BaseURL: baseURL,
-			Enabled: true,
-		}
-		cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoData)
 	}
 
 	mockCfgDir := getMockCfgDir(pkg, arch)
@@ -129,8 +149,9 @@ func (cfgBldr *mockCfgBuilder) createMockCfgFile() error {
 	}
 	templateExecError := parsedMockCfgTemplate.Execute(mockCfgFileHandle, cfgBldr.templateData)
 	if templateExecError != nil {
-		return fmt.Errorf("%sError '%s' executing template with %s",
-			cfgBldr.errPrefix, templateExecError, cfgBldr.templateData)
+		return fmt.Errorf("%sError '%s' executing template with %v",
+			cfgBldr.errPrefix, templateExecError,
+			*cfgBldr.templateData)
 	}
 
 	return nil

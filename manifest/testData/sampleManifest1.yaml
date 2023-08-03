@@ -8,9 +8,10 @@ package:
           skip-check: true
     type: srpm
     build:
-      repo:
-        - name: BaseOS
-          version: foo/bar
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar
   - name: tcpdump
     upstream-sources:
       - source: http://foo/tcpdump.tar.xz
@@ -19,6 +20,7 @@ package:
           public-key: mrtparse/mrtparsePubKey.pem
     type: tarball
     build:
-      repo:
-        - name: BaseOS
-          version: foo/bar
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar

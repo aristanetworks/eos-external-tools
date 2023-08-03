@@ -15,17 +15,19 @@ import (
 
 // Repo spec
 // mock cfg dnf.conf is generated from this
-type Repo struct {
-	Name        string `yaml:"name"`
-	Version     string `yaml:"version"`
-	UseBaseArch bool   `yaml:"use-base-arch"`
+type RepoBundle struct {
+	Name        string   `yaml:"name"`
+	Version     string   `yaml:"version"`
+	UseBaseArch bool     `yaml:"use-base-arch"`
+	Enable      []string `yaml:"enable"`
+	Disable     []string `yaml:"disable"`
 }
 
 // Build spec
 // mock cfg is generated for each target depending on this
 type Build struct {
-	Include []string `yaml:"include"`
-	Repo    []Repo   `yaml:"repo"`
+	Include    []string     `yaml:"include"`
+	RepoBundle []RepoBundle `yaml:"repo-bundle"`
 }
 
 // UpstreamSrcSignature specifies detached signature file for tarball

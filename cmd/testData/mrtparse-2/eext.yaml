@@ -11,8 +11,7 @@ package:
     build:
       include:
         - a.tpl
-      repo:
-        - name: BaseOS
+      repo-bundle:
+        - name: el9
           version: 9.1
-        - name: AppStream
-          version: default
+        - name: epel9

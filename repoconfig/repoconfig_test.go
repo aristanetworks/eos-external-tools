@@ -26,11 +26,16 @@ func TestRepoConfig(t *testing.T) {
 	defer viper.Reset()
 
 	t.Log("Testing Load")
-	reposConfig, loadErr := LoadDnfRepoConfig()
+	dnfConfig, loadErr := LoadDnfConfig()
 	require.NoError(t, loadErr)
-	require.NotNil(t, reposConfig)
-	require.Contains(t, reposConfig.DnfRepoConfig, "repo1")
-	require.NotNil(t, reposConfig.DnfRepoConfig["repo1"].baseURLFormatTemplate)
+	require.NotNil(t, dnfConfig)
+	require.Contains(t, dnfConfig.DnfRepoBundleConfig, "bundle1")
+	bundle1Config := dnfConfig.DnfRepoBundleConfig["bundle1"]
+	require.NotNil(t, bundle1Config)
+	require.Contains(t, bundle1Config.DnfRepoConfig, "repo1")
+	repo1Config := bundle1Config.DnfRepoConfig["repo1"]
+	require.NotNil(t, repo1Config)
+	require.NotNil(t, repo1Config.baseURLFormatTemplate)
 	t.Log("Load test passed")
 
 	t.Log("Testing BaseURL template with x86_64")
@@ -52,7 +57,7 @@ func TestRepoConfig(t *testing.T) {
 				expectedVersion := expectedVersionMap[version]
 				expectedURL := fmt.Sprintf("http://foo.org/bar-%s/%s/",
 					expectedVersion, expectedArch)
-				baseURL, execErr := reposConfig.BaseURL("repo1",
+				baseURL, execErr := bundle1Config.BaseURL("repo1",
 					arch, version, useBaseArch,
 					util.ErrPrefix("TestRepoConfig"))
 				require.NoError(t, execErr)

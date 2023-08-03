@@ -25,7 +25,7 @@ type mockBuilder struct {
 	onlyCreateCfg bool
 	noCheck       bool
 
-	dnfRepoConfig *repoconfig.DnfReposConfig
+	dnfConfig *repoconfig.DnfConfig
 
 	errPrefixBase util.ErrPrefix
 	errPrefix     util.ErrPrefix
@@ -113,7 +113,7 @@ func (bldr *mockBuilder) createCfg() error {
 		isPkgSubdirInRepo: bldr.isPkgSubdirInRepo,
 		arch:              bldr.arch,
 		buildSpec:         bldr.buildSpec,
-		dnfRepoConfig:     bldr.dnfRepoConfig,
+		dnfConfig:         bldr.dnfConfig,
 		errPrefix:         bldr.errPrefix,
 		templateData:      nil,
 	}
@@ -291,9 +291,9 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		return err
 	}
 
-	dnfRepoConfig, dnfRepoConfigErr := repoconfig.LoadDnfRepoConfig()
-	if dnfRepoConfigErr != nil {
-		return dnfRepoConfigErr
+	dnfConfig, dnfConfigErr := repoconfig.LoadDnfConfig()
+	if dnfConfigErr != nil {
+		return dnfConfigErr
 	}
 
 	repoManifest, loadManifestErr := manifest.LoadManifest(repo)
@@ -325,7 +325,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			rpmReleaseMacro:   pkgSpec.RpmReleaseMacro,
 			onlyCreateCfg:     extraArgs.OnlyCreateCfg,
 			noCheck:           extraArgs.NoCheck,
-			dnfRepoConfig:     dnfRepoConfig,
+			dnfConfig:         dnfConfig,
 			errPrefixBase:     errPrefixBase,
 			errPrefix:         errPrefix,
 			srpmPath:          "",

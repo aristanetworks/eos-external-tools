@@ -1,22 +1,28 @@
 ---
 # yamllint disable rule:line-length
-repo:
-  AppStream:
-    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/AppStream/{{.Arch}}/os"
+repo-bundle:
+  el9:
+    repo:
+      AppStream:
+        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/AppStream/{{.Arch}}/os"
+        enabled: true
+      BaseOS:
+        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/BaseOS/{{.Arch}}/os"
+        enabled: true
+      CRB:
+        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/CRB/{{.Arch}}/os"
+        enabled: true
+      devel:
+        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/devel/{{.Arch}}/os"
+        enabled: false
+    version-labels:
+      default: 9.1
+      # Don't use latest if you want reproducible builds, this is just for experiments
+      latest: 9.2
 
-  BaseOS:
-    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/BaseOS/{{.Arch}}/os"
-
-  CRB:
-    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/CRB/{{.Arch}}/os"
-
-  devel:
-    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/devel/{{.Arch}}/os"
-
-  epel:
-    baseurl: "{{.Host}}/{{.Version}}/{{.Arch}}/"
-
-version-labels:
-  default: 9.1
-  # Don't use latest if you want reproducible builds, this is just for experiments
-  latest: 9.2
+  # epel9 is not version controlled
+  epel9:
+    repo:
+      epel:
+        baseurl: "{{.Host}}/artifactory/centos-9-epel/{{.Arch}}/"
+        enabled: true

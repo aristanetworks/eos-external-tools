@@ -6,7 +6,8 @@ require (
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
+	golang.org/x/sys v0.1.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
