@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"code.arista.io/eos/tools/eext/dnfconfig"
 	"code.arista.io/eos/tools/eext/manifest"
-	"code.arista.io/eos/tools/eext/repoconfig"
 	"code.arista.io/eos/tools/eext/util"
 )
 
@@ -25,7 +25,7 @@ type mockBuilder struct {
 	onlyCreateCfg bool
 	noCheck       bool
 
-	dnfConfig *repoconfig.DnfConfig
+	dnfConfig *dnfconfig.DnfConfig
 
 	errPrefixBase util.ErrPrefix
 	errPrefix     util.ErrPrefix
@@ -291,7 +291,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		return err
 	}
 
-	dnfConfig, dnfConfigErr := repoconfig.LoadDnfConfig()
+	dnfConfig, dnfConfigErr := dnfconfig.LoadDnfConfig()
 	if dnfConfigErr != nil {
 		return dnfConfigErr
 	}

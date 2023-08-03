@@ -23,7 +23,7 @@ COPY ./${EEXT_ROOT}/impl/ impl/
 COPY ./${EEXT_ROOT}/util/ util/
 COPY ./${EEXT_ROOT}/testutil/ testutil/
 COPY ./${EEXT_ROOT}/manifest/ manifest/
-COPY ./${EEXT_ROOT}/repoconfig/ repoconfig/
+COPY ./${EEXT_ROOT}/dnfconfig/ dnfconfig/
 RUN go build -o  /bin/eext && \
     go test ./... && \
     GO111MODULE=off go get -u golang.org/x/lint/golint && \
@@ -35,9 +35,9 @@ FROM base as deploy
 ARG EEXT_ROOT=.
 ARG CFG_DIR=/usr/share/eext
 ARG MOCK_CFG_TEMPLATE=mock.cfg.template
-ARG REPO_CFG_FILE=dnfrepoconfig.yaml
+ARG DNF_CFG_FILE=dnfconfig.yaml
 COPY --from=builder /bin/eext /usr/bin/
 COPY ./${EEXT_ROOT}/configfiles/${MOCK_CFG_TEMPLATE} ${CFG_DIR}/${MOCK_CFG_TEMPLATE}
-COPY ./${EEXT_ROOT}/configfiles/${REPO_CFG_FILE} ${CFG_DIR}/${REPO_CFG_FILE}
+COPY ./${EEXT_ROOT}/configfiles/${DNF_CFG_FILE} ${CFG_DIR}/${DNF_CFG_FILE}
 RUN mkdir -p /etc/pki/eext
 COPY ./${EEXT_ROOT}/pki/*.pem /etc/pki/eext/

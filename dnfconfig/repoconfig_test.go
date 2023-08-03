@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Arista Networks, Inc.  All rights reserved.
 // Arista Networks, Inc. Confidential and Proprietary.
 
-package repoconfig
+package dnfconfig
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ func TestRepoConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	viper.Set("DnfRepoConfigFile", "testData/sample-dnfrepoconfig.yaml")
+	viper.Set("DnfRepoConfigFile", "testData/sample-dnfconfig.yaml")
 	viper.Set("DnfRepoHost", "http://foo.org")
 	defer viper.Reset()
 

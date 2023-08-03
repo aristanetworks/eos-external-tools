@@ -86,7 +86,7 @@ func SetupViperConfig(workingDir string, destDir string) {
 	viper.Set("DnfRepoHost",
 		"https://artifactory.infra.corp.arista.io")
 	viper.Set("DnfRepoConfigFile",
-		"../configfiles/dnfrepoconfig.yaml")
+		"../configfiles/dnfconfig.yaml")
 	viper.Set("MockCfgTemplate",
 		"../configfiles/mock.cfg.template")
 	viper.Set("PkiPath",

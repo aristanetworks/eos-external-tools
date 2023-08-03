@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Arista Networks, Inc.  All rights reserved.
 // Arista Networks, Inc. Confidential and Proprietary.
 
-package repoconfig
+package dnfconfig
 
 import (
 	"bytes"
@@ -124,22 +124,22 @@ func LoadDnfConfig() (*DnfConfig, error) {
 	_, statErr := os.Stat(cfgPath)
 	if statErr != nil {
 		if os.IsNotExist(statErr) {
-			return nil, fmt.Errorf("repoconfig.LoadDnfConfig: %s doesn't exist",
+			return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: %s doesn't exist",
 				cfgPath)
 		}
-		return nil, fmt.Errorf("repoconfig.LoadDnfConfig: os.Stat on %s returned %s",
+		return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: os.Stat on %s returned %s",
 			cfgPath, statErr)
 	}
 
 	yamlContents, readErr := ioutil.ReadFile(cfgPath)
 	if readErr != nil {
-		return nil, fmt.Errorf("repoconfig.LoadDnfConfig: ioutil.ReadFile on %s returned %s",
+		return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: ioutil.ReadFile on %s returned %s",
 			cfgPath, readErr)
 	}
 
 	var config DnfConfig
 	if parseErr := yaml.UnmarshalStrict(yamlContents, &config); parseErr != nil {
-		return nil, fmt.Errorf("repoconfig.LoadDnfConfig: Error parsing yaml file %s: %s",
+		return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: Error parsing yaml file %s: %s",
 			cfgPath, parseErr)
 	}
 
@@ -149,7 +149,7 @@ func LoadDnfConfig() (*DnfConfig, error) {
 			t, parseErr := template.New(templateName).Parse(repoConfig.BaseURLFormat)
 			if parseErr != nil {
 				return nil, fmt.Errorf(
-					"repoconfig.LoadDnfConfig: Error parsing baseurl %s for dnf repo %s in bundle %s",
+					"dnfconfig.LoadDnfConfig: Error parsing baseurl %s for dnf repo %s in bundle %s",
 					repoConfig.BaseURLFormat, bundleName, repoName)
 			}
 			repoConfig.baseURLFormatTemplate = t

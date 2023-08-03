@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"code.arista.io/eos/tools/eext/dnfconfig"
 	"code.arista.io/eos/tools/eext/manifest"
-	"code.arista.io/eos/tools/eext/repoconfig"
 	"code.arista.io/eos/tools/eext/util"
 )
 
@@ -33,7 +33,7 @@ type mockCfgBuilder struct {
 	isPkgSubdirInRepo bool
 	arch              string
 	buildSpec         *manifest.Build
-	dnfConfig         *repoconfig.DnfConfig
+	dnfConfig         *dnfconfig.DnfConfig
 	errPrefix         util.ErrPrefix
 	templateData      *MockCfgTemplateData
 }
