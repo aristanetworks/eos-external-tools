@@ -140,8 +140,6 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 
 	macros := map[string]string{
 		"release": bldr.rpmReleaseMacro,
-		// this macro ensures that static libraries are determinstic
-		"__brp_strip_static_archive": "/usr/lib/rpm/brp-strip-static-archive \"%{__strip} -D\"",
 	}
 
 	var defineArgs []string

@@ -3,6 +3,10 @@ config_opts['package_manager'] = "dnf"
 config_opts['releasever'] = "9"
 config_opts['cleanup_on_failure'] = False
 config_opts['cleanup_on_success'] = False
+
+# Make sure static libraries are deterministic
+config_opts['macros']['__brp_strip_static_archive'] = '/usr/lib/rpm/brp-strip-static-archive "%{__strip} -D"'
+
 {{range $key,$val := .DefaultCommonCfg}}
 config_opts['{{$key}}'] = "{{$val}}"
 {{end}}
