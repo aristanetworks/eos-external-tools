@@ -49,6 +49,13 @@ func TestMock(t *testing.T) {
 	}
 	defer os.RemoveAll(destDir)
 
+	var sources = []string{
+		"code.arista.io/eos/tools/eext#deadbeefdeadbeefdead",
+		"code.arista.io/eos/eext/mrtparse#beefdeadbeefdeadbeef",
+	}
+	testutil.SetupSrcEnv(sources)
+	defer testutil.CleanupSrcEnv(sources)
+
 	repoName := "mrtparse-1"
 	expectedPkgName := "mrtparse"
 	SetViperDefaults()
@@ -64,7 +71,7 @@ func TestMock(t *testing.T) {
 	t.Logf("WorkingDir: %s", workingDir)
 	t.Log("Test mock from SRPM")
 	expectedRpmFiles := []ExpectedRpmFile{
-		{"noarch", "python3-mrtparse-2.0.1-Ar.1.noarch.rpm"},
+		{"noarch", "python3-mrtparse-2.0.1-deadbee_beefdea.noarch.rpm"},
 	}
 	testMock(t, destDir, repoName, expectedPkgName, false, expectedRpmFiles)
 }

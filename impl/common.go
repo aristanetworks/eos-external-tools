@@ -10,10 +10,12 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
 
+	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
 )
 
@@ -259,6 +261,66 @@ func loadGpgKeys() error {
 
 	gpgKeysLoaded = true
 	return nil
+}
+
+func combineSrcEnv(
+	onlyHash bool,
+	hashMaxWidth uint,
+	sep string,
+	maxSources int,
+	errPrefix util.ErrPrefix) (string, error) {
+	envPrefix := "SRC_"
+	var releaseFields []string
+	for i := 0; i < maxSources; i++ {
+		envVar := envPrefix + strconv.Itoa(i)
+		srcI := os.Getenv(envVar)
+		if srcI == "" {
+			break
+		}
+
+		srcIComps := strings.Split(srcI, "#")
+		if len(srcIComps) != 2 {
+			return "", fmt.Errorf("%sEnv %s has bad format %s",
+				errPrefix, envVar, srcI)
+		}
+
+		var field string
+		if onlyHash {
+			fullHash := srcIComps[1]
+			if hashMaxWidth != 0 {
+				field = fullHash[:hashMaxWidth]
+			} else {
+				field = fullHash
+			}
+		} else {
+			field = srcI
+		}
+		releaseFields = append(releaseFields, field)
+	}
+	return strings.Join(releaseFields, sep), nil
+}
+
+// getRpmReleaseMacro returns the release rpm macro to be defined
+// for building srpms and rpms.
+// If the value is hardcoded in the manifest, we use that.
+// Otherwise it is constructed by combining the first <hashWidthInRelease>
+// characters of the commit hashes in the SRC_<N> env vars.
+// If the env vars are unset, an empty string is returned.
+func getRpmReleaseMacro(pkgSpec *manifest.Package, errPrefix util.ErrPrefix) (
+	string, error) {
+	if pkgSpec.RpmReleaseMacro != "" {
+		return pkgSpec.RpmReleaseMacro, nil
+	}
+
+	const hashWidthInRelease uint = 7
+	const maxSources int = 10
+	const sep string = "_"
+
+	return combineSrcEnv(
+		true, hashWidthInRelease,
+		sep,
+		maxSources,
+		errPrefix)
 }
 
 func setup() error {

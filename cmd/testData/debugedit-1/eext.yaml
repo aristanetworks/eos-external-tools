@@ -1,7 +1,6 @@
 ---
 package:
   - name: debugedit
-    release: Ar.2
     upstream-sources:
       - source: file:///debugedit-5.0-3.el9.src.rpm
     type: srpm

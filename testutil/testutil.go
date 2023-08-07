@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -76,6 +77,26 @@ func checkAndCleanupQuiet(t *testing.T) {
 	}
 	require.Empty(t, out)
 	os.Stdout = rescueStdout
+}
+
+func SetupSrcEnv(src []string) {
+	for index, val := range src {
+		varName := "SRC_" + strconv.Itoa(index)
+		err := os.Setenv(varName, val)
+		if err != nil {
+			panic("Setenv failed")
+		}
+	}
+}
+
+func CleanupSrcEnv(src []string) {
+	for index, _ := range src {
+		varName := "SRC_" + strconv.Itoa(index)
+		err := os.Unsetenv(varName)
+		if err != nil {
+			panic("Unsetenv failed")
+		}
+	}
 }
 
 // SetupViperConfig sets up the viper config for the test

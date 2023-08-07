@@ -54,12 +54,18 @@ func TestCreateSrpmFromSrpm(t *testing.T) {
 	t.Log("Test createSrpm from SRPM")
 	testCreateSrpm(t,
 		"debugedit-1", "debugedit", false,
-		[]string{"debugedit-5.0-Ar.2.src.rpm"})
+		[]string{"debugedit-5.0-eng.src.rpm"})
 }
 
 func TestCreateSrpmFromTarball(t *testing.T) {
 	t.Log("Test createSrpm from tarball")
+	var sources = []string{
+		"code.arista.io/eos/tools/eext#deadbeefdeadbeefdead",
+		"code.arista.io/eos/eext/mrtparse#beefdeadbeefdeadbeef",
+	}
+	testutil.SetupSrcEnv(sources)
+	defer testutil.CleanupSrcEnv(sources)
 	testCreateSrpm(t,
 		"mrtparse-1", "mrtparse", true,
-		[]string{"mrtparse-2.0.1-Ar.1.src.rpm"})
+		[]string{"mrtparse-2.0.1-deadbee_beefdea.src.rpm"})
 }

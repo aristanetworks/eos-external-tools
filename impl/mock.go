@@ -138,8 +138,9 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 	targetArg := "--target=" + arch
 	resultArg := "--resultdir=" + getMockResultsDir(bldr.pkg, arch)
 
-	macros := map[string]string{
-		"release": bldr.rpmReleaseMacro,
+	macros := make(map[string]string)
+	if bldr.rpmReleaseMacro != "" {
+		macros["release"] = bldr.rpmReleaseMacro
 	}
 
 	var defineArgs []string
@@ -314,13 +315,18 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		errPrefix := util.ErrPrefix(fmt.Sprintf(
 			"%s: ", errPrefixBase))
 
+		rpmReleaseMacro, err := getRpmReleaseMacro(&pkgSpec, "impl.Mock:")
+		if err != nil {
+			return err
+		}
+
 		bldr := &mockBuilder{
 			pkg:               thisPkgName,
 			repo:              repo,
 			isPkgSubdirInRepo: pkgSpec.Subdir,
 			arch:              arch,
 			buildSpec:         &pkgSpec.Build,
-			rpmReleaseMacro:   pkgSpec.RpmReleaseMacro,
+			rpmReleaseMacro:   rpmReleaseMacro,
 			onlyCreateCfg:     extraArgs.OnlyCreateCfg,
 			noCheck:           extraArgs.NoCheck,
 			dnfConfig:         dnfConfig,
