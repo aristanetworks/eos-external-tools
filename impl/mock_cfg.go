@@ -23,6 +23,7 @@ type RepoData struct {
 // MockCfgTemplateData is used to execute the mock config template
 type MockCfgTemplateData struct {
 	DefaultCommonCfg map[string]string
+	Macros           map[string]string
 	Repo             []RepoData
 	Includes         []string
 }
@@ -32,6 +33,7 @@ type mockCfgBuilder struct {
 	repo              string
 	isPkgSubdirInRepo bool
 	arch              string
+	rpmReleaseMacro   string
 	buildSpec         *manifest.Build
 	dnfConfig         *dnfconfig.DnfConfig
 	errPrefix         util.ErrPrefix
@@ -50,6 +52,12 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 		"target_arch": arch,
 		"root":        getMockChrootDirName(pkg, arch),
 	}
+
+	cfgBldr.templateData.Macros = make(map[string]string)
+	if cfgBldr.rpmReleaseMacro != "" {
+		cfgBldr.templateData.Macros["release"] = cfgBldr.rpmReleaseMacro
+	}
+
 	for _, repoBundleSpecifiedInManifest := range cfgBldr.buildSpec.RepoBundle {
 		bundleName := repoBundleSpecifiedInManifest.Name
 		bundleVersion := repoBundleSpecifiedInManifest.Version

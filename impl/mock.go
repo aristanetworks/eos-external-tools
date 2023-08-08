@@ -112,6 +112,7 @@ func (bldr *mockBuilder) createCfg() error {
 		repo:              bldr.repo,
 		isPkgSubdirInRepo: bldr.isPkgSubdirInRepo,
 		arch:              bldr.arch,
+		rpmReleaseMacro:   bldr.rpmReleaseMacro,
 		buildSpec:         bldr.buildSpec,
 		dnfConfig:         bldr.dnfConfig,
 		errPrefix:         bldr.errPrefix,
@@ -138,25 +139,11 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 	targetArg := "--target=" + arch
 	resultArg := "--resultdir=" + getMockResultsDir(bldr.pkg, arch)
 
-	macros := make(map[string]string)
-	if bldr.rpmReleaseMacro != "" {
-		macros["release"] = bldr.rpmReleaseMacro
-	}
-
-	var defineArgs []string
-	for macro, macroVal := range macros {
-		defineArg := []string{"--define",
-			fmt.Sprintf("%s %s", macro, macroVal),
-		}
-		defineArgs = append(defineArgs, defineArg...)
-	}
-
 	baseArgs := []string{
 		cfgArg,
 		targetArg,
 		resultArg,
 	}
-	baseArgs = append(baseArgs, defineArgs...)
 	if util.GlobalVar.Quiet {
 		baseArgs = append(baseArgs, "--quiet")
 	}
