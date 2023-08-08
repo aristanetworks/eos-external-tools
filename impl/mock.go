@@ -15,20 +15,11 @@ import (
 )
 
 type mockBuilder struct {
-	pkg               string
-	repo              string
-	isPkgSubdirInRepo bool
-	arch              string
-	buildSpec         *manifest.Build
-	rpmReleaseMacro   string
+	*builderCommon
 
 	onlyCreateCfg bool
 	noCheck       bool
-
-	dnfConfig *dnfconfig.DnfConfig
-
 	errPrefixBase util.ErrPrefix
-	errPrefix     util.ErrPrefix
 
 	srpmPath string
 }
@@ -108,15 +99,8 @@ func (bldr *mockBuilder) createCfg() error {
 	bldr.log("starting")
 
 	cfgBldr := mockCfgBuilder{
-		pkg:               bldr.pkg,
-		repo:              bldr.repo,
-		isPkgSubdirInRepo: bldr.isPkgSubdirInRepo,
-		arch:              bldr.arch,
-		rpmReleaseMacro:   bldr.rpmReleaseMacro,
-		buildSpec:         bldr.buildSpec,
-		dnfConfig:         bldr.dnfConfig,
-		errPrefix:         bldr.errPrefix,
-		templateData:      nil,
+		builderCommon: bldr.builderCommon,
+		templateData:  nil,
 	}
 
 	if err := cfgBldr.populateTemplateData(); err != nil {
@@ -308,18 +292,20 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		}
 
 		bldr := &mockBuilder{
-			pkg:               thisPkgName,
-			repo:              repo,
-			isPkgSubdirInRepo: pkgSpec.Subdir,
-			arch:              arch,
-			buildSpec:         &pkgSpec.Build,
-			rpmReleaseMacro:   rpmReleaseMacro,
-			onlyCreateCfg:     extraArgs.OnlyCreateCfg,
-			noCheck:           extraArgs.NoCheck,
-			dnfConfig:         dnfConfig,
-			errPrefixBase:     errPrefixBase,
-			errPrefix:         errPrefix,
-			srpmPath:          "",
+			builderCommon: &builderCommon{
+				pkg:               thisPkgName,
+				repo:              repo,
+				isPkgSubdirInRepo: pkgSpec.Subdir,
+				arch:              arch,
+				rpmReleaseMacro:   rpmReleaseMacro,
+				buildSpec:         &pkgSpec.Build,
+				dnfConfig:         dnfConfig,
+				errPrefix:         errPrefix,
+			},
+			onlyCreateCfg: extraArgs.OnlyCreateCfg,
+			noCheck:       extraArgs.NoCheck,
+			errPrefixBase: errPrefixBase,
+			srpmPath:      "",
 		}
 		if err := bldr.runStages(); err != nil {
 			return err

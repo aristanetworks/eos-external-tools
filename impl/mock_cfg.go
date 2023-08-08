@@ -28,7 +28,8 @@ type MockCfgTemplateData struct {
 	Includes         []string
 }
 
-type mockCfgBuilder struct {
+// Common config used by both mockBuilder and mockCfgBuilder
+type builderCommon struct {
 	pkg               string
 	repo              string
 	isPkgSubdirInRepo bool
@@ -37,7 +38,11 @@ type mockCfgBuilder struct {
 	buildSpec         *manifest.Build
 	dnfConfig         *dnfconfig.DnfConfig
 	errPrefix         util.ErrPrefix
-	templateData      *MockCfgTemplateData
+}
+
+type mockCfgBuilder struct {
+	*builderCommon
+	templateData *MockCfgTemplateData
 }
 
 // populateTemplateData sets up the MockCfgTemplateData instance named templateData
