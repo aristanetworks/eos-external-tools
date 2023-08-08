@@ -45,4 +45,6 @@ func SetViperDefaults() {
 		"/usr/share/eext/dnfconfig.yaml")
 	viper.SetDefault("PkiPath",
 		"/etc/pki/eext")
+	viper.SetDefault("SrcEnvPrefix",
+		"SRC_")
 }

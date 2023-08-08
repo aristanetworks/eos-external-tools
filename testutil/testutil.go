@@ -80,8 +80,9 @@ func checkAndCleanupQuiet(t *testing.T) {
 }
 
 func SetupSrcEnv(src []string) {
+	envPrefix := viper.GetString("SrcEnvPrefix")
 	for index, val := range src {
-		varName := "SRC_" + strconv.Itoa(index)
+		varName := envPrefix + strconv.Itoa(index)
 		err := os.Setenv(varName, val)
 		if err != nil {
 			panic("Setenv failed")
@@ -90,8 +91,9 @@ func SetupSrcEnv(src []string) {
 }
 
 func CleanupSrcEnv(src []string) {
+	envPrefix := viper.GetString("SrcEnvPrefix")
 	for index, _ := range src {
-		varName := "SRC_" + strconv.Itoa(index)
+		varName := envPrefix + strconv.Itoa(index)
 		err := os.Unsetenv(varName)
 		if err != nil {
 			panic("Unsetenv failed")
@@ -112,6 +114,10 @@ func SetupViperConfig(workingDir string, destDir string) {
 		"../configfiles/mock.cfg.template")
 	viper.Set("PkiPath",
 		"../pki")
+	// Don't user the default of SRC_ to make sure that
+	// the test works in a barney context
+	viper.Set("SrcEnvPrefix",
+		"XXXSRC_")
 }
 
 // CheckEnv panics if the test hasn't setup the environment correctly

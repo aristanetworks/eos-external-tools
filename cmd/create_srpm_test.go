@@ -16,7 +16,8 @@ import (
 
 func testCreateSrpm(t *testing.T,
 	repoName string, expectedPkgName string, quiet bool,
-	expectedFiles []string) {
+	expectedFiles []string,
+	sources []string) {
 	t.Log("Create temporary working directory")
 	workingDir, err := os.MkdirTemp("", "createSrpm-wd-test")
 	if err != nil {
@@ -36,6 +37,10 @@ func testCreateSrpm(t *testing.T,
 	SetViperDefaults()
 	testutil.SetupViperConfig(workingDir, destDir)
 	defer viper.Reset()
+	if sources != nil {
+		testutil.SetupSrcEnv(sources)
+		defer testutil.CleanupSrcEnv(sources)
+	}
 
 	testutil.CheckEnv(t, rootCmd)
 
@@ -54,7 +59,8 @@ func TestCreateSrpmFromSrpm(t *testing.T) {
 	t.Log("Test createSrpm from SRPM")
 	testCreateSrpm(t,
 		"debugedit-1", "debugedit", false,
-		[]string{"debugedit-5.0-eng.src.rpm"})
+		[]string{"debugedit-5.0-eng.src.rpm"},
+		nil)
 }
 
 func TestCreateSrpmFromTarball(t *testing.T) {
@@ -63,9 +69,8 @@ func TestCreateSrpmFromTarball(t *testing.T) {
 		"code.arista.io/eos/tools/eext#deadbeefdeadbeefdead",
 		"code.arista.io/eos/eext/mrtparse#beefdeadbeefdeadbeef",
 	}
-	testutil.SetupSrcEnv(sources)
-	defer testutil.CleanupSrcEnv(sources)
 	testCreateSrpm(t,
 		"mrtparse-1", "mrtparse", true,
-		[]string{"mrtparse-2.0.1-deadbee_beefdea.src.rpm"})
+		[]string{"mrtparse-2.0.1-deadbee_beefdea.src.rpm"},
+		sources)
 }

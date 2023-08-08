@@ -269,7 +269,7 @@ func combineSrcEnv(
 	sep string,
 	maxSources int,
 	errPrefix util.ErrPrefix) (string, error) {
-	envPrefix := "SRC_"
+	envPrefix := viper.GetString("SrcEnvPrefix")
 	var releaseFields []string
 	for i := 0; i < maxSources; i++ {
 		envVar := envPrefix + strconv.Itoa(i)
