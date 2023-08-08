@@ -7,14 +7,17 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
 	"code.arista.io/eos/tools/eext/testutil"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 type ExpectedRpmFile struct {
@@ -22,22 +25,31 @@ type ExpectedRpmFile struct {
 	name string
 }
 
-func testMock(t *testing.T, destDir string,
+func runMockAndVerify(t *testing.T, destDir string,
 	repoName string, expectedPkgName string,
 	quiet bool,
-	expectedFiles []ExpectedRpmFile) {
+	expectedFiles []ExpectedRpmFile,
+	expectedTags map[string]string) {
 	args := []string{"mock", "--target", defaultArch(), "--repo", repoName}
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
 	for _, expectedFile := range expectedFiles {
 		fileAbsPath := filepath.Join(destDir, "RPMS",
 			expectedFile.arch, expectedPkgName, expectedFile.name)
 		require.FileExists(t, fileAbsPath)
+
+		for tag, expVal := range expectedTags {
+			qfField := fmt.Sprintf("--qf=%%{%s}", tag)
+			tagVal, rpmErr := util.CheckOutput("rpm", "-q", qfField, "-p", fileAbsPath)
+			require.NoError(t, rpmErr)
+			require.Equal(t, expVal, tagVal)
+		}
 	}
 }
 
-func TestMock(t *testing.T) {
-	t.Log("Create temporary working directory")
+func testMock(t *testing.T, setupSrcEnv bool) {
+	t.Logf("Starting TestMock variant: setupSrcEnv: %v", setupSrcEnv)
 
+	t.Log("Create temporary working directory")
 	workingDir, err := os.MkdirTemp("", "mock-test-wd")
 	if err != nil {
 		t.Fatal(err)
@@ -48,13 +60,6 @@ func TestMock(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(destDir)
-
-	var sources = []string{
-		"code.arista.io/eos/tools/eext#deadbeefdeadbeefdead",
-		"code.arista.io/eos/eext/mrtparse#beefdeadbeefdeadbeef",
-	}
-	testutil.SetupSrcEnv(sources)
-	defer testutil.CleanupSrcEnv(sources)
 
 	repoName := "mrtparse-1"
 	expectedPkgName := "mrtparse"
@@ -68,10 +73,40 @@ func TestMock(t *testing.T) {
 	require.NoError(t, cmdErr)
 	defer viper.Reset()
 
+	var sources = []string{
+		"code.arista.io/eos/tools/eext#deadbeefdeadbeefdead",
+		"code.arista.io/eos/eext/mrtparse#beefdeadbeefdeadbeef",
+	}
+
+	var expectedRelease string
+	var expectedDistribution string
+	if setupSrcEnv {
+		testutil.SetupSrcEnv(sources)
+		defer testutil.CleanupSrcEnv(sources)
+		expectedRelease = "deadbee_beefdea"
+		expectedDistribution = "eextsig=" + strings.Join(sources, ",")
+	} else {
+		expectedRelease = "eng"
+		expectedDistribution = "(none)"
+	}
+	expectedOutputFilename := "python3-mrtparse-2.0.1-" + expectedRelease + ".noarch.rpm"
+
 	t.Logf("WorkingDir: %s", workingDir)
 	t.Log("Test mock from SRPM")
 	expectedRpmFiles := []ExpectedRpmFile{
-		{"noarch", "python3-mrtparse-2.0.1-deadbee_beefdea.noarch.rpm"},
+		{"noarch", expectedOutputFilename},
 	}
-	testMock(t, destDir, repoName, expectedPkgName, false, expectedRpmFiles)
+	expectedTags := map[string]string{
+		"release":      expectedRelease,
+		"distribution": expectedDistribution,
+	}
+	runMockAndVerify(t, destDir, repoName, expectedPkgName, false,
+		expectedRpmFiles, expectedTags)
+
+	t.Logf("TestMock variant: setupSrcEnv: %v passed", setupSrcEnv)
+}
+
+func TestMock(t *testing.T) {
+	testMock(t, true)
+	testMock(t, false)
 }

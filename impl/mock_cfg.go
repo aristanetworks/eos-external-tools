@@ -35,6 +35,7 @@ type builderCommon struct {
 	isPkgSubdirInRepo bool
 	arch              string
 	rpmReleaseMacro   string
+	eextSignature     string
 	buildSpec         *manifest.Build
 	dnfConfig         *dnfconfig.DnfConfig
 	errPrefix         util.ErrPrefix
@@ -61,6 +62,12 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 	cfgBldr.templateData.Macros = make(map[string]string)
 	if cfgBldr.rpmReleaseMacro != "" {
 		cfgBldr.templateData.Macros["release"] = cfgBldr.rpmReleaseMacro
+	}
+
+	if cfgBldr.eextSignature != "" {
+		var eextsigTag string
+		eextsigTag = fmt.Sprintf("eextsig=%s", cfgBldr.eextSignature)
+		cfgBldr.templateData.Macros["distribution"] = eextsigTag
 	}
 
 	for _, repoBundleSpecifiedInManifest := range cfgBldr.buildSpec.RepoBundle {

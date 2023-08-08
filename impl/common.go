@@ -323,6 +323,20 @@ func getRpmReleaseMacro(pkgSpec *manifest.Package, errPrefix util.ErrPrefix) (
 		errPrefix)
 }
 
+// getEextSignature returns a signature of the Source and BuildRequires
+// It is derived by combining the SRC_<N> environment variables.
+func getEextSignature(errPrefix util.ErrPrefix) (
+	string, error) {
+	const sep string = ","
+	const maxSources int = 10
+
+	return combineSrcEnv(
+		false, 0,
+		sep,
+		maxSources,
+		errPrefix)
+}
+
 func setup() error {
 	if err := CheckEnv(); err != nil {
 		return err

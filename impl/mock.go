@@ -291,6 +291,11 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			return err
 		}
 
+		eextSignature, err := getEextSignature("impl.Mock:")
+		if err != nil {
+			return err
+		}
+
 		bldr := &mockBuilder{
 			builderCommon: &builderCommon{
 				pkg:               thisPkgName,
@@ -298,6 +303,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				isPkgSubdirInRepo: pkgSpec.Subdir,
 				arch:              arch,
 				rpmReleaseMacro:   rpmReleaseMacro,
+				eextSignature:     eextSignature,
 				buildSpec:         &pkgSpec.Build,
 				dnfConfig:         dnfConfig,
 				errPrefix:         errPrefix,
