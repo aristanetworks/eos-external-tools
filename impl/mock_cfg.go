@@ -57,6 +57,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 	cfgBldr.templateData.DefaultCommonCfg = map[string]string{
 		"target_arch": arch,
 		"root":        getMockChrootDirName(pkg, arch),
+		"resultdir":   getMockResultsDir(pkg, arch),
 	}
 
 	cfgBldr.templateData.Macros = make(map[string]string)

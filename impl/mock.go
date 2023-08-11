@@ -120,13 +120,9 @@ func (bldr *mockBuilder) createCfg() error {
 func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 	arch := bldr.arch
 	cfgArg := "--root=" + getMockCfgPath(bldr.pkg, arch)
-	targetArg := "--target=" + arch
-	resultArg := "--resultdir=" + getMockResultsDir(bldr.pkg, arch)
 
 	baseArgs := []string{
 		cfgArg,
-		targetArg,
-		resultArg,
 	}
 	if util.GlobalVar.Quiet {
 		baseArgs = append(baseArgs, "--quiet")
