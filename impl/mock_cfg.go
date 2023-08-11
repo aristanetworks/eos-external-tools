@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+
+	"golang.org/x/exp/maps"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
 	"code.arista.io/eos/tools/eext/manifest"
@@ -83,7 +86,10 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 			}
 		}
 
-		for repoName, _ := range bundleConfig.DnfRepoConfig {
+		// Iterate in sorted order to make config file generation non-random
+		reposInBundle := maps.Keys(bundleConfig.DnfRepoConfig)
+		sort.Strings(reposInBundle)
+		for _, repoName := range reposInBundle {
 			repoParams, err := bundleConfig.GetDnfRepoParams(
 				repoName,
 				arch,

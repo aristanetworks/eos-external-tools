@@ -20,7 +20,7 @@ func CheckEnv() error {
 	workingDir := viper.GetString("WorkingDir")
 	destDir := viper.GetString("DestDir")
 	mockCfgTemplate := viper.GetString("MockCfgTemplate")
-	dnfRepoConfigFile := viper.GetString("DnfRepoConfigFile")
+	dnfConfigFile := viper.GetString("DnfConfigFile")
 	pkiPath := viper.GetString("PkiPath")
 
 	var aggError string
@@ -60,8 +60,8 @@ func CheckEnv() error {
 		}
 	}
 
-	if err := util.CheckPath(dnfRepoConfigFile, false, false); err != nil {
-		aggError += fmt.Sprintf("\ntrouble with DnfRepoConfigFile: %s", err)
+	if err := util.CheckPath(dnfConfigFile, false, false); err != nil {
+		aggError += fmt.Sprintf("\ntrouble with DnfConfigFile: %s", err)
 		failed = true
 	}
 

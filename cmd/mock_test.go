@@ -63,8 +63,12 @@ func testMock(t *testing.T, setupSrcEnv bool) {
 
 	repoName := "mrtparse-1"
 	expectedPkgName := "mrtparse"
-	SetViperDefaults()
-	testutil.SetupViperConfig(workingDir, destDir)
+	testutil.SetupViperConfig(
+		"", // srcDir
+		workingDir, destDir,
+		"", // repoHost,
+		"", // dnfConfigFile
+	)
 
 	args := []string{"create-srpm", "--repo", repoName}
 	rootCmd.SetArgs(args)

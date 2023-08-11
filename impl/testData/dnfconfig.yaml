@@ -1,0 +1,34 @@
+---
+repo-bundle:
+  bundle-boo1:
+    gpgcheck: true
+    gpgkey: file:///keyfile
+    baseurl: "{{.Host}}/boo1-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
+    repo:
+      repo-roo11:
+        enabled: false
+      repo-roo12:
+        enabled: true
+      repo-roo13:
+        enabled: false
+      repo-roo14:
+        enabled: true
+    version-labels:
+      default: v1
+  bundle-boo2:
+    baseurl: "{{.Host}}/boo2-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
+    use-base-arch: true
+    repo:
+      repo-roo21:
+        enabled: true
+    version-labels:
+      default: v1
+      latest: v3
+  bundle-boo3:
+    baseurl: "{{.Host}}/boo3-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
+    repo:
+      repo-roo31:
+        enabled: true
+    version-labels:
+      default: v1
+      latest: v3

@@ -102,14 +102,32 @@ func CleanupSrcEnv(src []string) {
 }
 
 // SetupViperConfig sets up the viper config for the test
-func SetupViperConfig(workingDir string, destDir string) {
+func SetupViperConfig(
+	srcDir string,
+	workingDir string,
+	destDir string,
+	repoHost string,
+	dnfConfigFile string,
+) {
+	if srcDir == "" {
+		viper.Set("SrcDir", "testData")
+	} else {
+		viper.Set("SrcDir", srcDir)
+	}
 	viper.Set("WorkingDir", workingDir)
-	viper.Set("SrcDir", "testData")
 	viper.Set("DestDir", destDir)
-	viper.Set("DnfRepoHost",
-		"https://artifactory.infra.corp.arista.io")
-	viper.Set("DnfRepoConfigFile",
-		"../configfiles/dnfconfig.yaml")
+	if repoHost == "" {
+		viper.Set("DnfRepoHost",
+			"https://artifactory.infra.corp.arista.io")
+	} else {
+		viper.Set("DnfRepoHost", repoHost)
+	}
+	if dnfConfigFile == "" {
+		viper.Set("DnfConfigFile",
+			"../configfiles/dnfconfig.yaml")
+	} else {
+		viper.Set("DnfConfigFile", dnfConfigFile)
+	}
 	viper.Set("MockCfgTemplate",
 		"../configfiles/mock.cfg.template")
 	viper.Set("PkiPath",

@@ -34,8 +34,12 @@ func testCreateSrpm(t *testing.T,
 	defer os.RemoveAll(destDir)
 
 	t.Logf("DestDir: %s", destDir)
-	SetViperDefaults()
-	testutil.SetupViperConfig(workingDir, destDir)
+	testutil.SetupViperConfig(
+		"", // srcDir
+		workingDir, destDir,
+		"", // repoHost,
+		"", // dnfConfigFile
+	)
 	defer viper.Reset()
 	if sources != nil {
 		testutil.SetupSrcEnv(sources)

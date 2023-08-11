@@ -41,7 +41,7 @@ func SetViperDefaults() {
 	viper.SetDefault("MockCfgTemplate", "/usr/share/eext/mock.cfg.template")
 	viper.SetDefault("DnfRepoHost",
 		"http://artifactory.infra.corp.arista.io")
-	viper.SetDefault("DnfRepoConfigFile",
+	viper.SetDefault("DnfConfigFile",
 		"/usr/share/eext/dnfconfig.yaml")
 	viper.SetDefault("PkiPath",
 		"/etc/pki/eext")

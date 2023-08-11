@@ -1,0 +1,19 @@
+---
+package:
+  - name: pkg1
+    upstream-sources:
+      - source: http://foo.org/pkg1.src.rpm
+    type: srpm
+    build:
+      repo-bundle:
+        - name: bundle-boo1
+          override:
+            repo-roo11:
+              enabled: true
+              exclude: "roo1-rpm.rpm"
+            repo-roo12:
+              enabled: false
+        - name: bundle-boo2
+          version: v2
+        - name: bundle-boo2
+          version: latest

@@ -174,7 +174,7 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 // LoadDnfConfig loads the dnf repo config file, parses it and
 // returns the data structure
 func LoadDnfConfig() (*DnfConfig, error) {
-	cfgPath := viper.GetString("DnfRepoConfigFile")
+	cfgPath := viper.GetString("DnfConfigFile")
 	_, statErr := os.Stat(cfgPath)
 	if statErr != nil {
 		if os.IsNotExist(statErr) {

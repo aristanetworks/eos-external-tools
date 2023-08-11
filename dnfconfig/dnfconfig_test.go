@@ -21,7 +21,7 @@ func TestRepoConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	viper.Set("DnfRepoConfigFile", "testData/sample-dnfconfig.yaml")
+	viper.Set("DnfConfigFile", "testData/sample-dnfconfig.yaml")
 	viper.Set("DnfRepoHost", "http://foo.org")
 	defer viper.Reset()
 
@@ -80,6 +80,47 @@ func TestRepoConfig(t *testing.T) {
 			}
 		}
 	}
+
+	overrides := map[string]DnfRepoParamsOverride{
+		"repo1": DnfRepoParamsOverride{
+			Enabled: false,
+			Exclude: "foo",
+		},
+	}
+
+	repo1ParamsWithoutOverride, err := bundle1Config.GetDnfRepoParams(
+		"repo1",
+		"x86_64",
+		"",
+		nil,
+		util.ErrPrefix("TestRepoConfig-repo1-no-override"))
+	require.NoError(t, err)
+
+	expectedRepo1ParamsWithoutOverride := DnfRepoParams{
+		Name: "repo1",
+		BaseURL: fmt.Sprintf("http://foo.org/%s-%s/repo1/%s/",
+			"bundle1", "1", "x86_64"),
+		Enabled:  true,
+		GpgCheck: true,
+		GpgKey:   "file:///keyfile",
+		Priority: 2,
+	}
+	require.Equal(t,
+		expectedRepo1ParamsWithoutOverride,
+		*repo1ParamsWithoutOverride)
+
+	repo1ParamsWithOverride, err := bundle1Config.GetDnfRepoParams(
+		"repo1",
+		"x86_64",
+		"",
+		overrides,
+		util.ErrPrefix("TestRepoConfig-repo1-override"))
+	require.NoError(t, err)
+
+	expectedRepo1ParamsWithOverride := expectedRepo1ParamsWithoutOverride
+	expectedRepo1ParamsWithOverride.Enabled = false
+	expectedRepo1ParamsWithOverride.Exclude = "foo"
+	require.Equal(t, expectedRepo1ParamsWithOverride, *repo1ParamsWithOverride)
 
 	t.Log("BaseURL template test passed")
 }
