@@ -32,38 +32,54 @@ func TestRepoConfig(t *testing.T) {
 	require.Contains(t, dnfConfig.DnfRepoBundleConfig, "bundle1")
 	bundle1Config := dnfConfig.DnfRepoBundleConfig["bundle1"]
 	require.NotNil(t, bundle1Config)
+	require.NotNil(t, bundle1Config.baseURLFormatTemplate)
 	require.Contains(t, bundle1Config.DnfRepoConfig, "repo1")
 	repo1Config := bundle1Config.DnfRepoConfig["repo1"]
 	require.NotNil(t, repo1Config)
-	require.NotNil(t, repo1Config.baseURLFormatTemplate)
 	t.Log("Load test passed")
 
 	t.Log("Testing BaseURL template with x86_64")
 
 	expectedVersionMap := map[string]string{
-		"123":    "123",
-		"latest": "999",
+		"123":     "123",
+		"latest":  "999",
+		"default": "1",
 	}
 
 	for _, arch := range []string{"x86_64", "aarch64", "i686"} {
-		for _, useBaseArch := range []bool{false, true} {
+		for useBaseArch, bundleName := range map[bool]string{
+			false: "bundle1",
+			true:  "bundle2"} {
+			bundleConfig := dnfConfig.DnfRepoBundleConfig[bundleName]
+			require.NotNil(t, bundleConfig)
+
 			var expectedArch string
 			if arch == "i686" && useBaseArch {
 				expectedArch = "x86_64"
 			} else {
 				expectedArch = arch
 			}
-			for _, version := range []string{"123", "latest"} {
-				expectedVersion := expectedVersionMap[version]
-				expectedURL := fmt.Sprintf("http://foo.org/bar-%s/%s/",
-					expectedVersion, expectedArch)
-				baseURL, execErr := bundle1Config.BaseURL("repo1",
-					arch, version, useBaseArch,
-					util.ErrPrefix("TestRepoConfig"))
-				require.NoError(t, execErr)
-				require.Equal(t, baseURL, expectedURL)
+			for _, version := range []string{"123", "latest", ""} {
+				var expectedVersion string
+				if version != "" {
+					expectedVersion = expectedVersionMap[version]
+				} else {
+					expectedVersion = expectedVersionMap["default"]
+				}
+				t.Logf("Testing case: Arch %s Bundle %s version %s",
+					arch, bundleName, version)
+				expectedURL := fmt.Sprintf("http://foo.org/%s-%s/repo1/%s/",
+					bundleName, expectedVersion, expectedArch)
+				repoParams, err := bundleConfig.GetDnfRepoParams("repo1",
+					arch,
+					version,
+					nil,
+					util.ErrPrefix("TestRepoConfig-repo1"))
+				require.NoError(t, err)
+				require.Equal(t, expectedURL, repoParams.BaseURL)
 			}
 		}
 	}
+
 	t.Log("BaseURL template test passed")
 }

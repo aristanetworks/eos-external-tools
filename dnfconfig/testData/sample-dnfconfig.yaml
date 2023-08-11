@@ -1,9 +1,25 @@
 ---
 repo-bundle:
   bundle1:
+    gpgcheck: true
+    gpgkey: file:///keyfile
+    baseurl: "{{.Host}}/bundle1-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
     repo:
       repo1:
-        baseurl: "{{.Host}}/bar-{{.Version}}/{{.Arch}}/"
         enabled: true
+      repo2:
+        enabled: false
     version-labels:
       latest: 999
+      default: 1
+  bundle2:
+    baseurl: "{{.Host}}/bundle2-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
+    use-base-arch: true
+    repo:
+      repo1:
+        enabled: true
+      repo2:
+        enabled: false
+    version-labels:
+      latest: 999
+      default: 1

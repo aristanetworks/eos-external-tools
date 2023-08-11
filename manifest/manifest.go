@@ -10,17 +10,16 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"code.arista.io/eos/tools/eext/dnfconfig"
 	"code.arista.io/eos/tools/eext/util"
 )
 
 // Repo spec
 // mock cfg dnf.conf is generated from this
 type RepoBundle struct {
-	Name        string   `yaml:"name"`
-	Version     string   `yaml:"version"`
-	UseBaseArch bool     `yaml:"use-base-arch"`
-	Enable      []string `yaml:"enable"`
-	Disable     []string `yaml:"disable"`
+	Name                  string                                     `yaml:"name"`
+	VersionOverride       string                                     `yaml:"version"`
+	DnfRepoParamsOverride map[string]dnfconfig.DnfRepoParamsOverride `yaml:"override"`
 }
 
 // Build spec

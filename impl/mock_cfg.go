@@ -13,18 +13,11 @@ import (
 	"code.arista.io/eos/tools/eext/util"
 )
 
-// RepoData holds dnf repo name and baseurl for mock.cfg generation
-type RepoData struct {
-	Name    string
-	BaseURL string
-	Enabled bool
-}
-
 // MockCfgTemplateData is used to execute the mock config template
 type MockCfgTemplateData struct {
 	DefaultCommonCfg map[string]string
 	Macros           map[string]string
-	Repo             []RepoData
+	Repo             []*dnfconfig.DnfRepoParams
 	Includes         []string
 }
 
@@ -73,10 +66,8 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 
 	for _, repoBundleSpecifiedInManifest := range cfgBldr.buildSpec.RepoBundle {
 		bundleName := repoBundleSpecifiedInManifest.Name
-		bundleVersion := repoBundleSpecifiedInManifest.Version
-		useBaseArch := repoBundleSpecifiedInManifest.UseBaseArch
-		forceEnabledRepos := repoBundleSpecifiedInManifest.Enable
-		forceDisabledRepos := repoBundleSpecifiedInManifest.Disable
+		bundleVersionOverride := repoBundleSpecifiedInManifest.VersionOverride
+		bundleRepoOverrides := repoBundleSpecifiedInManifest.DnfRepoParamsOverride
 
 		bundleConfig, found := cfgBldr.dnfConfig.DnfRepoBundleConfig[bundleName]
 		if !found {
@@ -84,31 +75,26 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 				cfgBldr.errPrefix, bundleName)
 		}
 
+		for overrideRepo, _ := range bundleRepoOverrides {
+			_, isValidRepo := bundleConfig.DnfRepoConfig[overrideRepo]
+			if !isValidRepo {
+				return fmt.Errorf("%sBad repo-override %s specified in manifest",
+					cfgBldr.errPrefix, overrideRepo)
+			}
+		}
+
 		for repoName, _ := range bundleConfig.DnfRepoConfig {
-			baseURL, err := bundleConfig.BaseURL(
+			repoParams, err := bundleConfig.GetDnfRepoParams(
 				repoName,
 				arch,
-				bundleVersion,
-				useBaseArch,
+				bundleVersionOverride,
+				bundleRepoOverrides,
 				cfgBldr.errPrefix)
-
 			if err != nil {
-				return fmt.Errorf("%sError deriving baseURL in bundle %s: %s",
-					cfgBldr.errPrefix, bundleName, err)
+				return err
 			}
 
-			enabled, err := bundleConfig.Enabled(
-				repoName,
-				forceEnabledRepos,
-				forceDisabledRepos,
-				cfgBldr.errPrefix)
-
-			repoData := RepoData{
-				Name:    repoName,
-				BaseURL: baseURL,
-				Enabled: enabled,
-			}
-			cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoData)
+			cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, repoParams)
 		}
 	}
 

@@ -2,18 +2,17 @@
 # yamllint disable rule:line-length
 repo-bundle:
   el9:
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
+    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os"
     repo:
       AppStream:
-        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/AppStream/{{.Arch}}/os"
         enabled: true
       BaseOS:
-        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/BaseOS/{{.Arch}}/os"
         enabled: true
       CRB:
-        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/CRB/{{.Arch}}/os"
         enabled: true
       devel:
-        baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/devel/{{.Arch}}/os"
         enabled: false
     version-labels:
       default: 9.1
@@ -22,7 +21,9 @@ repo-bundle:
 
   # epel9 is not version controlled
   epel9:
+    gpgcheck: true
+    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9
+    baseurl: "{{.Host}}/artifactory/centos-9-epel/{{.Arch}}/"
     repo:
       epel:
-        baseurl: "{{.Host}}/artifactory/centos-9-epel/{{.Arch}}/"
         enabled: true

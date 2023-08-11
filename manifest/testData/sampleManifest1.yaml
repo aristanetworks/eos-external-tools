@@ -11,6 +11,10 @@ package:
       repo-bundle:
         - name: foo
           version: v1
+          override:
+            rfoo:
+              enabled: true
+              exclude: "rfoo.rpm"
         - name: bar
   - name: tcpdump
     upstream-sources:
