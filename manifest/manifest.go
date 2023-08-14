@@ -27,6 +27,7 @@ type RepoBundle struct {
 type Build struct {
 	Include    []string     `yaml:"include"`
 	RepoBundle []RepoBundle `yaml:"repo-bundle"`
+	LocalDeps  bool         `yaml:"local-deps"`
 }
 
 // UpstreamSrcSignature specifies detached signature file for tarball

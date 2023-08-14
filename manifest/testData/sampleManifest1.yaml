@@ -28,3 +28,4 @@ package:
         - name: foo
           version: v1
         - name: bar
+      local-deps: true

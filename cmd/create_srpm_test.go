@@ -37,6 +37,7 @@ func testCreateSrpm(t *testing.T,
 	testutil.SetupViperConfig(
 		"", // srcDir
 		workingDir, destDir,
+		"", // depsDir
 		"", // repoHost,
 		"", // dnfConfigFile
 	)

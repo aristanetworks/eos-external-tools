@@ -63,6 +63,11 @@ func getMockBaseDir(pkg string, arch string) string {
 		fmt.Sprintf("mock-%s", arch))
 }
 
+func getMockDepsDir(pkg string, arch string) string {
+	return filepath.Join(getMockBaseDir(pkg, arch),
+		"mock-deps")
+}
+
 func getMockCfgDir(pkg string, arch string) string {
 	return filepath.Join(getMockBaseDir(pkg, arch),
 		"mock-cfg")

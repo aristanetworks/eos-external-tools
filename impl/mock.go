@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/spf13/viper"
+
 	"code.arista.io/eos/tools/eext/dnfconfig"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
@@ -92,6 +94,36 @@ func (bldr *mockBuilder) clean() error {
 	if err := util.RemoveDirs(dirs, bldr.errPrefix); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (bldr *mockBuilder) setupDeps() error {
+	bldr.log("starting")
+	depsDir := viper.GetString("DepsDir")
+
+	// See if depsDir exists
+	if err := util.CheckPath(depsDir, true, false); err != nil {
+		return fmt.Errorf("%sProblem with DepsDir: %s", bldr.errPrefix, err)
+	}
+
+	mockDepsDir := getMockDepsDir(bldr.pkg, bldr.arch)
+	if err := util.MaybeCreateDirWithParents(mockDepsDir, bldr.errPrefix); err != nil {
+		return err
+	}
+
+	depsToCopy := filepath.Join(depsDir, "*")
+	if err := util.CopyToDestDir(
+		depsToCopy, mockDepsDir, bldr.errPrefix); err != nil {
+		return err
+	}
+
+	createRepoErr := util.RunSystemCmd("createrepo", mockDepsDir)
+	if createRepoErr != nil {
+		return fmt.Errorf("%screaterepo %s errored out with %s",
+			bldr.errPrefix, mockDepsDir, createRepoErr)
+	}
+
+	bldr.log("successful")
 	return nil
 }
 
@@ -217,6 +249,13 @@ func (bldr *mockBuilder) runStages() error {
 	bldr.setupStageErrPrefix("clean")
 	if err := bldr.clean(); err != nil {
 		return err
+	}
+
+	if bldr.buildSpec.LocalDeps {
+		bldr.setupStageErrPrefix("setupDeps")
+		if err := bldr.setupDeps(); err != nil {
+			return err
+		}
 	}
 
 	bldr.setupStageErrPrefix("createCfg")

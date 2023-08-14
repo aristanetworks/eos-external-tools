@@ -106,6 +106,7 @@ func SetupViperConfig(
 	srcDir string,
 	workingDir string,
 	destDir string,
+	depsDir string,
 	repoHost string,
 	dnfConfigFile string,
 ) {
@@ -116,6 +117,7 @@ func SetupViperConfig(
 	}
 	viper.Set("WorkingDir", workingDir)
 	viper.Set("DestDir", destDir)
+	viper.Set("DepsDir", depsDir)
 	if repoHost == "" {
 		viper.Set("DnfRepoHost",
 			"https://artifactory.infra.corp.arista.io")

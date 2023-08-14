@@ -66,6 +66,7 @@ func testMock(t *testing.T, setupSrcEnv bool) {
 	testutil.SetupViperConfig(
 		"", // srcDir
 		workingDir, destDir,
+		"", // depsDir
 		"", // repoHost,
 		"", // dnfConfigFile
 	)

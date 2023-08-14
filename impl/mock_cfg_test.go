@@ -19,7 +19,7 @@ import (
 	"code.arista.io/eos/tools/eext/util"
 )
 
-func TestMockConfig(t *testing.T) {
+func testMockConfig(t *testing.T, chained bool) {
 	t.Log("Create temporary working directory")
 	testWorkingDir, err := os.MkdirTemp("", "mock-cfg-test")
 	if err != nil {
@@ -43,6 +43,7 @@ func TestMockConfig(t *testing.T) {
 		srcDir,
 		workDir,
 		destDir,
+		"",                        // depsDir
 		"https://foo.org",         // repoHost
 		"testData/dnfconfig.yaml", //dnfConfigFile
 	)
@@ -52,6 +53,11 @@ func TestMockConfig(t *testing.T) {
 	manifestObj, err := manifest.LoadManifest(pkg)
 	require.NoError(t, err)
 	require.NotNil(t, manifestObj)
+
+	// Force chained attr in manifest
+	if chained {
+		manifestObj.Package[0].Build.LocalDeps = true
+	}
 
 	t.Log("Load dnfconfig.yaml")
 	dnfConfig, loadErr := dnfconfig.LoadDnfConfig()
@@ -97,8 +103,12 @@ func TestMockConfig(t *testing.T) {
 
 	if templateExecError := expectedMockCfgTemplate.Execute(
 		generatedExpectedMockCfgFileHandle,
-		struct{ TestWorkingDir string }{
+		struct {
+			TestWorkingDir string
+			Chained        bool
+		}{
 			testWorkingDir,
+			chained,
 		}); templateExecError != nil {
 		panic(fmt.Sprintf("Error %s executing expectedMockCfgTemplate template",
 			templateExecError))
@@ -109,4 +119,12 @@ func TestMockConfig(t *testing.T) {
 		t.Errorf("Mock configuration differes from expected one: diff -u %s %s failed",
 			generatedExpectedMockCfgPath, outFilePath)
 	}
+}
+
+func TestMockConfigUnchained(t *testing.T) {
+	testMockConfig(t, false)
+}
+
+func TestMockConfigChained(t *testing.T) {
+	testMockConfig(t, true)
 }

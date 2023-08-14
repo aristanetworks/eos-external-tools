@@ -33,10 +33,9 @@ func SetViperDefaults() {
 	// If we need multiple repos, we need to specify SrcDir as their base directory,
 	// and each repo is cloned in a subdir.
 	viper.SetDefault("SrcDir", "")
-
 	viper.SetDefault("WorkingDir", "/var/eext")
-
 	viper.SetDefault("DestDir", "/dest")
+	viper.SetDefault("DepsDir", "/RPMS")
 
 	viper.SetDefault("MockCfgTemplate", "/usr/share/eext/mock.cfg.template")
 	viper.SetDefault("DnfRepoHost",

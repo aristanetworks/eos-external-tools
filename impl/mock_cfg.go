@@ -104,6 +104,17 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 		}
 	}
 
+	if cfgBldr.buildSpec.LocalDeps {
+		localRepo := &dnfconfig.DnfRepoParams{
+			Name:     "local-deps",
+			BaseURL:  "file://" + getMockDepsDir(cfgBldr.pkg, arch),
+			Enabled:  true,
+			GpgCheck: false,
+			Priority: dnfconfig.RepoHighPriority,
+		}
+		cfgBldr.templateData.Repo = append(cfgBldr.templateData.Repo, localRepo)
+	}
+
 	mockCfgDir := getMockCfgDir(pkg, arch)
 	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.errPrefix); err != nil {
 		return err
