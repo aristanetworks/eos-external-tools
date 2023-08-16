@@ -124,6 +124,7 @@ func getDetachedSigDir() string {
 
 // checkRepo checks that a repo is sane.
 func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
+	isUnmodified bool,
 	errPrefix util.ErrPrefix) error {
 	repoDir := util.GetRepoDir(repo)
 	if err := util.CheckPath(repoDir, true, false); err != nil {
@@ -138,19 +139,33 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 				errPrefix, pkgDirInRepo, err)
 		}
 		pkgSpecDirInRepo := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
-		if err := util.CheckPath(pkgSpecDirInRepo, true, false); err != nil {
-			return fmt.Errorf("%sspecs-dir %s not found in repo/pkg: %s",
-				errPrefix, pkgSpecDirInRepo, err)
-		}
-		specFiles, _ := filepath.Glob(filepath.Join(pkgSpecDirInRepo, "*.spec"))
-		numSpecFiles := len(specFiles)
-		if numSpecFiles == 0 {
-			return fmt.Errorf("%sNo *.spec files found in %s",
-				errPrefix, pkgSpecDirInRepo)
-		}
-		if numSpecFiles > 1 {
-			return fmt.Errorf("%sMultiple*.spec files %s found in %s",
-				errPrefix, strings.Join(specFiles, ","), pkgSpecDirInRepo)
+		if !isUnmodified {
+			if err := util.CheckPath(pkgSpecDirInRepo, true, false); err != nil {
+				return fmt.Errorf("%sspecs-dir %s not found in repo/pkg: %s",
+					errPrefix, pkgSpecDirInRepo, err)
+			}
+			specFiles, _ := filepath.Glob(filepath.Join(pkgSpecDirInRepo, "*.spec"))
+			numSpecFiles := len(specFiles)
+			if numSpecFiles == 0 {
+				return fmt.Errorf("%sNo *.spec files found in %s",
+					errPrefix, pkgSpecDirInRepo)
+			}
+			if numSpecFiles > 1 {
+				return fmt.Errorf("%sMultiple*.spec files %s found in %s",
+					errPrefix, strings.Join(specFiles, ","), pkgSpecDirInRepo)
+			}
+		} else {
+			if err := util.CheckPath(pkgSpecDirInRepo, true, false); err == nil {
+				return fmt.Errorf(
+					"%sNo spec directory expected to be present for package %s with type unmodified-srpm",
+					errPrefix, pkg)
+			}
+			pkgSourcesDirInRepo := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
+			if err := util.CheckPath(pkgSourcesDirInRepo, true, false); err == nil {
+				return fmt.Errorf(
+					"%sNo sources directory expected to be present for package %s with type unmodified-srpm",
+					errPrefix, pkg)
+			}
 		}
 	}
 	return nil

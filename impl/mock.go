@@ -291,7 +291,10 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 	}
 
 	// Error out early if source is not available.
-	if err := checkRepo(repo, "", false,
+	if err := checkRepo(repo,
+		"",    // pkg
+		false, // isPkgSubdirInRepo
+		false, // isUnmodified
 		util.ErrPrefix("mockBuilder: ")); err != nil {
 		return err
 	}

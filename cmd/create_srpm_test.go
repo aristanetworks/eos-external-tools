@@ -79,3 +79,15 @@ func TestCreateSrpmFromTarball(t *testing.T) {
 		[]string{"mrtparse-2.0.1-deadbee_beefdea.src.rpm"},
 		sources)
 }
+
+func TestCreateSrpmUnmodified(t *testing.T) {
+	t.Log("Test createSrpm for unmodified")
+	var sources = []string{
+		"code.arista.io/eos/tools/eext#deadbeefdeadbeefdead",
+		"code.arista.io/eos/eext/mrtparse#beefdeadbeefdeadbeef",
+	}
+	testCreateSrpm(t,
+		"debugedit-2", "debugedit", true,
+		[]string{"debugedit-5.0-3.el9.src.rpm"},
+		sources)
+}

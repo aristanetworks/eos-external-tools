@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
 )
@@ -125,7 +127,7 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 					bldr.errPrefix, pubKeyPath)
 			}
 			upstreamSrc.pubKeyPath = pubKeyPath
-		} else if bldr.pkgSpec.Type == "srpm" {
+		} else if bldr.pkgSpec.Type == "srpm" || bldr.pkgSpec.Type == "unmodified-srpm" {
 			// We don't expect SRPMs to have detached signature or
 			// to be validated with a public-key specified in manifest.
 			if signatureSpec.DetachedSig != "" {
@@ -145,24 +147,35 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 	return nil
 }
 
-// installs upstream SRPM to create a rpmbuild tree
-// also checks upstream SRPM signature
-func (bldr *srpmBuilder) installUpstreamSrpm() error {
-
+// Returns downloaded upstrem srpm path
+// Expects fetchUpstream to have been called before to setup bldr.upstreamSrc
+func (bldr *srpmBuilder) upstreamSrpmDownloadPath() string {
 	if len(bldr.upstreamSrc) != 1 {
-		return fmt.Errorf("%sFor building SRPMs, we expect exactly one upstream source to be specified",
-			bldr.errPrefix)
+		panic(fmt.Sprintf("%sFor building SRPMs, we expect exactly one upstream source to be specified",
+			bldr.errPrefix))
 	}
 
 	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
 	upstreamSrc := &bldr.upstreamSrc[0]
-	upstreamSrpmFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+	downloadedFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+	if err := util.CheckPath(downloadedFilePath, false, false); err != nil {
+		panic(fmt.Sprintf("%sFile not found and expected path: %s",
+			bldr.errPrefix, downloadedFilePath))
+	}
+	return downloadedFilePath
+}
+
+// verifies upstream srpm has right extension and is properly signed
+func (bldr *srpmBuilder) verifyUpstreamSrpm() error {
+
+	upstreamSrpmFilePath := bldr.upstreamSrpmDownloadPath()
 
 	if !strings.HasSuffix(upstreamSrpmFilePath, ".src.rpm") {
 		return fmt.Errorf("%sUpstream SRPM file %s doesn't have valid extension",
 			bldr.errPrefix, upstreamSrpmFilePath)
 	}
 
+	upstreamSrc := bldr.upstreamSrc[0]
 	if upstreamSrc.sigFile != "" {
 		return fmt.Errorf("%sUnexpected: detached signature specified for SRPM",
 			bldr.errPrefix)
@@ -174,6 +187,41 @@ func (bldr *srpmBuilder) installUpstreamSrpm() error {
 		}
 	}
 
+	return nil
+}
+
+// verifies upstream srpm has right extension and is properly signed
+func (bldr *srpmBuilder) verifyUpstream() error {
+	bldr.log("starting")
+	if bldr.pkgSpec.Type == "srpm" || bldr.pkgSpec.Type == "unmodified-srpm" {
+		if err := bldr.verifyUpstreamSrpm(); err != nil {
+			return err
+		}
+	} else {
+		downloadDir := getDownloadDir(bldr.pkgSpec.Name)
+		for _, upstreamSrc := range bldr.upstreamSrc {
+			upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+
+			if !upstreamSrc.skipSigCheck {
+				upstreamSigFilePath := filepath.Join(downloadDir, upstreamSrc.sigFile)
+				if err := util.VerifyTarballSignature(
+					upstreamSourceFilePath,
+					upstreamSigFilePath,
+					upstreamSrc.pubKeyPath,
+					bldr.errPrefix); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	bldr.log("successful")
+	return nil
+}
+
+// installs upstream SRPM to create a rpmbuild tree
+// also checks upstream SRPM signature
+func (bldr *srpmBuilder) setupRpmbuildTreeSrpm() error {
+	upstreamSrpmFilePath := bldr.upstreamSrpmDownloadPath()
 	rpmbuildDir := getRpmbuildDir(bldr.pkgSpec.Name)
 	rpmInstArgs := []string{
 		"--define", fmt.Sprintf("_topdir %s", rpmbuildDir),
@@ -203,7 +251,13 @@ func (bldr *srpmBuilder) installUpstreamSrpm() error {
 // Create rpmbuild tree similar to an SRPM install
 // for a SRPM build out of tarballs.
 // also checks tarball signature
-func (bldr *srpmBuilder) setupRpmbuildTree() error {
+func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
+
+	supportedTypes := []string{"tarball", "standalone"}
+	if !slices.Contains(supportedTypes, bldr.pkgSpec.Type) {
+		panic(fmt.Sprintf("%ssetupRpmbuildTreeNonSrpm called for unsupported type %s",
+			bldr.errPrefix, bldr.pkgSpec.Type))
+	}
 
 	// Now copy tarball upstream sources to SOURCES
 	rpmbuildDir := getRpmbuildDir(bldr.pkgSpec.Name)
@@ -212,24 +266,15 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 		return err
 	}
 
-	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
-	for _, upstreamSrc := range bldr.upstreamSrc {
-		upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+	if bldr.pkgSpec.Type == "tarball" {
+		downloadDir := getDownloadDir(bldr.pkgSpec.Name)
+		for _, upstreamSrc := range bldr.upstreamSrc {
+			upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
 
-		if !upstreamSrc.skipSigCheck {
-			upstreamSigFilePath := filepath.Join(downloadDir, upstreamSrc.sigFile)
-			if err := util.VerifyTarballSignature(
-				upstreamSourceFilePath,
-				upstreamSigFilePath,
-				upstreamSrc.pubKeyPath,
+			if err := util.CopyToDestDir(upstreamSourceFilePath, rpmbuildSourcesDir,
 				bldr.errPrefix); err != nil {
 				return err
 			}
-		}
-
-		if err := util.CopyToDestDir(upstreamSourceFilePath, rpmbuildSourcesDir,
-			bldr.errPrefix); err != nil {
-			return err
 		}
 	}
 
@@ -246,27 +291,32 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 // do this automatically.
 // If upstream source is tarball, the directories are created in this method
 // and the tarball is copied to SOURCES.
-func (bldr *srpmBuilder) prepAndPatchUpstream() error {
+func (bldr *srpmBuilder) setupRpmbuildTree() error {
 	bldr.log("starting")
+
+	if bldr.pkgSpec.Type == "unmodified-srpm" {
+		bldr.log("skipping")
+		return nil
+	}
 
 	repo := bldr.repo
 	pkg := bldr.pkgSpec.Name
 	isPkgSubdirInRepo := bldr.pkgSpec.Subdir
 
 	if bldr.pkgSpec.Type == "srpm" {
-		if err := bldr.installUpstreamSrpm(); err != nil {
+		if err := bldr.setupRpmbuildTreeSrpm(); err != nil {
 			return err
 		}
-	} else if bldr.pkgSpec.Type == "tarball" {
-		if err := bldr.setupRpmbuildTree(); err != nil {
+	} else if bldr.pkgSpec.Type == "tarball" || bldr.pkgSpec.Type == "standalone" {
+		if err := bldr.setupRpmbuildTreeNonSrpm(); err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("%sInvalid type %s in manifest",
-			bldr.errPrefix, bldr.pkgSpec.Type)
+		panic(fmt.Sprintf("%ssetupRpmbuildTree called for unsupported type %s",
+			bldr.errPrefix, bldr.pkgSpec.Type))
 	}
 
-	// Now copy all sources
+	// Now copy all sources from git repo to rpmbuild directory
 	rpmbuildDir := getRpmbuildDir(pkg)
 	rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
 	repoSourcesDir := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
@@ -277,7 +327,7 @@ func (bldr *srpmBuilder) prepAndPatchUpstream() error {
 		return err
 	}
 
-	// Now copy the spec file
+	// Now copy the spec file from git trepo
 	rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
 	repoSpecsDir := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
 	if err := util.CopyToDestDir(
@@ -293,6 +343,12 @@ func (bldr *srpmBuilder) prepAndPatchUpstream() error {
 
 func (bldr *srpmBuilder) build(prep bool) error {
 	bldr.log("starting")
+
+	if bldr.pkgSpec.Type == "unmodified-srpm" {
+		bldr.log("skipping")
+		return nil
+	}
+
 	pkg := bldr.pkgSpec.Name
 	rpmbuildDir := getRpmbuildDir(pkg)
 	specsDir := filepath.Join(rpmbuildDir, "SPECS")
@@ -337,11 +393,17 @@ func (bldr *srpmBuilder) build(prep bool) error {
 	return nil
 }
 
-func (bldr *srpmBuilder) copyResultsToDestDir() error {
-	bldr.log("starting")
-	pkg := bldr.pkgSpec.Name
+func (bldr *srpmBuilder) copyDownloadedUpstreamSrpmToDestDir() error {
+	pkgSrpmsDestDir := getPkgSrpmsDestDir(bldr.pkgSpec.Name)
+	upstreamSrpmFilePath := bldr.upstreamSrpmDownloadPath()
+	err := util.CopyToDestDir(
+		upstreamSrpmFilePath, pkgSrpmsDestDir,
+		bldr.errPrefix)
+	return err
+}
 
-	// Copy newly built SRPM to dest dir
+func (bldr *srpmBuilder) copyBuiltSrpmToDestDir() error {
+	pkg := bldr.pkgSpec.Name
 	srpmsRpmbuildDir := getSrpmsRpmbuildDir(pkg)
 	if util.CheckPath(srpmsRpmbuildDir, true, false) != nil {
 		return fmt.Errorf("%sSRPMS directory %s not found after build",
@@ -362,17 +424,35 @@ func (bldr *srpmBuilder) copyResultsToDestDir() error {
 	}
 
 	pkgSrpmsDestDir := getPkgSrpmsDestDir(pkg)
-	if err := util.MaybeCreateDirWithParents(
-		pkgSrpmsDestDir, bldr.errPrefix); err != nil {
-		return nil
-	}
 	if err := util.CopyToDestDir(
 		filenames[0], pkgSrpmsDestDir,
 		bldr.errPrefix); err != nil {
 		return err
 	}
-	bldr.log("successful")
 	return nil
+}
+
+func (bldr *srpmBuilder) copyResultsToDestDir() error {
+	bldr.log("starting")
+
+	pkgSrpmsDestDir := getPkgSrpmsDestDir(bldr.pkgSpec.Name)
+	if err := util.MaybeCreateDirWithParents(
+		pkgSrpmsDestDir, bldr.errPrefix); err != nil {
+		return nil
+	}
+
+	var err error
+	if bldr.pkgSpec.Type == "unmodified-srpm" {
+		err = bldr.copyDownloadedUpstreamSrpmToDestDir()
+	} else {
+		err = bldr.copyBuiltSrpmToDestDir()
+
+	}
+	if err == nil {
+		bldr.log("successful")
+	}
+
+	return err
 }
 
 // This is the entry point to srpmBuilder
@@ -386,13 +466,20 @@ func (bldr *srpmBuilder) runStages() error {
 		return err
 	}
 
-	bldr.setupStageErrPrefix("fetchUpstream")
-	if err := bldr.fetchUpstream(); err != nil {
-		return err
+	if bldr.pkgSpec.Type != "standalone" {
+		bldr.setupStageErrPrefix("fetchUpstream")
+		if err := bldr.fetchUpstream(); err != nil {
+			return err
+		}
+
+		bldr.setupStageErrPrefix("verifyUpstream")
+		if err := bldr.verifyUpstream(); err != nil {
+			return err
+		}
 	}
 
-	bldr.setupStageErrPrefix("prepAndPatchUpstream")
-	if err := bldr.prepAndPatchUpstream(); err != nil {
+	bldr.setupStageErrPrefix("setupRpmbuildTree")
+	if err := bldr.setupRpmbuildTree(); err != nil {
 		return err
 	}
 
@@ -427,7 +514,10 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) e
 	}
 
 	// Error out early if source is not available.
-	if err := checkRepo(repo, "", false,
+	if err := checkRepo(repo,
+		"",    // pkg
+		false, // isPkgSubdirInRepo
+		false, // isUnmodified
 		util.ErrPrefix("srpmBuilder: ")); err != nil {
 		return err
 	}
@@ -453,8 +543,15 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) e
 			errPrefixBase: errPrefixBase,
 		}
 		bldr.setupStageErrPrefix("")
+
+		isUnmodified := (pkgSpec.Type == "unmodified-srpm")
 		// Error out early if pkg-specific repo is not sane
-		if err := checkRepo(repo, thisPkgName, pkgSpec.Subdir, bldr.errPrefix); err != nil {
+		if err := checkRepo(
+			repo,
+			thisPkgName,
+			pkgSpec.Subdir,
+			isUnmodified,
+			bldr.errPrefix); err != nil {
 			return err
 		}
 		if err := bldr.runStages(); err != nil {

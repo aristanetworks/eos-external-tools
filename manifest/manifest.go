@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v2"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
@@ -66,6 +67,27 @@ type Manifest struct {
 	Package []Package `yaml:"package"`
 }
 
+func (m Manifest) sanityCheck() error {
+	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone"}
+
+	for _, pkgSpec := range m.Package {
+		if pkgSpec.Name == "" {
+			return fmt.Errorf("Package name not specified in manifest")
+		}
+
+		if !slices.Contains(allowedPkgTypes, pkgSpec.Type) {
+			return fmt.Errorf("Bad type '%s' for package %s",
+				pkgSpec.Name, pkgSpec.Type)
+		}
+
+		if pkgSpec.Build.RepoBundle == nil {
+			return fmt.Errorf("No repo-bundle specified for Build in package %s",
+				pkgSpec.Name)
+		}
+	}
+	return nil
+}
+
 // LoadManifest loads the manifest file for the repo to memory and
 // returns the data structure
 func LoadManifest(repo string) (*Manifest, error) {
@@ -81,6 +103,11 @@ func LoadManifest(repo string) (*Manifest, error) {
 	parseErr := yaml.UnmarshalStrict(yamlContents, &manifest)
 	if parseErr != nil {
 		return nil, fmt.Errorf("manifest.LoadManifest: Error parsing yaml file %s: %s", yamlPath, parseErr)
+	}
+
+	if sanityErr := manifest.sanityCheck(); sanityErr != nil {
+		return nil, fmt.Errorf("manifest.LoadManifest: Manifest sanity check error: %s",
+			sanityErr)
 	}
 	return &manifest, nil
 }
