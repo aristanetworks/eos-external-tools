@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 package:
   - name: debugedit
     upstream-sources:
