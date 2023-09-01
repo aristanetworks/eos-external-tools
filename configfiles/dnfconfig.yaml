@@ -19,11 +19,12 @@ repo-bundle:
       # Don't use latest if you want reproducible builds, this is just for experiments
       latest: 9.2
 
-  # epel9 is not version controlled
-  epel9:
+  epel9-subset:
     gpgcheck: true
-    gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9
-    baseurl: "{{.Host}}/artifactory/centos-9-epel/{{.Arch}}/"
+    gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
+    baseurl: "{{.Host}}/artifactory/eext-sources/epel9-frozen-subsets/{{.Version}}/"
     repo:
-      epel:
+      epel9:
         enabled: true
+    version-labels:
+      default: v20230901-1

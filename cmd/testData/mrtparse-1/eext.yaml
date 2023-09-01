@@ -14,4 +14,3 @@ package:
       repo-bundle:
         - name: el9
           version: default
-        - name: epel9
