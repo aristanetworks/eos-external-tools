@@ -17,8 +17,8 @@ images:
           export DNF_HOST="https://artifactory.infra.corp.arista.io/artifactory"
           export DNF_ARCH="$(arch)"
           export DNF_DISTRO_REPO="alma-vault/9.1"
-          export DNF_EXTERNAL_DEPS_REPO="eext-sources/eext-externaldeps"
-          export DNF_EXTERNAL_DEPS_REPO_VERSION="v20230820-1"
+          export DNF_EPEL9_REPO="eext-sources/epel9-frozen-subsets"
+          export DNF_EPEL9_REPO_VERSION="v20230901-1"
           echo '#!/bin/sh
           microdnf --assumeyes --installroot=/dest --noplugins --config=/etc/dnf/dnf.conf \
                    --setopt=cachedir=/var/cache/microdnf --setopt=reposdir=/etc/yum.repos.d \
@@ -27,8 +27,8 @@ images:
           chmod 755 /usr/bin/install-rpms
           rm -rf /etc/yum.repos.d
           mkdir -p /etc/yum.repos.d
-          echo "[externaldeps]
-          baseurl=${DNF_HOST}/${DNF_EXTERNAL_DEPS_REPO}/${DNF_EXTERNAL_DEPS_REPO_VERSION}/
+          echo "[epel9-subset]
+          baseurl=${DNF_HOST}/${DNF_EPEL9_REPO}/${DNF_EPEL9_REPO_VERSION}/
           enabled=1
           gpgcheck=0
           " > /etc/yum.repos.d/eext-externaldeps.repo
