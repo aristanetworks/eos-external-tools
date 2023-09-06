@@ -40,6 +40,8 @@ func testCreateSrpm(t *testing.T,
 		"", // depsDir
 		"", // repoHost,
 		"", // dnfConfigFile
+		"", // srcRepoHost
+		"", // srcConfigFile
 	)
 	defer viper.Reset()
 	if sources != nil {

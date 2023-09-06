@@ -13,6 +13,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"code.arista.io/eos/tools/eext/manifest"
+	"code.arista.io/eos/tools/eext/srcconfig"
 	"code.arista.io/eos/tools/eext/util"
 )
 
@@ -30,6 +31,7 @@ type srpmBuilder struct {
 	errPrefixBase util.ErrPrefix
 	errPrefix     util.ErrPrefix
 	upstreamSrc   []upstreamSrcSpec
+	srcConfig     *srcconfig.SrcConfig
 }
 
 // CreateSrpmExtraCmdlineArgs is a bundle of extra args for impl.CreateSrpm
@@ -86,18 +88,27 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 	}
 
 	for _, upstreamSrcFromManifest := range bldr.pkgSpec.UpstreamSrc {
-		if upstreamSrcFromManifest.Source == "" {
-			return fmt.Errorf("%ssource not specified for upstream-sources entry",
-				bldr.errPrefix)
+		srcParams, err := srcconfig.GetSrcParams(
+			bldr.pkgSpec.Name,
+			upstreamSrcFromManifest.FullURL,
+			upstreamSrcFromManifest.SourceBundle.Name,
+			upstreamSrcFromManifest.Signature.DetachedSignature.FullURL,
+			upstreamSrcFromManifest.SourceBundle.SrcRepoParamsOverride,
+			upstreamSrcFromManifest.Signature.DetachedSignature.OnUncompressed,
+			bldr.srcConfig,
+			bldr.errPrefix)
+		if err != nil {
+			return fmt.Errorf("%sUnable to get source params for %s",
+				err, upstreamSrcFromManifest.SourceBundle.Name)
 		}
 
 		var downloadErr error
 		upstreamSrc := upstreamSrcSpec{}
 
-		bldr.log("downloading %s", upstreamSrcFromManifest.Source)
+		bldr.log("downloading %s", srcParams.SrcURL)
 		// Download source
 		if upstreamSrc.sourceFile, downloadErr = download(
-			upstreamSrcFromManifest.Source,
+			srcParams.SrcURL,
 			downloadDir,
 			repo, pkg, isPkgSubdirInRepo,
 			bldr.errPrefix); downloadErr != nil {
@@ -105,23 +116,23 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 		}
 		bldr.log("downloaded")
 
-		signatureSpec := upstreamSrcFromManifest.Signature
-		upstreamSrc.skipSigCheck = signatureSpec.SkipCheck
+		upstreamSrc.skipSigCheck = upstreamSrcFromManifest.Signature.SkipCheck
+		pubKey := upstreamSrcFromManifest.Signature.DetachedSignature.PubKey
 
-		if bldr.pkgSpec.Type == "tarball" && !signatureSpec.SkipCheck {
-			if signatureSpec.DetachedSig == "" || signatureSpec.PubKey == "" {
+		if bldr.pkgSpec.Type == "tarball" && !upstreamSrc.skipSigCheck {
+			if srcParams.SignatureURL == "" || pubKey == "" {
 				return fmt.Errorf("%sNo detached-signature/public-key specified for upstream-sources entry %s",
-					bldr.errPrefix, upstreamSrcFromManifest.Source)
+					bldr.errPrefix, srcParams.SrcURL)
 			}
 			if upstreamSrc.sigFile, downloadErr = download(
-				signatureSpec.DetachedSig,
+				srcParams.SignatureURL,
 				downloadDir,
 				repo, pkg, isPkgSubdirInRepo,
 				bldr.errPrefix); downloadErr != nil {
 				return downloadErr
 			}
 
-			pubKeyPath := filepath.Join(getDetachedSigDir(), signatureSpec.PubKey)
+			pubKeyPath := filepath.Join(getDetachedSigDir(), pubKey)
 			if pathErr := util.CheckPath(pubKeyPath, false, false); pathErr != nil {
 				return fmt.Errorf("%sCannot find public-key at path %s",
 					bldr.errPrefix, pubKeyPath)
@@ -130,11 +141,11 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 		} else if bldr.pkgSpec.Type == "srpm" || bldr.pkgSpec.Type == "unmodified-srpm" {
 			// We don't expect SRPMs to have detached signature or
 			// to be validated with a public-key specified in manifest.
-			if signatureSpec.DetachedSig != "" {
+			if srcParams.SignatureURL != "" {
 				return fmt.Errorf("%sUnexpected detached-sig specified for SRPM",
 					bldr.errPrefix)
 			}
-			if signatureSpec.PubKey != "" {
+			if pubKey != "" {
 				return fmt.Errorf("%sUnexpected public-key specified for SRPM",
 					bldr.errPrefix)
 			}
@@ -527,6 +538,11 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) e
 		return loadManifestErr
 	}
 
+	srcConfig, err := srcconfig.LoadSrcConfig()
+	if err != nil {
+		return err
+	}
+
 	var pkgSpecified bool = (pkg != "")
 	found := !pkgSpecified
 	for _, pkgSpec := range repoManifest.Package {
@@ -541,6 +557,7 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) e
 			repo:          repo,
 			skipBuildPrep: extraArgs.SkipBuildPrep,
 			errPrefixBase: errPrefixBase,
+			srcConfig:     srcConfig,
 		}
 		bldr.setupStageErrPrefix("")
 
