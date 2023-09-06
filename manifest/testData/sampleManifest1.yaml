@@ -3,7 +3,7 @@ package:
   - name: libpcap
     subdir: true
     upstream-sources:
-      - source: http://foo/libpcap.src.rpm
+      - full-url: http://foo/libpcap.src.rpm
         signature:
           skip-check: true
     type: srpm
@@ -18,10 +18,42 @@ package:
         - name: bar
   - name: tcpdump
     upstream-sources:
-      - source: http://foo/tcpdump.tar.xz
+      - full-url: http://foo/tcpdump.tar.xz
         signature:
-          detached-sig: http://foo/tcpdump.tar.xz.sig
-          public-key: mrtparse/mrtparsePubKey.pem
+          detached-sig:
+            full-url: http://foo/tcpdump.tar.xz.sig
+            public-key: mrtparse/mrtparsePubKey.pem
+    type: tarball
+    build:
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar
+      local-deps: true
+  - name: binutils
+    upstream-sources:
+      - source-bundle:
+          name: srpm
+          override:
+            version: 1.1
+    type: srpm
+    build:
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar
+  - name: libutils
+    upstream-sources:
+      - source-bundle:
+          name: tarball
+          override:
+            version: 1.2.1
+            sig-suffix: .asc
+        signature:
+          skip-check: true
+          detached-sig:
+            public-key: mrtparse/mrtparsePubKey.pem
+            on-uncompressed: true
     type: tarball
     build:
       repo-bundle:

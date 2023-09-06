@@ -1,0 +1,19 @@
+---
+package:
+  - name: tcpdump
+    upstream-sources:
+      - source-bundle:
+          name: tarball
+          override:
+            sig-suffix: .sig
+        signature:
+          detached-sig:
+            full-url: http://foo/tcpdump.tar.xz.sig
+            public-key: mrtparse/mrtparsePubKey.pem
+    type: tarball
+    build:
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar
+      local-deps: true

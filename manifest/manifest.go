@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
+	"code.arista.io/eos/tools/eext/srcconfig"
 	"code.arista.io/eos/tools/eext/util"
 )
 
@@ -31,20 +32,35 @@ type Build struct {
 	LocalDeps  bool         `yaml:"local-deps"`
 }
 
-// UpstreamSrcSignature specifies detached signature file for tarball
-// and specifies the public key to be used to verify the signature.
-type UpstreamSrcSignature struct {
-	DetachedSig string `yaml:"detached-sig"`
-	PubKey      string `yaml:"public-key"`
-	SkipCheck   bool   `yaml:"skip-check"`
+// DetachedSignature spec
+// Specify either full URL of detached signature or how to derive it from source URL
+type DetachedSignature struct {
+	FullURL        string `yaml:"full-url"`
+	PubKey         string `yaml:"public-key"`
+	OnUncompressed bool   `yaml:"on-uncompressed"`
+}
+
+// Signature spec
+// Signature params to verify tarballs
+type Signature struct {
+	SkipCheck         bool              `yaml:"skip-check"`
+	DetachedSignature DetachedSignature `yaml:"detached-sig"`
+}
+
+// SourceBundle spec
+// Used to generate the source url for srpm
+type SourceBundle struct {
+	Name                  string                          `yaml:"name"`
+	SrcRepoParamsOverride srcconfig.SrcRepoParamsOverride `yaml:"override"`
 }
 
 // UpstreamSrc spec
 // Lists each source bundle(tarball/srpm) and
 // detached signature file for tarball.
 type UpstreamSrc struct {
-	Source    string               `yaml:"source"`
-	Signature UpstreamSrcSignature `yaml:"signature"`
+	SourceBundle SourceBundle `yaml:"source-bundle"`
+	FullURL      string       `yaml:"full-url"`
+	Signature    Signature    `yaml:"signature"`
 }
 
 // Package spec
@@ -83,6 +99,27 @@ func (m Manifest) sanityCheck() error {
 		if pkgSpec.Build.RepoBundle == nil {
 			return fmt.Errorf("No repo-bundle specified for Build in package %s",
 				pkgSpec.Name)
+		}
+
+		for _, upStreamSrc := range pkgSpec.UpstreamSrc {
+			specifiedFullSrcURL := (upStreamSrc.FullURL != "")
+			specifiedSrcBundle := (upStreamSrc.SourceBundle != SourceBundle{})
+			if !specifiedFullSrcURL && !specifiedSrcBundle {
+				return fmt.Errorf("Specify source for Build in package %s, provide either full-url or source-bundle",
+					pkgSpec.Name)
+			}
+
+			if specifiedFullSrcURL && specifiedSrcBundle {
+				return fmt.Errorf(
+					"Conflicting sources for Build in package %s, provide either full-url or source-bundle",
+					pkgSpec.Name)
+			}
+
+			specifiedFullSigURL := upStreamSrc.Signature.DetachedSignature.FullURL != ""
+			if specifiedFullSigURL && specifiedSrcBundle {
+				return fmt.Errorf("Conflicting signatures for Build in package %s, provide full-url or source-bundle",
+					pkgSpec.Name)
+			}
 		}
 	}
 	return nil
