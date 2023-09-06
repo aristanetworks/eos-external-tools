@@ -42,6 +42,12 @@ func SetViperDefaults() {
 		"http://artifactory.infra.corp.arista.io")
 	viper.SetDefault("DnfConfigFile",
 		"/usr/share/eext/dnfconfig.yaml")
+	viper.SetDefault("SrcRepoHost",
+		"http://artifactory.infra.corp.arista.io")
+	viper.SetDefault("SrcConfigFile",
+		"/usr/share/eext/srcconfig.yaml")
+	viper.SetDefault("SrcRepoPathPrefix",
+		"artifactory/eext-sources")
 	viper.SetDefault("PkiPath",
 		"/etc/pki/eext")
 	viper.SetDefault("SrcEnvPrefix",

@@ -109,6 +109,9 @@ func SetupViperConfig(
 	depsDir string,
 	repoHost string,
 	dnfConfigFile string,
+	srcRepoHost string,
+	srcConfigFile string,
+	srcRepoPathPrefix string,
 ) {
 	if srcDir == "" {
 		viper.Set("SrcDir", "testData")
@@ -129,6 +132,24 @@ func SetupViperConfig(
 			"../configfiles/dnfconfig.yaml")
 	} else {
 		viper.Set("DnfConfigFile", dnfConfigFile)
+	}
+	if srcRepoHost == "" {
+		viper.Set("SrcRepoHost",
+			"https://artifactory.infra.corp.arista.io")
+	} else {
+		viper.Set("SrcRepoHost", srcRepoHost)
+	}
+	if srcConfigFile == "" {
+		viper.Set("SrcConfigFile",
+			"../configfiles/srcconfig.yaml")
+	} else {
+		viper.Set("SrcConfigFile", srcConfigFile)
+	}
+	if srcRepoPathPrefix == "" {
+		viper.Set("SrcRepoPathPrefix",
+			"artifactory/eext-sources")
+	} else {
+		viper.Set("SrcRepoPathPrefix", srcRepoPathPrefix)
 	}
 	viper.Set("MockCfgTemplate",
 		"../configfiles/mock.cfg.template")

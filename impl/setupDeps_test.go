@@ -49,6 +49,9 @@ func TestSetupDeps(t *testing.T) {
 		depsDir,
 		"", // repoHost
 		"", // dnf config file
+		"", // src repo host
+		"", // src config file
+		"", // src repo path prefix
 	)
 	defer viper.Reset()
 
