@@ -1,0 +1,5 @@
+---
+# yamllint disable rule:line-length
+source-bundle:
+  srpm:
+    url-format: "{{.Host}}/{{.PathPrefix}}/eext-testData/{{.PkgName}}-{{.Version}}.src.rpm"

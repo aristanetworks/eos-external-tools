@@ -35,13 +35,15 @@ func testCreateSrpm(t *testing.T,
 
 	t.Logf("DestDir: %s", destDir)
 	testutil.SetupViperConfig(
-		"", // srcDir
-		workingDir, destDir,
-		"", // depsDir
-		"", // repoHost,
-		"", // dnfConfigFile
-		"", // srcRepoHost
-		"", // srcConfigFile
+		"",                                    // srcDir
+		workingDir,                            // workingDir
+		destDir,                               // destDir
+		"",                                    // depsDir
+		"",                                    // repoHost,
+		"",                                    // dnfConfigFile
+		"",                                    // srcRepoHost
+		"testData/configfiles/srcconfig.yaml", // srcConfigFile
+		"",                                    // srcRepoPathPrefix
 	)
 	defer viper.Reset()
 	if sources != nil {

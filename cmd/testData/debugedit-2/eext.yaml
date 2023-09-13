@@ -3,7 +3,10 @@
 package:
   - name: debugedit
     upstream-sources:
-      - full-url: "{{.Host}}/artifactory/eext-sources/eext-testData/debugedit-5.0-3.el9.src.rpm"
+      - source-bundle:
+          name: srpm
+          override:
+            version: 5.0-3.el9
     type: unmodified-srpm
     build:
       repo-bundle:
