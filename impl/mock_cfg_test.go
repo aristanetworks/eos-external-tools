@@ -45,7 +45,10 @@ func testMockConfig(t *testing.T, chained bool) {
 		destDir,
 		"",                        // depsDir
 		"https://foo.org",         // repoHost
-		"testData/dnfconfig.yaml", //dnfConfigFile
+		"testData/dnfconfig.yaml", // dnfConfigFile
+		"",                        // srcRepoHost
+		"",                        // srcConfigFile
+		"",                        // srcRepoPathPrefix
 	)
 	defer viper.Reset()
 

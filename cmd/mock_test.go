@@ -69,6 +69,9 @@ func testMock(t *testing.T, setupSrcEnv bool) {
 		"", // depsDir
 		"", // repoHost,
 		"", // dnfConfigFile
+		"", // srcRepoHost
+		"", // srcConfigFile
+		"", // srcRepoPathPrefix
 	)
 
 	args := []string{"create-srpm", "--repo", repoName}
