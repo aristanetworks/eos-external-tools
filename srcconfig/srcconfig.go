@@ -139,11 +139,42 @@ func (s *SrcBundle) getSrcRepoParams(
 	}, nil
 }
 
-func getSrcParamsWithoutBundle(srcFullURL, sigFullURL string) *SrcParams {
-	return &SrcParams{
-		SrcURL:       srcFullURL,
-		SignatureURL: sigFullURL,
+func formatURLTemplate(urlFormat string, errPrefix util.ErrPrefix) (string, error) {
+	var urlBuf bytes.Buffer
+	urlData := struct {
+		Host       string
+		PathPrefix string
+	}{
+		Host:       viper.GetString("SrcRepoHost"),
+		PathPrefix: viper.GetString("SrcRepoPathPrefix"),
 	}
+
+	t, err := template.New("urlTemplate").Parse(urlFormat)
+	if err != nil {
+		return "", fmt.Errorf("%sError parsing source URL %s", errPrefix, urlFormat)
+	}
+
+	if err := t.Execute(&urlBuf, urlData); err != nil {
+		return "", fmt.Errorf("%sError executing template %s with data %v",
+			errPrefix, urlFormat, urlData)
+	}
+
+	return urlBuf.String(), nil
+}
+
+func getSrcParamsWithoutBundle(srcFullURL, sigFullURL string, errPrefix util.ErrPrefix) (*SrcParams, error) {
+	srcURL, err := formatURLTemplate(srcFullURL, errPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("%sUnable to format provided source url %s", errPrefix, srcFullURL)
+	}
+	sigURL, err := formatURLTemplate(sigFullURL, errPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("%sUnable to format provided signature url %s", errPrefix, sigFullURL)
+	}
+	return &SrcParams{
+		SrcURL:       srcURL,
+		SignatureURL: sigURL,
+	}, nil
 }
 
 func GetSrcParams(
@@ -170,7 +201,7 @@ func GetSrcParams(
 			onUncompressed,
 			errPrefix)
 	} else {
-		srcParams = getSrcParamsWithoutBundle(srcFullURL, sigFullURL)
+		srcParams, srcParamsErr = getSrcParamsWithoutBundle(srcFullURL, sigFullURL, errPrefix)
 	}
 
 	if srcParamsErr != nil {
