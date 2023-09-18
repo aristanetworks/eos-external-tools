@@ -1,0 +1,7 @@
+The code-signing key for openssl3-fips was downloaded from
+keys.openpgp.org
+
+keyId: 700C2F12E3C21B70
+fingerprint: 8657 ABB2 60F0 56B1 E519 0839 D9C4 D26D 0E60 4491
+
+As documented in https://www.openssl.org/community/otc.html
