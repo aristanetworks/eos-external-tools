@@ -4,7 +4,7 @@ package:
   - name: mrtparse
     subdir: true
     upstream-sources:
-      - source: file:///mrtparse-2.0.1.tar.gz
+      - full-url: file:///mrtparse-2.0.1.tar.gz
         signature:
           skip-check: true
     type: tarball

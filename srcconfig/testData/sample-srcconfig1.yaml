@@ -1,0 +1,5 @@
+---
+# yamllint disable rule:line-length
+source-bundle:
+  bundle-srpm:
+    url-format: "{{.Host}}/{{.PathPrefix}}/{{.PkgName}}/{{.PkgName}}-{{.Version}}.src.rpm"

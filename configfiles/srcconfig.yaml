@@ -1,0 +1,10 @@
+---
+# yamllint disable rule:line-length
+source-bundle:
+  srpm:
+    url-format: "{{.Host}}/{{.PathPrefix}}/source-bundles/srpm/{{.PkgName}}/{{.PkgName}}-{{.Version}}.src.rpm"
+  tarball:
+    url-format: "{{.Host}}/{{.PathPrefix}}/source-bundles/tarball/{{.PkgName}}/{{.Version}}/{{.PkgName}}-{{.Version}}{{.Suffix}}"
+    default-src-suffix: .tar.gz
+    default-sig-suffix: .sig
+    has-detached-sig: true

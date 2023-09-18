@@ -1,0 +1,20 @@
+---
+# yamllint disable rule:line-length
+source-bundle:
+  bundle-tarball1:
+    url-format: "{{.Host}}/{{.PathPrefix}}/tarballs/{{.PkgName}}/{{.Version}}/{{.PkgName}}{{.Suffix}}"
+    default-src-suffix: .tar.gz
+    default-sig-suffix: .sig
+    has-detached-sig: true
+
+  bundle-tarball2:
+    url-format: "{{.Host}}/{{.PathPrefix}}/tarballs/{{.PkgName}}/{{.Version}}/{{.PkgName}}{{.Suffix}}"
+    default-src-suffix: .tar.bz2
+    default-sig-suffix: .sig
+    has-detached-sig: true
+
+  bundle-tarball3:
+    url-format: "{{.Host}}/{{.PathPrefix}}/tarballs/{{.PkgName}}/{{.Version}}/{{.PkgName}}{{.Suffix}}"
+    default-src-suffix: .tar.gz
+    default-sig-suffix: .asc
+    has-detached-sig: true

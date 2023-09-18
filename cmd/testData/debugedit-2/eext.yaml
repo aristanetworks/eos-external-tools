@@ -3,7 +3,7 @@
 package:
   - name: debugedit
     upstream-sources:
-      - source: https://artifactory.infra.corp.arista.io/artifactory/eext-sources/eext-testData/debugedit-5.0-3.el9.src.rpm
+      - full-url: https://artifactory.infra.corp.arista.io/artifactory/eext-sources/eext-testData/debugedit-5.0-3.el9.src.rpm
     type: unmodified-srpm
     build:
       repo-bundle:

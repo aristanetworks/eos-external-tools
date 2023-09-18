@@ -3,10 +3,11 @@
 package:
   - name: mrtparse
     upstream-sources:
-      - source: file:///mrtparse-2.0.1.tar.gz
+      - full-url: file:///mrtparse-2.0.1.tar.gz
         signature:
-          detached-sig: file:///mrtparse-2.0.1.tar.gz.sig
-          public-key: mrtparse/mrtparsePubKey.pem
+          detached-sig:
+            full-url: file:///mrtparse-2.0.1.tar.gz.sig
+            public-key: mrtparse/mrtparsePubKey.pem
     type: tarball
     build:
       include:
