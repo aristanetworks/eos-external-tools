@@ -56,7 +56,7 @@ images:
     units:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
-        build: install-rpms automake coreutils git rpm rpmdevtools rpm-build make mock python3-devel quilt
+        build: install-rpms automake coreutils git libtool rpm rpmdevtools rpm-build make mock python3-devel quilt
 
   go-binaries:
     description: |
