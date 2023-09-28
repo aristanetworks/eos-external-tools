@@ -4,7 +4,7 @@
 
 Name: debugedit
 Version: 5.0
-Release: %{?release:%{release}}%{!?release:eng}
+Release: %{?eext_release:%{eext_release}}%{!?eext_release:eng}
 Summary: Tools for debuginfo creation
 License: GPLv3+ and GPLv2+ and LGPLv2+
 URL: https://sourceware.org/debugedit/

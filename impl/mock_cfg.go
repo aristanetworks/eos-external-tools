@@ -58,7 +58,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 
 	cfgBldr.templateData.Macros = make(map[string]string)
 	if cfgBldr.rpmReleaseMacro != "" {
-		cfgBldr.templateData.Macros["release"] = cfgBldr.rpmReleaseMacro
+		cfgBldr.templateData.Macros["eext_release"] = cfgBldr.rpmReleaseMacro
 	}
 
 	if cfgBldr.eextSignature != "" {

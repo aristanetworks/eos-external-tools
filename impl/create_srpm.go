@@ -392,7 +392,7 @@ func (bldr *srpmBuilder) build(prep bool) error {
 
 	if rpmReleaseMacro != "" {
 		rpmbuildArgs = append(rpmbuildArgs, []string{
-			"--define", fmt.Sprintf("release %s", rpmReleaseMacro),
+			"--define", fmt.Sprintf("eext_release %s", rpmReleaseMacro),
 		}...)
 	}
 	rpmbuildArgs = append(rpmbuildArgs, specFile)
