@@ -24,7 +24,7 @@ it can be overridden with `EEXT_WORKINGDIR` environment variable.
 
 Example usage:
 ```
-eext createSrpm [-r <repo-name>]
+eext create-srpm [-r <repo-name>]
 eext mock [-r <repo-name>] -t <target-arch>
 ```
 
