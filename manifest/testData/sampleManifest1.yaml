@@ -29,6 +29,16 @@ package:
         - name: foo
           version: v1
         - name: bar
+      eextgen:
+        cmd-options:
+          mock:
+            - "--nocheck"
+          create-srpm:
+            - "--skip-build-prep"
+        dependencies:
+          - repo: .
+            package: libpcap
+          - repo: code.arista.io/eos/eext/glibc
   - name: binutils
     upstream-sources:
       - source-bundle:
@@ -59,3 +69,28 @@ package:
         - name: foo
           version: v1
         - name: bar
+  - name: iptables
+    upstream-sources:
+      - source-bundle:
+          name: srpm
+          override:
+            version: 1.1
+    type: srpm
+    build:
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar
+      eextgen:
+        multilib:
+          i686:
+           native-arch:
+             remove: false
+             patterns:
+               - "iptables-devel*"
+               - "iptables-libs*"
+           other-arch:
+             remove: true
+             patterns:
+               - "iptables-devel*"
+

@@ -24,11 +24,65 @@ type RepoBundle struct {
 	DnfRepoParamsOverride map[string]dnfconfig.DnfRepoParamsOverride `yaml:"override"`
 }
 
+// MultilibRpmFilenamePattern spec
+//
+// Patterns: Specifies a list of patterns of RPM filenames.
+// Remove: Specifies if the patterns are to be removed/kept.
+type MultilibRpmFilenamePattern struct {
+	Patterns []string `yaml:"patterns"`
+	Remove   bool     `yaml:"remove"`
+}
+
+// MultiLib spec for a specific native arch
+//
+// NativeArchPattern specifies list of patterns of native-arch RPMs
+// to be removed/kept in the multilib image.
+//
+// OtherArchPattern specifies list of patterns of other-arch RPMs
+// to be removed/kept in the multilib image.
+type Multilib struct {
+	NativeArchPattern MultilibRpmFilenamePattern `yaml:"native-arch"`
+	OtherArchPattern  MultilibRpmFilenamePattern `yaml:"other-arch"`
+}
+
+// Dependency spec
+// Used to specify a dependency to be consumed by the generator
+//
+// Dependency is a tuple of repo and package.
+//
+// Repo can specify some other barney repo like "code.arista.io/eos/eext/<depRepoName>"
+// It can also point to current repo with "."
+//
+// Package can be left empty when the specified repo has only one package.
+type Dependency struct {
+	Repo    string `yaml:"repo"`
+	Package string `yaml:"package"`
+}
+
+// Generator spec
+// Used only by the eextgen barney generator to generate eext commands to build barney images
+//
+// CmdOptions specifies extra options to be added to the default command. It's index by
+// the command name(mock/create-srpm) and the value is a list of extra-options.
+//
+//	Valid options for mock are [ --nocheck ]
+//	Valid options for create-srpm are [ --skip-build-prep ]
+//
+// # Dependencies is a list of other eext package dependencies for this package
+//
+// MultiLib specifies MultiLib spec to generate multilib. It's indexed by native-arch (i686/x86_64).
+type Generator struct {
+	CmdOptions   map[string][]string `yaml:"cmd-options"`
+	Multilib     map[string]Multilib `yaml:"multilib"`
+	Dependencies []Dependency        `yaml:"dependencies"`
+}
+
 // Build spec
 // mock cfg is generated for each target depending on this
 type Build struct {
 	Include    []string     `yaml:"include"`
 	RepoBundle []RepoBundle `yaml:"repo-bundle"`
+	Generator  Generator    `yaml:"eextgen"`
 }
 
 // DetachedSignature spec
@@ -63,9 +117,8 @@ type UpstreamSrc struct {
 }
 
 // Package spec
-// In the general case, there will only be one package/
-// But each git repo can have multiple packages if there is
-// a dependency order to be maintained.
+// In the general case, there will only be one package.
+// But we can have a bundle repo with multiple pakcages too.
 type Package struct {
 	Name            string        `yaml:"name"`
 	Subdir          bool          `yaml:"subdir"`
