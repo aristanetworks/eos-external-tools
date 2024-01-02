@@ -225,6 +225,13 @@ func download(srcURL string, targetDir string,
 			return "", GetErr
 		}
 
+		if response.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("%sutil.download: GET %s returned %d %s",
+				errPrefix, srcURL, response.StatusCode,
+				http.StatusText(response.StatusCode))
+
+		}
+
 		defer response.Body.Close()
 		_, ioErr := io.Copy(file, response.Body)
 		if ioErr != nil {
