@@ -57,11 +57,6 @@ func testMockConfig(t *testing.T, chained bool) {
 	require.NoError(t, err)
 	require.NotNil(t, manifestObj)
 
-	// Force chained attr in manifest
-	if chained {
-		manifestObj.Package[0].Build.LocalDeps = true
-	}
-
 	t.Log("Load dnfconfig.yaml")
 	dnfConfig, loadErr := dnfconfig.LoadDnfConfig()
 	require.NoError(t, loadErr)
@@ -75,6 +70,7 @@ func testMockConfig(t *testing.T, chained bool) {
 			eextSignature:   "my-signature",
 			buildSpec:       &manifestObj.Package[0].Build,
 			dnfConfig:       dnfConfig,
+			useLocalDeps:    chained,
 		},
 	}
 

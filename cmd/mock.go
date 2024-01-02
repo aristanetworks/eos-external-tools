@@ -24,7 +24,8 @@ var mockCmd = &cobra.Command{
 		pkg, _ := cmd.Flags().GetString("package")
 		extraArgs := impl.MockExtraCmdlineArgs{
 			NoCheck:       commonArgs.noCheck,
-			OnlyCreateCfg: onlyCreateCfg}
+			OnlyCreateCfg: onlyCreateCfg,
+			UseLocalDeps:  commonArgs.useLocalDeps}
 		if err := impl.Mock(repo, pkg, commonArgs.arch, extraArgs); err != nil {
 			return err
 		}
@@ -38,5 +39,6 @@ func init() {
 	mockCmd.Flags().StringVarP(&commonArgs.arch, "target", "t", defaultArch(), "target architecture for the rpmbuild (OPTIONAL)")
 	mockCmd.Flags().BoolVar(&onlyCreateCfg, "only-create-cfg", false, "Just create mock configuration, don't run mock (OPTIONAL)")
 	mockCmd.Flags().BoolVar(&commonArgs.noCheck, "nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
+	mockCmd.Flags().BoolVar(&commonArgs.useLocalDeps, "use-local-deps", false, "Configure file://RPMS as a high priority local-repo. Used to plumb in other eext packages as dependencies (OPTIONAL)")
 	rootCmd.AddCommand(mockCmd)
 }

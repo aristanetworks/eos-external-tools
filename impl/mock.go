@@ -30,6 +30,7 @@ type mockBuilder struct {
 type MockExtraCmdlineArgs struct {
 	NoCheck       bool
 	OnlyCreateCfg bool
+	UseLocalDeps  bool
 }
 
 func (bldr *mockBuilder) log(format string, a ...any) {
@@ -251,7 +252,7 @@ func (bldr *mockBuilder) runStages() error {
 		return err
 	}
 
-	if bldr.buildSpec.LocalDeps {
+	if bldr.useLocalDeps {
 		bldr.setupStageErrPrefix("setupDeps")
 		if err := bldr.setupDeps(); err != nil {
 			return err
@@ -342,6 +343,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				arch:              arch,
 				rpmReleaseMacro:   rpmReleaseMacro,
 				eextSignature:     eextSignature,
+				useLocalDeps:      extraArgs.UseLocalDeps,
 				buildSpec:         &pkgSpec.Build,
 				dnfConfig:         dnfConfig,
 				errPrefix:         errPrefix,

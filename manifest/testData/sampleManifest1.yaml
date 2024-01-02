@@ -29,7 +29,6 @@ package:
         - name: foo
           version: v1
         - name: bar
-      local-deps: true
   - name: binutils
     upstream-sources:
       - source-bundle:
@@ -60,4 +59,3 @@ package:
         - name: foo
           version: v1
         - name: bar
-      local-deps: true
