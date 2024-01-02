@@ -192,6 +192,13 @@ func (bldr *srpmBuilder) verifyUpstreamSrpm() error {
 			bldr.errPrefix)
 	}
 
+	// Check if downloaded file is a valid rpm
+	err := util.RunSystemCmd("rpm", "-q", "-p", upstreamSrpmFilePath)
+	if err != nil {
+		return fmt.Errorf("%sDownloaded SRPM file is not a valid rpm: %s",
+			bldr.errPrefix, err)
+	}
+
 	if !upstreamSrc.skipSigCheck {
 		if err := util.VerifyRpmSignature(upstreamSrpmFilePath, bldr.errPrefix); err != nil {
 			return err
