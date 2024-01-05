@@ -6,6 +6,8 @@ package impl
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -171,6 +173,20 @@ func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
 	bldr.log("Running mock %s", strings.Join(mockArgs, " "))
 	mockErr := util.RunSystemCmd("mock", mockArgs...)
 	if mockErr != nil {
+		resultdir := getMockResultsDir(bldr.pkg, bldr.arch)
+		buildLogPath := filepath.Join(resultdir, "build.log")
+		if util.CheckPath(buildLogPath, false, false) == nil {
+			bldr.log("--- start of mock build.log ---")
+			dumpLogCmd := exec.Command("cat", buildLogPath)
+			dumpLogCmd.Stderr = os.Stderr
+			dumpLogCmd.Stdout = os.Stdout
+			if dumpLogCmd.Run() != nil {
+				bldr.log("Dumping logfile failed")
+			}
+			bldr.log("--- end of build.log ---")
+		} else {
+			bldr.log("No build.log found")
+		}
 		return fmt.Errorf("%smock %s errored out with %s",
 			bldr.errPrefix, strings.Join(mockArgs, " "), mockErr)
 	}
