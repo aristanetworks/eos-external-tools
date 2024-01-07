@@ -196,6 +196,10 @@ func download(srcURL string, targetDir string,
 
 	if uri.Scheme == "file" {
 		pkgDirInRepo := getPkgDirInRepo(repo, pkg, isPkgSubdirInRepo)
+		if uri.Path == "" {
+			return "", fmt.Errorf("%sBad URL %s. Example usage: file:///foo",
+				errPrefix, srcURL)
+		}
 		srcAbsPath := filepath.Join(pkgDirInRepo, uri.Path)
 		if err := util.CheckPath(srcAbsPath, false, false); err != nil {
 			return "", fmt.Errorf("%supstream file %s not found in repo",

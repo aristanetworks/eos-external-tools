@@ -1,0 +1,12 @@
+---
+# yamllint disable rule:line-length
+package:
+  - name: unmodified-srpm-pkg
+    upstream-sources:
+      - full-url: "file:///unmodified-srpm-pkg-1.0.0-1.el9.src.rpm"
+        signature:
+          skip-check: true
+    type: unmodified-srpm
+    build:
+      repo-bundle:
+        - name: el9

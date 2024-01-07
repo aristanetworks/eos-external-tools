@@ -4,11 +4,14 @@
 package testutil
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"testing"
+	"text/template"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -38,7 +41,95 @@ func SetupManifest(t *testing.T, baseDir string, pkg string, sampleFile string) 
 	if symlinkErr != nil {
 		t.Fatal(symlinkErr)
 	}
+}
 
+// SetupUpstreamSrpm used to setup a test upstream srpm
+func SetupUpstreamSrpm(t *testing.T, baseDir,
+	pkg, upstreamVersion, upstreamRelease, specFileReleaseLine string) {
+	pkgDir := filepath.Join(baseDir, pkg)
+	_, statErr := os.Stat(pkgDir)
+	if statErr != nil {
+		t.Fatal(pkgDir)
+	}
+
+	specFileTemplateStr := `
+Summary: Dummy package
+Name: {{.Name}}
+Version: {{.UpstreamVersion}}
+{{ .SpecFileReleaseLine }}
+BuildArch: noarch
+License: foo
+
+%description
+foo
+
+%prep
+true
+
+%build
+true
+
+%install
+true
+
+%files
+`
+	tmpl, tmplErr := template.New("specTemplate").Parse(specFileTemplateStr)
+	if tmplErr != nil {
+		t.Fatal(tmplErr)
+	}
+
+	workdir, workdirErr := os.MkdirTemp("", "srpmbuild")
+	if workdirErr != nil {
+		t.Fatal(workdirErr)
+	}
+	defer os.RemoveAll(workdir)
+
+	resultsDir := filepath.Join(workdir, "results")
+	resultsSpecsDir := filepath.Join(workdir, "results", "SPECS")
+	for _, dir := range []string{resultsDir, resultsSpecsDir} {
+		if err := os.Mkdir(dir, 0775); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	specFilePath := filepath.Join(resultsSpecsDir, pkg+".spec")
+	specFileHandle, createErr := os.Create(specFilePath)
+	if createErr != nil {
+		t.Fatal(createErr)
+	}
+
+	data := struct {
+		Name                string
+		UpstreamVersion     string
+		SpecFileReleaseLine string
+	}{pkg, upstreamVersion, specFileReleaseLine}
+
+	if tmplExecErr := tmpl.Execute(specFileHandle, data); tmplExecErr != nil {
+		t.Fatal(tmplExecErr)
+	}
+	specFileHandle.Close()
+
+	rpmbuildCmdOptions := []string{
+		"--define", fmt.Sprintf("_topdir %s", resultsDir),
+		"-bs",
+		specFilePath}
+	rpmbuildCmd := exec.Command("rpmbuild", rpmbuildCmdOptions...)
+	rpmbuildCmd.Stderr = os.Stderr
+	rpmbuildCmd.Stdout = os.Stdout
+
+	t.Logf("Running rpmbuild %s to setup an upstream srpm", rpmbuildCmdOptions)
+	if rbErr := rpmbuildCmd.Run(); rbErr != nil {
+		t.Fatal(fmt.Errorf("rpmbuild failed with %s", rbErr))
+	}
+	t.Logf("Upstream srpm setup")
+	builtSrpmFilename := fmt.Sprintf("%s-%s-%s.src.rpm", pkg, upstreamVersion, upstreamRelease)
+	targetPath := filepath.Join(pkgDir, builtSrpmFilename)
+	builtSrpmPath := filepath.Join(resultsDir, "SRPMS", builtSrpmFilename)
+	linkErr := os.Link(builtSrpmPath, targetPath)
+	if linkErr != nil {
+		t.Fatal(linkErr)
+	}
 }
 
 // RunCmd runs the command in cobra cmd and returns error

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -253,7 +254,6 @@ func (bldr *srpmBuilder) setupRpmbuildTreeSrpm() error {
 
 	// Make sure expected dirs have been created
 	pathsToCheck := []string{
-		filepath.Join(rpmbuildDir, "SOURCES"),
 		filepath.Join(rpmbuildDir, "SPECS"),
 	}
 	for _, path := range pathsToCheck {
@@ -304,6 +304,65 @@ func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 	return nil
 }
 
+// For rebuilding unmodified-srpms, patch the upstream spec file
+// Release field with %{eext_release} macro.
+func (bldr *srpmBuilder) patchUpstreamSpecFileWithEextRelease() error {
+	pkg := bldr.pkgSpec.Name
+	rpmbuildDir := getRpmbuildDir(pkg)
+	specsDir := filepath.Join(rpmbuildDir, "SPECS")
+	specFiles, _ := filepath.Glob(filepath.Join(specsDir, "*.spec"))
+	if len(specFiles) != 1 {
+		return fmt.Errorf("%sNo/multiple spec files %s in %s",
+			bldr.errPrefix, strings.Join(specFiles, ","), specsDir)
+	}
+	specFile := specFiles[0]
+
+	// Backup original spec file
+	origSpecFile := specFile + ".orig"
+	if err := util.RunSystemCmd("cp", specFile, origSpecFile); err != nil {
+		return fmt.Errorf("%scopying %s to %s errored out with '%s'",
+			bldr.errPrefix, specFile, origSpecFile, err)
+	}
+
+	// Group 1 is the Release line contents before any comments
+	// Group 2 is the optional comment
+	releaseRegex := `^(Release:\s+[^#]+)(.*)$`
+
+	// Validate regex match on upstream spec file
+	grepCmdOptions := []string{"-c", releaseRegex, specFile}
+	if grepOutput, grepErr := util.CheckOutput("egrep", grepCmdOptions...); grepErr != nil {
+		return fmt.Errorf("%s%s", bldr.errPrefix, grepErr)
+	} else {
+		numMatchingLinesStr := strings.TrimRight(grepOutput, "\n")
+		if numMatchingLines, err := strconv.Atoi(numMatchingLinesStr); err != nil {
+			return fmt.Errorf("%sAtoi on grep -c output: %s returned error %s",
+				bldr.errPrefix, numMatchingLinesStr, err)
+		} else if numMatchingLines != 1 {
+			return fmt.Errorf("%sFound unexpected number (%d) of occurences matching regex '%s'"+
+				"expected only one", bldr.errPrefix, numMatchingLines, releaseRegex)
+		}
+	}
+
+	// We need to escape '(', ')' and '+' in the egrep match pattern
+	// to make it work with sed
+	sedMatchPattern := releaseRegex
+	for _, pattern := range []string{"(", ")", "+"} {
+		replaceWith := `\` + pattern
+		sedMatchPattern = strings.ReplaceAll(sedMatchPattern, pattern, replaceWith)
+	}
+	// We need to append ".%{?eext_release:%{eext_release}}%{!?eext_release:eng}" to Group 1
+	sedReplacePattern := `\1.%{?eext_release:%{eext_release}}%{!?eext_release:eng}\2`
+
+	// Run sed to patch the spec file
+	sedScript := fmt.Sprintf("s/%s/%s/", sedMatchPattern, sedReplacePattern)
+	sedCmdOptions := []string{"-i", "-e", sedScript, specFile}
+	if err := util.RunSystemCmd("sed", sedCmdOptions...); err != nil {
+		return fmt.Errorf("%s%s", bldr.errPrefix, err)
+	}
+
+	return nil
+}
+
 // Then, setup an rpmbuild directory for building the modified SRPM.
 // If upstream source is SRPM, installing the upstream SRPM will
 // do this automatically.
@@ -312,16 +371,11 @@ func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 func (bldr *srpmBuilder) setupRpmbuildTree() error {
 	bldr.log("starting")
 
-	if bldr.pkgSpec.Type == "unmodified-srpm" {
-		bldr.log("skipping")
-		return nil
-	}
-
 	repo := bldr.repo
 	pkg := bldr.pkgSpec.Name
 	isPkgSubdirInRepo := bldr.pkgSpec.Subdir
 
-	if bldr.pkgSpec.Type == "srpm" {
+	if bldr.pkgSpec.Type == "srpm" || bldr.pkgSpec.Type == "unmodified-srpm" {
 		if err := bldr.setupRpmbuildTreeSrpm(); err != nil {
 			return err
 		}
@@ -334,25 +388,35 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 			bldr.errPrefix, bldr.pkgSpec.Type))
 	}
 
-	// Now copy all sources from git repo to rpmbuild directory
-	rpmbuildDir := getRpmbuildDir(pkg)
-	rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
-	repoSourcesDir := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
-	if err := util.CopyToDestDir(
-		repoSourcesDir+"/*",
-		rpmbuildSourcesDir,
-		bldr.errPrefix); err != nil {
-		return err
-	}
+	// Now patch rpmbuild tree with sources and spec files from git repo
+	if bldr.pkgSpec.Type != "unmodified-srpm" {
+		rpmbuildDir := getRpmbuildDir(pkg)
+		repoSourcesDir := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
 
-	// Now copy the spec file from git trepo
-	rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
-	repoSpecsDir := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
-	if err := util.CopyToDestDir(
-		repoSpecsDir+"/*",
-		rpmbuildSpecsDir,
-		bldr.errPrefix); err != nil {
-		return err
+		// Only copy sources if present
+		// Some repos just have spec file changes and no patches.
+		if util.CheckPath(repoSourcesDir, true, false) == nil {
+			rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
+			if err := util.CopyToDestDir(
+				repoSourcesDir+"/*",
+				rpmbuildSourcesDir,
+				bldr.errPrefix); err != nil {
+				return err
+			}
+		}
+
+		rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
+		repoSpecsDir := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
+		if err := util.CopyToDestDir(
+			repoSpecsDir+"/*",
+			rpmbuildSpecsDir,
+			bldr.errPrefix); err != nil {
+			return err
+		}
+	} else {
+		if err := bldr.patchUpstreamSpecFileWithEextRelease(); err != nil {
+			return err
+		}
 	}
 
 	bldr.log("successful")
@@ -361,11 +425,6 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 
 func (bldr *srpmBuilder) build(prep bool) error {
 	bldr.log("starting")
-
-	if bldr.pkgSpec.Type == "unmodified-srpm" {
-		bldr.log("skipping")
-		return nil
-	}
 
 	pkg := bldr.pkgSpec.Name
 	rpmbuildDir := getRpmbuildDir(pkg)
@@ -411,15 +470,6 @@ func (bldr *srpmBuilder) build(prep bool) error {
 	return nil
 }
 
-func (bldr *srpmBuilder) copyDownloadedUpstreamSrpmToDestDir() error {
-	pkgSrpmsDestDir := getPkgSrpmsDestDir(bldr.pkgSpec.Name)
-	upstreamSrpmFilePath := bldr.upstreamSrpmDownloadPath()
-	err := util.CopyToDestDir(
-		upstreamSrpmFilePath, pkgSrpmsDestDir,
-		bldr.errPrefix)
-	return err
-}
-
 func (bldr *srpmBuilder) copyBuiltSrpmToDestDir() error {
 	pkg := bldr.pkgSpec.Name
 	srpmsRpmbuildDir := getSrpmsRpmbuildDir(pkg)
@@ -456,21 +506,15 @@ func (bldr *srpmBuilder) copyResultsToDestDir() error {
 	pkgSrpmsDestDir := getPkgSrpmsDestDir(bldr.pkgSpec.Name)
 	if err := util.MaybeCreateDirWithParents(
 		pkgSrpmsDestDir, bldr.errPrefix); err != nil {
-		return nil
+		return err
 	}
 
-	var err error
-	if bldr.pkgSpec.Type == "unmodified-srpm" {
-		err = bldr.copyDownloadedUpstreamSrpmToDestDir()
-	} else {
-		err = bldr.copyBuiltSrpmToDestDir()
-
+	if err := bldr.copyBuiltSrpmToDestDir(); err != nil {
+		return err
 	}
-	if err == nil {
-		bldr.log("successful")
-	}
+	bldr.log("successful")
+	return nil
 
-	return err
 }
 
 // This is the entry point to srpmBuilder
