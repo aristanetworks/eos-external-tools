@@ -125,8 +125,12 @@ images:
     units:
       - floor: .%eext-testfloor
         build: |
-          go test code.arista.io/eos/tools/eext/...
-          go test code.arista.io/eos/tools/eext/... -tags privileged
+          go test code.arista.io/eos/tools/eext/dnfconfig
+          go test code.arista.io/eos/tools/eext/srcconfig
+          go test code.arista.io/eos/tools/eext/manifest
+          go test code.arista.io/eos/tools/eext/impl
+          go test code.arista.io/eos/tools/eext/cmd
+          go test code.arista.io/eos/tools/eext/cmd -tags privileged
           go vet code.arista.io/eos/tools/eext/...
           test -z "$(gofmt -l .)"
 
