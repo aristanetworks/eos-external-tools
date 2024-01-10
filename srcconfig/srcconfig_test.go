@@ -148,3 +148,44 @@ func TestRepoConfigTarBall(t *testing.T) {
 	require.ErrorContains(t, paramsErr, versionTestExpError)
 	t.Logf("%s: Version check PASSED", versionTestName)
 }
+
+func TestRepoConfigEpelSrpm(t *testing.T) {
+	viper.Set("SrcConfigFile", "testData/sample-srcconfig3.yaml")
+	viper.Set("SrcRepoHost", "http://foo.org")
+	viper.Set("SrcRepoPathPrefix", "foo")
+	defer viper.Reset()
+
+	t.Log("Testing Load")
+	srcConfig, loadErr := LoadSrcConfig()
+	require.NoError(t, loadErr)
+	require.NotNil(t, srcConfig)
+	require.Contains(t, srcConfig.SrcBundle, "epel-srpm")
+	srpmConfig := srcConfig.SrcBundle["epel-srpm"]
+	require.NotNil(t, srpmConfig)
+	require.NotNil(t, srpmConfig.urlFormatTemplate)
+	t.Log("Load test PASSED")
+
+	t.Log("Testing URL Format")
+	expectedURL := "http://foo.org/foo/pkg/pkg-1.0.src.rpm"
+	versions := []string{"1.0"}
+	for _, version := range versions {
+		srpmParams, paramsErr := GetSrcParams(
+			"pkg",       // Package Name
+			"",          // Full Source URL
+			"epel-srpm", // Bundle Name
+			"",          // Signature URL
+			SrcRepoParamsOverride{
+				VersionOverride:   version,
+				SrcSuffixOverride: "",
+				SigSuffixOverride: "",
+			},
+			false,     // onUncompressed
+			srcConfig, // Source Config
+			"",        // Error Prefix
+		)
+		require.NoError(t, paramsErr)
+		require.NotNil(t, srpmParams)
+		require.Equal(t, expectedURL, srpmParams.SrcURL)
+	}
+	t.Log("URL template test PASSED")
+}
