@@ -4,7 +4,7 @@ repo-bundle:
   el9:
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
-    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os"
+    baseurl: "{{.Host}}/artifactory/eext-alma-linux-virtual/{{.Version}}/{{.RepoName}}/{{.Arch}}/os"
     repo:
       AppStream:
         enabled: true
@@ -30,3 +30,14 @@ repo-bundle:
         enabled: true
     version-labels:
       default: v20230901-1
+
+  epel:
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
+    use-base-arch: true
+    baseurl: "{{.Host}}/artifactory/eext-epel/{{.Version}}/Everything/{{.Arch}}}/"
+    repo:
+      epel:
+        enabled: true
+    version-labels:
+      default: 9
