@@ -17,7 +17,7 @@ repo-bundle:
       extras:
         enabled: false
     version-labels:
-      default: 9.2
+      default: 9.3
       # Don't use latest if you want reproducible builds, this is just for experiments
       latest: 9.3
 
