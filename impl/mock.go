@@ -32,7 +32,6 @@ type mockBuilder struct {
 type MockExtraCmdlineArgs struct {
 	NoCheck       bool
 	OnlyCreateCfg bool
-	UseLocalDeps  bool
 }
 
 func (bldr *mockBuilder) log(format string, a ...any) {
@@ -93,6 +92,12 @@ func (bldr *mockBuilder) clean() error {
 
 func (bldr *mockBuilder) setupDeps() error {
 	bldr.log("starting")
+
+	if bldr.buildSpec.Dependencies == nil {
+		panic(fmt.Sprintf("%sUnexpected call to setupDeps "+
+			"(manifest doesn't specify any dependencies)",
+			bldr.errPrefix))
+	}
 	depsDir := viper.GetString("DepsDir")
 
 	// See if depsDir exists
@@ -100,17 +105,40 @@ func (bldr *mockBuilder) setupDeps() error {
 		return fmt.Errorf("%sProblem with DepsDir: %s", bldr.errPrefix, err)
 	}
 
+	var missingDeps []string
+	pathMap := make(map[string]string)
 	mockDepsDir := getMockDepsDir(bldr.pkg, bldr.arch)
-	if err := util.MaybeCreateDirWithParents(mockDepsDir, bldr.errPrefix); err != nil {
-		return err
+	for _, dep := range bldr.buildSpec.Dependencies {
+		depStatisfied := false
+		for _, arch := range []string{"noarch", bldr.arch} {
+			depDirWithArch := filepath.Join(depsDir, arch, dep)
+			if util.CheckPath(depDirWithArch, true, false) == nil {
+				rpmFileGlob := fmt.Sprintf("*.%s.rpm", arch)
+				pathGlob := filepath.Join(depDirWithArch, rpmFileGlob)
+				paths, globErr := filepath.Glob(pathGlob)
+				if globErr != nil {
+					panic(fmt.Sprintf("Bad glob pattern %s: %s", pathGlob, globErr))
+				}
+				if paths != nil {
+					depStatisfied = true
+					copyDestDir := filepath.Join(mockDepsDir, arch, dep)
+					pathMap[copyDestDir] = pathGlob
+				}
+			}
+		}
+		if !depStatisfied {
+			missingDeps = append(missingDeps, dep)
+		}
 	}
 
-	depsToCopy := filepath.Join(depsDir, "*")
-	if err := util.CopyToDestDir(
-		depsToCopy, mockDepsDir, bldr.errPrefix); err != nil {
-		return err
+	if missingDeps != nil {
+		return fmt.Errorf("%sMissing/Empty deps: %s in depDir: %s",
+			bldr.errPrefix, strings.Join(missingDeps, ","), depsDir)
 	}
 
+	if copyErr := filterAndCopy(pathMap, bldr.errPrefix); copyErr != nil {
+		return copyErr
+	}
 	createRepoErr := util.RunSystemCmd("createrepo", mockDepsDir)
 	if createRepoErr != nil {
 		return fmt.Errorf("%screaterepo %s errored out with %s",
@@ -259,7 +287,7 @@ func (bldr *mockBuilder) runStages() error {
 		return err
 	}
 
-	if bldr.useLocalDeps {
+	if bldr.buildSpec.Dependencies != nil {
 		bldr.setupStageErrPrefix("setupDeps")
 		if err := bldr.setupDeps(); err != nil {
 			return err
@@ -350,7 +378,6 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				arch:              arch,
 				rpmReleaseMacro:   rpmReleaseMacro,
 				eextSignature:     eextSignature,
-				useLocalDeps:      extraArgs.UseLocalDeps,
 				buildSpec:         &pkgSpec.Build,
 				dnfConfig:         dnfConfig,
 				errPrefix:         errPrefix,

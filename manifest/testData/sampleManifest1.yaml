@@ -29,16 +29,17 @@ package:
         - name: foo
           version: v1
         - name: bar
+      dependencies:
+        - libpcap
+        - glibc
       eextgen:
         cmd-options:
           mock:
             - "--nocheck"
           create-srpm:
             - "--skip-build-prep"
-        dependencies:
-          - repo: .
-            package: libpcap
-          - repo: code.arista.io/eos/eext/glibc
+        external-dependencies:
+          glibc: code.arista.io/eos/eext/glibc
   - name: binutils
     upstream-sources:
       - source-bundle:

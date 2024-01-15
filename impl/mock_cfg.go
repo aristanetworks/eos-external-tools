@@ -32,7 +32,6 @@ type builderCommon struct {
 	arch              string
 	rpmReleaseMacro   string
 	eextSignature     string
-	useLocalDeps      bool
 	buildSpec         *manifest.Build
 	dnfConfig         *dnfconfig.DnfConfig
 	errPrefix         util.ErrPrefix
@@ -105,7 +104,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 		}
 	}
 
-	if cfgBldr.useLocalDeps {
+	if cfgBldr.buildSpec.Dependencies != nil {
 		localRepo := &dnfconfig.DnfRepoParams{
 			Name:     "local-deps",
 			BaseURL:  "file://" + getMockDepsDir(cfgBldr.pkg, arch),

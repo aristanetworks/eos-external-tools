@@ -36,9 +36,22 @@ func testCreateSrpmFromUnmodifiedSrpm(t *testing.T,
 	t.Log("Copy testData/manifest to src directory")
 	pkg := "unmodified-srpm-pkg"
 	testutil.SetupManifest(t, srcDir, pkg, "unmodified-srpm-pkg/eext.yaml")
+
+	pkgDir := filepath.Join(srcDir, pkg)
+	// SetupManifest should have setup pkgDir
+	_, statErr := os.Stat(pkgDir)
+	if statErr != nil {
+		t.Fatal(pkgDir)
+	}
+
 	upstreamVersion := "1.0.0"
-	testutil.SetupUpstreamSrpm(t, srcDir, pkg,
-		upstreamVersion, upstreamRelease, specFileReleaseLine)
+	testutil.SetupDummyRpm(t,
+		pkgDir, // targetDir
+		pkg, "noarch", upstreamVersion, upstreamRelease, specFileReleaseLine,
+		nil,  // buildRequires
+		nil,  // requires
+		true, // isSource
+	)
 
 	testutil.SetupViperConfig(
 		srcDir,

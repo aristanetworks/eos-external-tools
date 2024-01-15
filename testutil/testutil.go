@@ -43,22 +43,28 @@ func SetupManifest(t *testing.T, baseDir string, pkg string, sampleFile string) 
 	}
 }
 
-// SetupUpstreamSrpm used to setup a test upstream srpm
-func SetupUpstreamSrpm(t *testing.T, baseDir,
-	pkg, upstreamVersion, upstreamRelease, specFileReleaseLine string) {
-	pkgDir := filepath.Join(baseDir, pkg)
-	_, statErr := os.Stat(pkgDir)
-	if statErr != nil {
-		t.Fatal(pkgDir)
-	}
+// SetupDummyRpm used to setup a test upstream srpm
+func SetupDummyRpm(t *testing.T,
+	targetDir, pkg, arch, upstreamVersion, upstreamRelease, specFileReleaseLine string,
+	buildRequires, requires []string,
+	isSource bool) {
 
 	specFileTemplateStr := `
 Summary: Dummy package
 Name: {{.Name}}
 Version: {{.UpstreamVersion}}
 {{ .SpecFileReleaseLine }}
-BuildArch: noarch
+BuildArch: {{.Arch}}
 License: foo
+
+{{ range .Requires }}
+Requires: {{.}}
+{{ end -}}
+
+{{ range .BuildRequires }}
+BuildRequires: {{.}}
+{{ end -}}
+
 
 %description
 foo
@@ -79,11 +85,11 @@ true
 		t.Fatal(tmplErr)
 	}
 
-	workdir, workdirErr := os.MkdirTemp("", "srpmbuild")
+	workdir, workdirErr := os.MkdirTemp("", "rpmbuild")
 	if workdirErr != nil {
 		t.Fatal(workdirErr)
 	}
-	defer os.RemoveAll(workdir)
+	// defer os.RemoveAll(workdir)
 
 	resultsDir := filepath.Join(workdir, "results")
 	resultsSpecsDir := filepath.Join(workdir, "results", "SPECS")
@@ -101,9 +107,13 @@ true
 
 	data := struct {
 		Name                string
+		Arch                string
 		UpstreamVersion     string
 		SpecFileReleaseLine string
-	}{pkg, upstreamVersion, specFileReleaseLine}
+		Requires            []string
+		BuildRequires       []string
+	}{pkg, arch, upstreamVersion, specFileReleaseLine,
+		requires, buildRequires}
 
 	if tmplExecErr := tmpl.Execute(specFileHandle, data); tmplExecErr != nil {
 		t.Fatal(tmplExecErr)
@@ -112,21 +122,30 @@ true
 
 	rpmbuildCmdOptions := []string{
 		"--define", fmt.Sprintf("_topdir %s", resultsDir),
-		"-bs",
+		"-ba",
 		specFilePath}
 	rpmbuildCmd := exec.Command("rpmbuild", rpmbuildCmdOptions...)
 	rpmbuildCmd.Stderr = os.Stderr
 	rpmbuildCmd.Stdout = os.Stdout
 
-	t.Logf("Running rpmbuild %s to setup an upstream srpm", rpmbuildCmdOptions)
+	t.Logf("Running rpmbuild %s to setup a dummy rpm", rpmbuildCmdOptions)
 	if rbErr := rpmbuildCmd.Run(); rbErr != nil {
 		t.Fatal(fmt.Errorf("rpmbuild failed with %s", rbErr))
 	}
 	t.Logf("Upstream srpm setup")
-	builtSrpmFilename := fmt.Sprintf("%s-%s-%s.src.rpm", pkg, upstreamVersion, upstreamRelease)
-	targetPath := filepath.Join(pkgDir, builtSrpmFilename)
-	builtSrpmPath := filepath.Join(resultsDir, "SRPMS", builtSrpmFilename)
-	linkErr := os.Link(builtSrpmPath, targetPath)
+	var builtRpmSubdir string
+	var builtRpmExtension string
+	if isSource {
+		builtRpmSubdir = "SRPMS"
+		builtRpmExtension = "src.rpm"
+	} else {
+		builtRpmSubdir = filepath.Join("RPMS", arch)
+		builtRpmExtension = fmt.Sprintf("%s.rpm", arch)
+	}
+	builtRpmFilename := fmt.Sprintf("%s-%s-%s.%s", pkg, upstreamVersion, upstreamRelease, builtRpmExtension)
+	builtRpmPath := filepath.Join(resultsDir, builtRpmSubdir, builtRpmFilename)
+	targetPath := filepath.Join(targetDir, builtRpmFilename)
+	linkErr := os.Link(builtRpmPath, targetPath)
 	if linkErr != nil {
 		t.Fatal(linkErr)
 	}
@@ -258,4 +277,22 @@ func SetupViperConfig(
 func CheckEnv(t *testing.T, rootCmd *cobra.Command) {
 	_ = RunCmd(t, rootCmd, []string{"checkenv"}, false, true)
 	t.Log("Test environment fine")
+}
+
+// SetupDummyDependency sets up an empty rpm file at the path specified
+func SetupDummyDependency(t *testing.T,
+	depsDir, depPkg, depPkgArch, depVersion, depRelease string) {
+	// Create dep dir path
+	depPkgDirWithArch := filepath.Join(depsDir, depPkgArch, depPkg)
+	if err := os.MkdirAll(depPkgDirWithArch, 0755); err != nil {
+		t.Fatal(err)
+	}
+	releaseLine := fmt.Sprintf("Release: %s", depRelease)
+	SetupDummyRpm(t, depPkgDirWithArch,
+		depPkg, depPkgArch,
+		depVersion, depRelease, releaseLine,
+		nil,   // buildRequires
+		nil,   // requires
+		false, // isSource
+	)
 }

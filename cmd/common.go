@@ -13,7 +13,6 @@ var commonArgs = struct {
 	skipBuildPrep bool
 	arch          string
 	noCheck       bool
-	useLocalDeps  bool
 }{}
 
 func defaultArch() string {

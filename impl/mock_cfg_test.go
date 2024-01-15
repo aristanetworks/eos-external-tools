@@ -31,14 +31,20 @@ func testMockConfig(t *testing.T, chained bool) {
 	workDir := filepath.Join(testWorkingDir, "work")
 	destDir := filepath.Join(testWorkingDir, "dest")
 	srpmsDir := filepath.Join(destDir, "SRPMS")
-
 	for _, subdir := range []string{srcDir, workDir, destDir} {
 		os.Mkdir(subdir, 0775)
 	}
 
+	var sampleManifestFile string
+	if chained {
+		sampleManifestFile = "manifest-with-deps.yaml"
+	} else {
+		sampleManifestFile = "manifest.yaml"
+	}
+
 	t.Log("Copy testData/manifest to src directory")
 	pkg := "pkg1"
-	testutil.SetupManifest(t, srcDir, pkg, "manifest.yaml")
+	testutil.SetupManifest(t, srcDir, pkg, sampleManifestFile)
 
 	testutil.SetupViperConfig(
 		srcDir,
@@ -72,7 +78,6 @@ func testMockConfig(t *testing.T, chained bool) {
 			eextSignature:   "my-signature",
 			buildSpec:       &manifestObj.Package[0].Build,
 			dnfConfig:       dnfConfig,
-			useLocalDeps:    chained,
 		},
 	}
 

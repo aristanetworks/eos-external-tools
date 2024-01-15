@@ -252,7 +252,7 @@ func download(srcURL string, targetDir string,
 // filterAndCopy copies files from srcDirPath to a specified
 // destDirPath depending on filename.
 // pathMap is a map from destDirPath to a glob pattern.
-// We walk through all the entries of movePath and then copy files matching
+// We walk through all the entries of pathMap and then copy files matching
 // the glob to the the corresponding destDirPath.
 // Note that we make sure destDirPath is created with parents before copying.
 func filterAndCopy(pathMap map[string]string, errPrefix util.ErrPrefix) error {

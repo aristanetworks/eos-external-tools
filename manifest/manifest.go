@@ -45,20 +45,6 @@ type Multilib struct {
 	OtherArchPattern  MultilibRpmFilenamePattern `yaml:"other-arch"`
 }
 
-// Dependency spec
-// Used to specify a dependency to be consumed by the generator
-//
-// Dependency is a tuple of repo and package.
-//
-// Repo can specify some other barney repo like "code.arista.io/eos/eext/<depRepoName>"
-// It can also point to current repo with "."
-//
-// Package can be left empty when the specified repo has only one package.
-type Dependency struct {
-	Repo    string `yaml:"repo"`
-	Package string `yaml:"package"`
-}
-
 // Generator spec
 // Used only by the eextgen barney generator to generate eext commands to build barney images
 //
@@ -68,21 +54,23 @@ type Dependency struct {
 //	Valid options for mock are [ --nocheck ]
 //	Valid options for create-srpm are [ --skip-build-prep ]
 //
-// # Dependencies is a list of other eext package dependencies for this package
-//
 // MultiLib specifies MultiLib spec to generate multilib. It's indexed by native-arch (i686/x86_64).
+//
+// ExternalDependencies is indexed by the dependency name and the value is the barney repo
+// this dependency needs to fetched from
 type Generator struct {
-	CmdOptions   map[string][]string `yaml:"cmd-options"`
-	Multilib     map[string]Multilib `yaml:"multilib"`
-	Dependencies []Dependency        `yaml:"dependencies"`
+	CmdOptions           map[string][]string `yaml:"cmd-options"`
+	Multilib             map[string]Multilib `yaml:"multilib"`
+	ExternalDependencies map[string]string   `yaml:"external-dependencies"`
 }
 
 // Build spec
 // mock cfg is generated for each target depending on this
 type Build struct {
-	Include    []string     `yaml:"include"`
-	RepoBundle []RepoBundle `yaml:"repo-bundle"`
-	Generator  Generator    `yaml:"eextgen"`
+	Include      []string     `yaml:"include"`
+	RepoBundle   []RepoBundle `yaml:"repo-bundle"`
+	Dependencies []string     `yaml:"dependencies"`
+	Generator    Generator    `yaml:"eextgen"`
 }
 
 // DetachedSignature spec
