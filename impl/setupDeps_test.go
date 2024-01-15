@@ -46,6 +46,7 @@ func TestSetupDeps(t *testing.T) {
 		srcDir,
 		workDir,
 		destDir,
+		"", // srpms dir
 		depsDir,
 		"", // repoHost
 		"", // dnf config file

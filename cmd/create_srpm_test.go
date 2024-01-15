@@ -38,6 +38,7 @@ func testCreateSrpm(t *testing.T,
 		"",                                    // srcDir
 		workingDir,                            // workingDir
 		destDir,                               // destDir
+		"",                                    // srpmsDir
 		"",                                    // depsDir
 		"",                                    // repoHost,
 		"",                                    // dnfConfigFile

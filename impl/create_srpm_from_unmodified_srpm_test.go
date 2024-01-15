@@ -27,6 +27,7 @@ func testCreateSrpmFromUnmodifiedSrpm(t *testing.T,
 	srcDir := filepath.Join(testWorkingDir, "src")
 	workDir := filepath.Join(testWorkingDir, "work")
 	destDir := filepath.Join(testWorkingDir, "dest")
+	srpmsDir := filepath.Join(destDir, "SRPMS")
 
 	for _, subdir := range []string{srcDir, workDir, destDir} {
 		os.Mkdir(subdir, 0775)
@@ -43,6 +44,7 @@ func testCreateSrpmFromUnmodifiedSrpm(t *testing.T,
 		srcDir,
 		workDir,
 		destDir,
+		srpmsDir,
 		"", // depsDir
 		"", // repoHost
 		"", // dnf config file

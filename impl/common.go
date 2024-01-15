@@ -96,12 +96,16 @@ func getPkgSrpmsDestDir(pkg string) string {
 	return filepath.Join(getAllSrpmsDestDir(), pkg)
 }
 
-func getAllSrpmsDir() string {
-	return "/SRPMS"
-}
-
-func getPkgSrpmsDir(pkg string) string {
-	return filepath.Join(getAllSrpmsDir(), pkg)
+func getPkgSrpmsDir(errPrefix util.ErrPrefix, pkg string) (string, error) {
+	srpmsDirs := viper.GetString("SrpmsDir")
+	for _, srpmsDir := range strings.Split(srpmsDirs, ":") {
+		thisPath := filepath.Join(srpmsDir, pkg)
+		if util.CheckPath(thisPath, true, false) == nil {
+			return thisPath, nil
+		}
+	}
+	return "", fmt.Errorf("%ssubpath %s not found in any item in SrpmsDir %s",
+		errPrefix, pkg, srpmsDirs)
 }
 
 func getAllRpmsDestDir() string {

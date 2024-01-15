@@ -63,9 +63,13 @@ func testMock(t *testing.T, setupSrcEnv bool) {
 
 	repoName := "mrtparse-1"
 	expectedPkgName := "mrtparse"
+
+	// Plumb output of create-srpm to mock
+	srpmsDir := filepath.Join(destDir, "SRPMS")
+
 	testutil.SetupViperConfig(
 		"", // srcDir
-		workingDir, destDir,
+		workingDir, destDir, srpmsDir,
 		"", // depsDir
 		"", // repoHost,
 		"", // dnfConfigFile

@@ -30,6 +30,7 @@ func testMockConfig(t *testing.T, chained bool) {
 	srcDir := filepath.Join(testWorkingDir, "src")
 	workDir := filepath.Join(testWorkingDir, "work")
 	destDir := filepath.Join(testWorkingDir, "dest")
+	srpmsDir := filepath.Join(destDir, "SRPMS")
 
 	for _, subdir := range []string{srcDir, workDir, destDir} {
 		os.Mkdir(subdir, 0775)
@@ -43,6 +44,7 @@ func testMockConfig(t *testing.T, chained bool) {
 		srcDir,
 		workDir,
 		destDir,
+		srpmsDir,
 		"",                        // depsDir
 		"https://foo.org",         // repoHost
 		"testData/dnfconfig.yaml", // dnfConfigFile

@@ -197,6 +197,7 @@ func SetupViperConfig(
 	srcDir string,
 	workingDir string,
 	destDir string,
+	srpmsDir string,
 	depsDir string,
 	repoHost string,
 	dnfConfigFile string,
@@ -250,6 +251,7 @@ func SetupViperConfig(
 	// the test works in a barney context
 	viper.Set("SrcEnvPrefix",
 		"XXXSRC_")
+	viper.Set("SrpmsDir", srpmsDir)
 }
 
 // CheckEnv panics if the test hasn't setup the environment correctly
