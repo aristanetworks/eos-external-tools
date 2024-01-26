@@ -17,8 +17,8 @@ images:
           export DNF_HOST="https://artifactory.infra.corp.arista.io/artifactory"
           export DNF_ARCH="$(arch)"
           export DNF_DISTRO_REPO="alma-vault/9.1"
-          export DNF_EPEL9_REPO="eext-sources/epel9-frozen-subsets"
-          export DNF_EPEL9_REPO_VERSION="v20230901-1"
+          export DNF_EPEL9_REPO_VERSION="v20240127-1"
+          export DNF_EPEL9_REPO="eext-snapshots-local/epel9/${DNF_EPEL9_REPO_VERSION}/9/Everything"
           echo '#!/bin/sh
           microdnf --assumeyes --installroot=/dest --noplugins --config=/etc/dnf/dnf.conf \
                    --setopt=cachedir=/var/cache/microdnf --setopt=reposdir=/etc/yum.repos.d \
@@ -28,7 +28,7 @@ images:
           rm -rf /etc/yum.repos.d
           mkdir -p /etc/yum.repos.d
           echo "[epel9-subset]
-          baseurl=${DNF_HOST}/${DNF_EPEL9_REPO}/${DNF_EPEL9_REPO_VERSION}/
+          baseurl=${DNF_HOST}/${DNF_EPEL9_REPO}/${DNF_ARCH}/
           enabled=1
           gpgcheck=0
           " > /etc/yum.repos.d/eext-externaldeps.repo
@@ -56,7 +56,7 @@ images:
     units:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
-        build: install-rpms automake coreutils git rpm rpmdevtools rpm-build make mock python3-devel quilt
+        build: install-rpms autoconf automake coreutils git rpm rpmdevtools rpm-build make mock python3-devel quilt
 
   go-binaries:
     description: |
@@ -106,7 +106,7 @@ images:
       - floor: .%internal/alma-9.1-bootstrap
         sources: []
         build: |
-          install-rpms coreutils rpm rpm-build rpmdevtools automake mock quilt git golang
+          install-rpms autoconf automake coreutils golang git rpm rpmdevtools rpm-build make mock python3-devel quilt
           touch $DESTDIR/etc/resolv.conf
     entry:
       env:
