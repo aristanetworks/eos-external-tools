@@ -1,10 +1,15 @@
 ---
 # yamllint disable rule:line-length
 repo-bundle:
+# --------------------------------------------------------------------------------------------
+  # The defaults for this bundle points to the second most recent stable dot release 9.x.
+  # Upstream vaults/freezes the previous release repo once a new dot release is stable.
+  # The newest stable dot release keeps on receiving updates, so we use the previous one
+  # to ensure build reproducibility from our end.
   el9:
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
-    baseurl: "{{.Host}}/artifactory/alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os"
+    baseurl: "{{.Host}}/artifactory/eext-alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os"
     repo:
       AppStream:
         enabled: true
@@ -18,15 +23,132 @@ repo-bundle:
         enabled: false
     version-labels:
       default: 9.2
-      # Don't use latest if you want reproducible builds, this is just for experiments
-      latest: 9.3
+# --------------------------------------------------------------------------------------------
 
-  epel9-subset:
+# --------------------------------------------------------------------------------------------
+  epel9:
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
-    baseurl: "{{.Host}}/artifactory/eext-sources/epel9-frozen-subsets/{{.Version}}/"
+
+    # EPEL doesn't publish i686 RPMs. This ensures that we point to the x86_64 repo
+    # when target is i686. This means we can satisfy EPEL dependencies for i686 targets
+    # provided the dependencies are all noarch.
+    use-base-arch: true
+    baseurl: "{{.Host}}/artifactory/eext-snapshots-local/epel9/{{.Version}}/9/Everything/{{.Arch}}/"
     repo:
       epel9:
         enabled: true
     version-labels:
-      default: v20230901-1
+      # Each version points to a timestamped snapshot of the repo cache of the epel9-unsafe repo.
+      # The eext team is responsible for creating these snapshots.
+      # default points to the latest such snapshot.
+      default: v20240127-1
+# --------------------------------------------------------------------------------------------
+
+# ********************************************************************************************
+# DO NOT use any repo bundles below this unless you know what you're doing.
+# ********************************************************************************************
+
+# --------------------------------------------------------------------------------------------
+  el9-unsafe:
+    # DO NOT use el9-unsafe as a repo-bundle in your eext.yaml unless you know what you're doing.
+    # Use el9 because the defaults there will ensure build reproducibility.
+    # el9-unsafe is used by the eext team for experiments.
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
+
+    # i686 rpms are not offically supported upstream, so it is only available in vault
+    # So point to eext-alma-vault repo for i686 and eext-alma-linux for other archs.
+    baseurl: '{{.Host}}/artifactory/eext-alma-{{if eq .Arch "i686"}}vault{{else}}linux{{end}}/{{.Version}}/{{.RepoName}}/{{.Arch}}/os'
+    repo:
+      AppStream:
+        enabled: true
+      BaseOS:
+        enabled: true
+      CRB:
+        enabled: true
+      devel:
+        enabled: false
+      extras:
+        enabled: false
+    version-labels:
+      # default=9 always points to upstream latest dot release 9.x,
+      # which upstream updates regularly.
+      default: 9
+# --------------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------------
+  el9-beta-unsafe:
+  # DO NOT use el9-beta-unsafe as a repo-bundle in your eext.yaml
+  # unless you know what you're doing. Use el9 instead because the defaults
+  # there will ensure build reproducibility.
+  # el9-beta-unsafe is used by the eext team for experiments.
+
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
+
+    # upstream always publishes the latest beta to vault.
+    baseurl: '{{.Host}}/artifactory/eext-alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os'
+    repo:
+      AppStream:
+        enabled: true
+      BaseOS:
+        enabled: true
+      CRB:
+        enabled: true
+      devel:
+        enabled: false
+      extras:
+        enabled: false
+    version-labels:
+      # default always points to upstream latest dot release 9.x's beta version,
+      # which upstream updates regularly.
+      default: 9.3-beta
+# --------------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------------
+  epel9-unsafe:
+    # DO NOT use epel9-unsafe as a repo-bundle in your eext.yaml
+    # unless you know what you're doing. Use epel9 instead because the defaults
+    # there will ensure build reproducibility.
+    # epel9-unsafe is used by the eext team for creating repo cache snapshots
+    # that are further used to update the epel9 repo-bundle default pointer.
+
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
+
+    # EPEL doesn't publish i686 RPMs. This ensures that we point to the x86_64 repo
+    # when target is i686. This means we can satisfy EPEL dependencies for i686 targets
+    # provided the dependencies are all noarch.
+    use-base-arch: true
+    baseurl: "{{.Host}}/artifactory/eext-epel/{{.Version}}/Everything/{{.Arch}}/"
+    repo:
+      epel9:
+        enabled: true
+    version-labels:
+      # default always points to upstream stable repo which receives updates.
+      default: 9
+# --------------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------------
+  epel9-next-unsafe:
+    # DO NOT use epel9-next-unsafe as a repo-bundle in your eext.yaml
+    # unless you know what you're doing. Use epel9 instead because the defaults
+    # there will ensure build reproducibility.
+    # epel9-beta-unsafe is used by the eext team for experiments.
+
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
+
+    # EPEL doesn't publish i686 RPMs. This ensures that we point to the x86_64 repo
+    # when target is i686. This means we can satisfy EPEL dependencies for i686 targets
+    # provided the dependencies are all noarch.
+    use-base-arch: true
+    baseurl: "{{.Host}}/artifactory/eext-epel/next/{{.Version}}/Everything/{{.Arch}}/"
+    repo:
+      epel9:
+        enabled: true
+    version-labels:
+      # default always points to upstream next/beta repo which receives updates.
+      default: 9
+# --------------------------------------------------------------------------------------------
