@@ -18,6 +18,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const ExpectedBuildHost string = "eext-buildhost"
+
+// $ date -d @1710460800
+// Fri Mar 15 00:00:00 UTC 2024
+const MrtParseChangeLogTs string = "1710460800"
+
+// $ date -d @1628467200
+// Mon Aug  9 00:00:00 UTC 2021
+const DebugeditChangeLogTs string = "1628467200"
+
 var r, w, rescueStdout *(os.File)
 
 // SetupManifest used to setup a test manifest from testdata for manifest functionality testing

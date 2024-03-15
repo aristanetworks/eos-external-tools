@@ -423,6 +423,13 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 	return nil
 }
 
+var reproducibleBuildMacros = map[string]string{
+	"source_date_epoch_from_changelog":   "1",
+	"use_source_date_epoch_as_buildtime": "1",
+	"clamp_mtime_to_source_date_epoch":   "1",
+	"_buildhost":                         "eext-buildhost",
+}
+
 func (bldr *srpmBuilder) build(prep bool) error {
 	bldr.log("starting")
 
@@ -461,6 +468,13 @@ func (bldr *srpmBuilder) build(prep bool) error {
 			"--define", fmt.Sprintf("eext_release %s", rpmReleaseMacro),
 		}...)
 	}
+
+	for macro, macroVal := range reproducibleBuildMacros {
+		rpmbuildArgs = append(rpmbuildArgs, []string{
+			"--define", fmt.Sprintf("%s %s", macro, macroVal),
+		}...)
+	}
+
 	rpmbuildArgs = append(rpmbuildArgs, specFile)
 
 	if err := util.RunSystemCmd("rpmbuild", rpmbuildArgs...); err != nil {

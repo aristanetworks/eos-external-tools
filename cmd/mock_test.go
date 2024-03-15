@@ -111,6 +111,8 @@ func testMock(t *testing.T, setupSrcEnv bool) {
 	expectedTags := map[string]string{
 		"release":      expectedRelease,
 		"distribution": expectedDistribution,
+		"BUILDHOST":    testutil.ExpectedBuildHost,
+		"BUILDTIME":    testutil.MrtParseChangeLogTs,
 	}
 	runMockAndVerify(t, destDir, repoName, expectedPkgName, false,
 		expectedRpmFiles, expectedTags)

@@ -51,3 +51,6 @@ information base contents, and is standardized in RFC6396. Programs like Quagga
 %{python3_sitelib}/mrtparse/params.py*
 %{python3_sitelib}/mrtparse/__pycache__/*cpython*
 
+%changelog
+* Fri Mar 15 2024 Arun Ajith S <aajith@arista.com>
+- Dummy changelog for tests
