@@ -12,7 +12,7 @@
     "commit": "170de1870a07a3ff5343bc55158265cefa45060c"
   },
   "barney.ci/golang": {
-    "commit": "32a79db5f3265059353e9355a64114804cb60771"
+    "commit": "f3714b98b2fc112906b22d64049e682470153986"
   },
   "barney.ci/model": {
     "commit": "c247d05e6c04c65b9db05ce92269edacde9de373"
