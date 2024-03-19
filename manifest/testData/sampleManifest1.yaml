@@ -30,8 +30,13 @@ package:
           version: v1
         - name: bar
       dependencies:
-        - libpcap
-        - glibc
+        all:
+          - libpcap
+          - glibc
+        x86_64:
+          - gcc11
+        i686:
+          - iptables
       eextgen:
         cmd-options:
           mock:

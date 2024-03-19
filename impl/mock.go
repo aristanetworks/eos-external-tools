@@ -93,7 +93,7 @@ func (bldr *mockBuilder) clean() error {
 func (bldr *mockBuilder) setupDeps() error {
 	bldr.log("starting")
 
-	if bldr.buildSpec.Dependencies == nil {
+	if len(bldr.dependencyList) == 0 {
 		panic(fmt.Sprintf("%sUnexpected call to setupDeps "+
 			"(manifest doesn't specify any dependencies)",
 			bldr.errPrefix))
@@ -108,7 +108,7 @@ func (bldr *mockBuilder) setupDeps() error {
 	var missingDeps []string
 	pathMap := make(map[string]string)
 	mockDepsDir := getMockDepsDir(bldr.pkg, bldr.arch)
-	for _, dep := range bldr.buildSpec.Dependencies {
+	for _, dep := range bldr.dependencyList {
 		depStatisfied := false
 		for _, arch := range []string{"noarch", bldr.arch} {
 			depDirWithArch := filepath.Join(depsDir, arch, dep)
@@ -287,7 +287,7 @@ func (bldr *mockBuilder) runStages() error {
 		return err
 	}
 
-	if bldr.buildSpec.Dependencies != nil {
+	if len(bldr.dependencyList) != 0 {
 		bldr.setupStageErrPrefix("setupDeps")
 		if err := bldr.setupDeps(); err != nil {
 			return err
@@ -370,6 +370,9 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			return err
 		}
 
+		dependencyMap := pkgSpec.Build.Dependencies
+		dependencyList := append(dependencyMap["all"], dependencyMap[arch]...)
+
 		bldr := &mockBuilder{
 			builderCommon: &builderCommon{
 				pkg:               thisPkgName,
@@ -381,6 +384,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				buildSpec:         &pkgSpec.Build,
 				dnfConfig:         dnfConfig,
 				errPrefix:         errPrefix,
+				dependencyList:    dependencyList,
 			},
 			onlyCreateCfg: extraArgs.OnlyCreateCfg,
 			noCheck:       extraArgs.NoCheck,

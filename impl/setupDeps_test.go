@@ -52,6 +52,7 @@ func TestSetupDeps(t *testing.T) {
 	defer viper.Reset()
 
 	depPkg := "foo"
+	depArch := "all"
 	depPkgArch := "noarch"
 	depVersion := "1.0.0"
 	depRelease := "1"
@@ -63,16 +64,17 @@ func TestSetupDeps(t *testing.T) {
 	require.Equal(t, pkg, manifestObj.Package[0].Name)
 	require.NotNil(t, manifestObj.Package[0].Build)
 	require.NotNil(t, manifestObj.Package[0].Build.Dependencies)
-	require.Equal(t, depPkg, manifestObj.Package[0].Build.Dependencies[0])
+	require.Equal(t, depPkg, manifestObj.Package[0].Build.Dependencies[depArch][0])
 
 	testutil.SetupDummyDependency(t, depsDir,
 		depPkg, depPkgArch, depVersion, depRelease)
 
 	bldr := mockBuilder{
 		builderCommon: &builderCommon{
-			pkg:       pkg,
-			arch:      "x86_64",
-			buildSpec: &manifestObj.Package[0].Build,
+			pkg:            pkg,
+			arch:           "x86_64",
+			buildSpec:      &manifestObj.Package[0].Build,
+			dependencyList: []string{"foo"},
 		},
 	}
 

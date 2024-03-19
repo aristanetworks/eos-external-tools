@@ -67,10 +67,10 @@ type Generator struct {
 // Build spec
 // mock cfg is generated for each target depending on this
 type Build struct {
-	Include      []string     `yaml:"include"`
-	RepoBundle   []RepoBundle `yaml:"repo-bundle"`
-	Dependencies []string     `yaml:"dependencies"`
-	Generator    Generator    `yaml:"eextgen"`
+	Include      []string            `yaml:"include"`
+	RepoBundle   []RepoBundle        `yaml:"repo-bundle"`
+	Dependencies map[string][]string `yaml:"dependencies"`
+	Generator    Generator           `yaml:"eextgen"`
 }
 
 // DetachedSignature spec
