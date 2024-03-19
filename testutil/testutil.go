@@ -65,7 +65,7 @@ Name: {{.Name}}
 Version: {{.UpstreamVersion}}
 {{ .SpecFileReleaseLine }}
 BuildArch: {{.Arch}}
-License: foo
+License: {{.Name}}
 
 {{ range .Requires }}
 Requires: {{.}}
@@ -77,7 +77,7 @@ BuildRequires: {{.}}
 
 
 %description
-foo
+{{.Name}}
 
 %prep
 true

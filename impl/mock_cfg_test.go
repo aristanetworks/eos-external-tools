@@ -36,10 +36,13 @@ func testMockConfig(t *testing.T, chained bool) {
 	}
 
 	var sampleManifestFile string
+	var dependencyList []string
 	if chained {
 		sampleManifestFile = "manifest-with-deps.yaml"
+		dependencyList = []string{"foo"}
 	} else {
 		sampleManifestFile = "manifest.yaml"
+		dependencyList = []string{}
 	}
 
 	t.Log("Copy testData/manifest to src directory")
@@ -78,6 +81,7 @@ func testMockConfig(t *testing.T, chained bool) {
 			eextSignature:   "my-signature",
 			buildSpec:       &manifestObj.Package[0].Build,
 			dnfConfig:       dnfConfig,
+			dependencyList:  dependencyList,
 		},
 	}
 

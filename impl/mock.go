@@ -13,6 +13,8 @@ import (
 
 	"github.com/spf13/viper"
 
+	"golang.org/x/exp/slices"
+
 	"code.arista.io/eos/tools/eext/dnfconfig"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
@@ -93,7 +95,7 @@ func (bldr *mockBuilder) clean() error {
 func (bldr *mockBuilder) setupDeps() error {
 	bldr.log("starting")
 
-	if bldr.buildSpec.Dependencies == nil {
+	if len(bldr.dependencyList) == 0 {
 		panic(fmt.Sprintf("%sUnexpected call to setupDeps "+
 			"(manifest doesn't specify any dependencies)",
 			bldr.errPrefix))
@@ -108,7 +110,7 @@ func (bldr *mockBuilder) setupDeps() error {
 	var missingDeps []string
 	pathMap := make(map[string]string)
 	mockDepsDir := getMockDepsDir(bldr.pkg, bldr.arch)
-	for _, dep := range bldr.buildSpec.Dependencies {
+	for _, dep := range bldr.dependencyList {
 		depStatisfied := false
 		for _, arch := range []string{"noarch", bldr.arch} {
 			depDirWithArch := filepath.Join(depsDir, arch, dep)
@@ -287,7 +289,9 @@ func (bldr *mockBuilder) runStages() error {
 		return err
 	}
 
-	if bldr.buildSpec.Dependencies != nil {
+	// Checking if the package has any dependencies for the target build arch.
+	// Using length check of dependency list, since bldr.Build.Dependencies might be set for other arch deps.
+	if len(bldr.dependencyList) != 0 {
 		bldr.setupStageErrPrefix("setupDeps")
 		if err := bldr.setupDeps(); err != nil {
 			return err
@@ -321,9 +325,21 @@ func (bldr *mockBuilder) runStages() error {
 // Mock calls fedora mock to build the RPMS for the specified target
 // from the already built SRPMs and places the results in
 // <DestDir>/RPMS/<rpmArch>/<package>/
+// 'arch' cannot be empty, needs to be a valid architecture.
 func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) error {
 	if err := setup(); err != nil {
 		return err
+	}
+
+	// Check if target arch has been set
+	allowedArchTypes := []string{"i686", "x86_64", "aarch64"}
+	if arch == "" {
+		return fmt.Errorf("Arch is not set, please input a valid build architecture.")
+	}
+	// Check if target arch is a valid arch value
+	if !slices.Contains(allowedArchTypes, arch) {
+		panic(fmt.Sprintf("'%s' is not a valid build arch, must be one of %s", arch,
+			strings.Join(allowedArchTypes, ", ")))
 	}
 
 	// Error out early if source is not available.
@@ -370,6 +386,11 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			return err
 		}
 
+		dependencyMap := pkgSpec.Build.Dependencies
+		// golang allows accessing keys of an empty/nil map, without throwing an error.
+		// If a key is not present in the map, it returns an empty instance of the value.
+		dependencyList := append(dependencyMap["all"], dependencyMap[arch]...)
+
 		bldr := &mockBuilder{
 			builderCommon: &builderCommon{
 				pkg:               thisPkgName,
@@ -381,6 +402,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				buildSpec:         &pkgSpec.Build,
 				dnfConfig:         dnfConfig,
 				errPrefix:         errPrefix,
+				dependencyList:    dependencyList,
 			},
 			onlyCreateCfg: extraArgs.OnlyCreateCfg,
 			noCheck:       extraArgs.NoCheck,

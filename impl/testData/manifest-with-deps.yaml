@@ -18,4 +18,7 @@ package:
         - name: bundle-boo2
           version: latest
       dependencies:
-        - foo
+        all:
+          - foo
+        i686:
+          - bar
