@@ -20,3 +20,5 @@ package:
       dependencies:
         all:
           - foo
+        i686:
+          - bar

@@ -29,7 +29,7 @@ func TestSetupDeps(t *testing.T) {
 	destDir := filepath.Join(testWorkingDir, "dest")
 	depsDir := filepath.Join(testWorkingDir, "deps")
 
-	for _, subdir := range []string{srcDir, workDir, destDir, depsDir} {
+	for _, subdir := range []string{srcDir, workDir, destDir} {
 		os.Mkdir(subdir, 0775)
 	}
 
@@ -66,28 +66,44 @@ func TestSetupDeps(t *testing.T) {
 	require.NotNil(t, manifestObj.Package[0].Build.Dependencies)
 	require.Equal(t, depPkg, manifestObj.Package[0].Build.Dependencies[depArch][0])
 
-	testutil.SetupDummyDependency(t, depsDir,
-		depPkg, depPkgArch, depVersion, depRelease)
+	for _, targetArch := range []string{"x86_64", "i686", "aarch64"} {
+		// Creating an anonymous function to ensure 'depsDir' folder is removed with 'defer'
+		func() {
+			os.Mkdir(depsDir, 0755)
+			defer os.RemoveAll(depsDir)
 
-	bldr := mockBuilder{
-		builderCommon: &builderCommon{
-			pkg:            pkg,
-			arch:           "x86_64",
-			buildSpec:      &manifestObj.Package[0].Build,
-			dependencyList: []string{"foo"},
-		},
+			dependencyMap := manifestObj.Package[0].Build.Dependencies
+			dependencyList := append(dependencyMap["all"], dependencyMap[targetArch]...)
+
+			for _, depPkg := range dependencyList {
+				testutil.SetupDummyDependency(t, depsDir,
+					depPkg, depPkgArch, depVersion, depRelease)
+			}
+
+			bldr := mockBuilder{
+				builderCommon: &builderCommon{
+					pkg:            pkg,
+					arch:           targetArch,
+					buildSpec:      &manifestObj.Package[0].Build,
+					dependencyList: dependencyList,
+				},
+			}
+
+			t.Log("Running setupDeps")
+			setupDepsErr := bldr.setupDeps()
+			require.NoError(t, setupDepsErr)
+			t.Log("Ran setupDeps, verifying results")
+
+			for _, depPkg := range dependencyList {
+				archDir := "mock-" + targetArch + "/mock-deps"
+				depsWorkDir := filepath.Join(workDir, pkg, archDir)
+				expectedDummyDepDir := filepath.Join(depsWorkDir, depPkgArch, depPkg)
+				expectedDummyDepFilename := fmt.Sprintf("%s-%s-%s.%s.rpm", depPkg, depVersion, depRelease, depPkgArch)
+				expectedDummyDepFilepath := filepath.Join(expectedDummyDepDir, expectedDummyDepFilename)
+				require.FileExists(t, expectedDummyDepFilepath)
+				require.DirExists(t, filepath.Join(depsWorkDir, "repodata"))
+			}
+		}()
+		t.Log("Results verified")
 	}
-
-	t.Log("Running setupDeps")
-	setupDepsErr := bldr.setupDeps()
-	require.NoError(t, setupDepsErr)
-	t.Log("Ran setupDeps, verifying results")
-
-	depsWorkDir := filepath.Join(workDir, pkg, "mock-x86_64/mock-deps")
-	expectedDummyDepDir := filepath.Join(depsWorkDir, depPkgArch, depPkg)
-	expectedDummyDepFilename := fmt.Sprintf("%s-%s-%s.%s.rpm", depPkg, depVersion, depRelease, depPkgArch)
-	expectedDummyDepFilepath := filepath.Join(expectedDummyDepDir, expectedDummyDepFilename)
-	require.FileExists(t, expectedDummyDepFilepath)
-	require.DirExists(t, filepath.Join(depsWorkDir, "repodata"))
-	t.Log("Results verified")
 }
