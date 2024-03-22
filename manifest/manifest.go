@@ -66,11 +66,33 @@ type Generator struct {
 
 // Build spec
 // mock cfg is generated for each target depending on this
+//
+// RepoBundle specifies while bundles should the eext tool look into,
+// to download required upstream dependencies. (Eg: el9, epel9)
+// Defined in config/dnfconfig.yaml.
+//
+// Dependencies helps eext determine, based on the target arch, which package dependencies are required.
+// Archs can be of type ['all', 'i686', 'x86_64', 'aarch64'].
+// The map specifies the list of package dependencies eext should build locally, based on the current build arch.
+// Use 'all' if the dependencies are common for all archs, else use arch specific dependencies.
+// Eg:
+//
+//	dependencies:
+//	  all:
+//	    - pkgDep1
+//	  i686:
+//	    - pkgDep2
+//
+// In this case, for 'i686' build, eext will need to build both pkgDep1 and pkgDep2.
+// Whereas for 'x86_64' build, only pkgDep1 needs to be built.
+//
+// Generator specifies commands for eext generator
+// Refer to Generator struct denifition above.
 type Build struct {
-	Include      []string     `yaml:"include"`
-	RepoBundle   []RepoBundle `yaml:"repo-bundle"`
-	Dependencies []string     `yaml:"dependencies"`
-	Generator    Generator    `yaml:"eextgen"`
+	Include      []string            `yaml:"include"`
+	RepoBundle   []RepoBundle        `yaml:"repo-bundle"`
+	Dependencies map[string][]string `yaml:"dependencies"`
+	Generator    Generator           `yaml:"eextgen"`
 }
 
 // DetachedSignature spec
@@ -139,6 +161,25 @@ func (m Manifest) sanityCheck() error {
 		if pkgSpec.Build.RepoBundle == nil {
 			return fmt.Errorf("No repo-bundle specified for Build in package %s",
 				pkgSpec.Name)
+		}
+
+		if pkgSpec.Build.Dependencies != nil {
+			dependencyMap := pkgSpec.Build.Dependencies
+			allowedArchs := []string{"all", "i686", "x86_64", "aarch64"}
+			duplicatePkgCheckList := make(map[string]string)
+			for arch := range dependencyMap {
+				if !slices.Contains(allowedArchs, arch) {
+					return fmt.Errorf("'%v' is not a valid/supported arch, use one of %v", arch, allowedArchs)
+				}
+				for _, depPkg := range dependencyMap[arch] {
+					otherArch, exists := duplicatePkgCheckList[depPkg]
+					if exists && (arch == "all" || otherArch == "all") {
+						return fmt.Errorf("Dependency package %v cannot belong to 'all' and '%v', choose any one arch",
+							depPkg, arch)
+					}
+					duplicatePkgCheckList[depPkg] = arch
+				}
+			}
 		}
 
 		for _, upStreamSrc := range pkgSpec.UpstreamSrc {
