@@ -155,7 +155,7 @@ func (m Manifest) sanityCheck() error {
 
 		if !slices.Contains(allowedPkgTypes, pkgSpec.Type) {
 			return fmt.Errorf("Bad type '%s' for package %s",
-				pkgSpec.Name, pkgSpec.Type)
+				pkgSpec.Type, pkgSpec.Name)
 		}
 
 		if pkgSpec.Build.RepoBundle == nil {
