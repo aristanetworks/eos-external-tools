@@ -36,6 +36,7 @@ type builderCommon struct {
 	dnfConfig         *dnfconfig.DnfConfig
 	errPrefix         util.ErrPrefix
 	dependencyList    []string
+	enableNetwork     bool
 }
 
 type mockCfgBuilder struct {
