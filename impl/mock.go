@@ -243,6 +243,9 @@ func (bldr *mockBuilder) runFedoraMockStages() error {
 	if bldr.noCheck {
 		buildArgs = append(buildArgs, "--nocheck")
 	}
+	if bldr.enableNetwork {
+		buildArgs = append(buildArgs, "--enable-network")
+	}
 	bldr.log("starting")
 	if err := bldr.runMockCmd(buildArgs); err != nil {
 		return err
@@ -403,6 +406,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				dnfConfig:         dnfConfig,
 				errPrefix:         errPrefix,
 				dependencyList:    dependencyList,
+				enableNetwork:     pkgSpec.Build.EnableNetwork,
 			},
 			onlyCreateCfg: extraArgs.OnlyCreateCfg,
 			noCheck:       extraArgs.NoCheck,

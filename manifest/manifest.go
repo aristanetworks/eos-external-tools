@@ -89,10 +89,11 @@ type Generator struct {
 // Generator specifies commands for eext generator
 // Refer to Generator struct denifition above.
 type Build struct {
-	Include      []string            `yaml:"include"`
-	RepoBundle   []RepoBundle        `yaml:"repo-bundle"`
-	Dependencies map[string][]string `yaml:"dependencies"`
-	Generator    Generator           `yaml:"eextgen"`
+	Include       []string            `yaml:"include"`
+	RepoBundle    []RepoBundle        `yaml:"repo-bundle"`
+	Dependencies  map[string][]string `yaml:"dependencies"`
+	Generator     Generator           `yaml:"eextgen"`
+	EnableNetwork bool                `yaml:"enable-network"`
 }
 
 // DetachedSignature spec
