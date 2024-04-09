@@ -386,7 +386,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			return err
 		}
 
-		dependencyMap := pkgSpec.Build.Dependencies
+		dependencyMap := pkgSpec.Build.GetDependencies()
 		// golang allows accessing keys of an empty/nil map, without throwing an error.
 		// If a key is not present in the map, it returns an empty instance of the value.
 		dependencyList := append(dependencyMap["all"], dependencyMap[arch]...)

@@ -63,8 +63,8 @@ func TestSetupDeps(t *testing.T) {
 	require.NotNil(t, manifestObj)
 	require.Equal(t, pkg, manifestObj.Package[0].Name)
 	require.NotNil(t, manifestObj.Package[0].Build)
-	require.NotNil(t, manifestObj.Package[0].Build.Dependencies)
-	require.Equal(t, depPkg, manifestObj.Package[0].Build.Dependencies[depArch][0])
+	require.NotNil(t, manifestObj.Package[0].Build.GetDependencies())
+	require.Equal(t, depPkg, manifestObj.Package[0].Build.GetDependencies()[depArch][0])
 
 	for _, targetArch := range []string{"x86_64", "i686", "aarch64"} {
 		// Creating an anonymous function to ensure 'depsDir' folder is removed with 'defer' for each arch
@@ -72,7 +72,7 @@ func TestSetupDeps(t *testing.T) {
 			os.Mkdir(depsDir, 0755)
 			defer os.RemoveAll(depsDir)
 
-			dependencyMap := manifestObj.Package[0].Build.Dependencies
+			dependencyMap := manifestObj.Package[0].Build.GetDependencies()
 			dependencyList := append(dependencyMap["all"], dependencyMap[targetArch]...)
 
 			for _, depPkg := range dependencyList {
