@@ -57,6 +57,10 @@ package:
         - name: foo
           version: v1
         - name: bar
+      dependencies:
+        - libpcap
+        - glibc
+        - 123
   - name: libutils
     upstream-sources:
       - source-bundle:

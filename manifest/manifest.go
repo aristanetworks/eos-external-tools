@@ -89,11 +89,56 @@ type Generator struct {
 // Generator specifies commands for eext generator
 // Refer to Generator struct denifition above.
 type Build struct {
-	Include      []string            `yaml:"include"`
-	RepoBundle   []RepoBundle        `yaml:"repo-bundle"`
-	Dependencies map[string][]string `yaml:"dependencies"`
-	Generator    Generator           `yaml:"eextgen"`
+	Include      []string     `yaml:"include"`
+	RepoBundle   []RepoBundle `yaml:"repo-bundle"`
+	Dependencies Dependencies `yaml:"dependencies"`
+	Generator    Generator    `yaml:"eextgen"`
 }
+
+// Dependencies is either a list of dependencies (meaning arch=all), or a map.
+// The List form is deprecated and only maintained for backward compatibility.
+type Dependencies struct {
+	List []string
+	Map  map[string][]string
+}
+
+// GetDependencies returns the dependency map from either a list or a map.
+func (b *Build) GetDependencies() map[string][]string {
+	if len(b.Dependencies.Map) > 0 {
+		return b.Dependencies.Map
+	}
+	if len(b.Dependencies.List) > 0 {
+		ret := map[string][]string{"all": b.Dependencies.List}
+		return ret
+	}
+	return nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler.
+func (d *Dependencies) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// First, try unmarshaling into a map
+	asMap := map[string][]string{}
+	if err := unmarshal(&asMap); err == nil {
+		d.Map = asMap
+		return nil
+	}
+
+	// If the map attempt fails, try unmarshaling into a slice
+	asList := []string{}
+	if err := unmarshal(&asList); err == nil {
+		d.List = asList
+		return nil
+	}
+
+	var badVal any
+	if err := unmarshal(&badVal); err == nil {
+		return fmt.Errorf("dependencies must be a list or a map (found %v [%T])", badVal, badVal)
+	}
+
+	return fmt.Errorf("dependencies must be a list or a map")
+}
+
+var _ yaml.Unmarshaler = &Dependencies{}
 
 // DetachedSignature spec
 // Specify either full URL of detached signature or how to derive it from source URL
@@ -163,8 +208,8 @@ func (m Manifest) sanityCheck() error {
 				pkgSpec.Name)
 		}
 
-		if pkgSpec.Build.Dependencies != nil {
-			dependencyMap := pkgSpec.Build.Dependencies
+		dependencyMap := pkgSpec.Build.GetDependencies()
+		if len(dependencyMap) != 0 {
 			allowedArchs := []string{"all", "i686", "x86_64", "aarch64"}
 			duplicatePkgCheckList := make(map[string]string)
 			for arch := range dependencyMap {

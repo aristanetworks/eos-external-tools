@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/spf13/viper"
@@ -35,8 +36,29 @@ func TestManifest(t *testing.T) {
 	testutil.SetupManifest(t, dir, "pkg1", "sampleManifest1.yaml")
 
 	t.Log("Testing Load")
-	testLoad(t, "pkg1")
-	t.Log("Load test passed")
+	manifest, err := LoadManifest("pkg1")
+	require.NoError(t, err)
+	require.NotNil(t, manifest)
+	verifyCount := 0
+	for _, pkg := range manifest.Package {
+		var expectDeps map[string][]string
+		switch pkg.Name {
+		case "tcpdump":
+			verifyCount++
+			expectDeps = map[string][]string{
+				"all":    {"libpcap", "glibc"},
+				"x86_64": {"gcc11"},
+				"i686":   {"iptables"},
+			}
+		case "binutils":
+			verifyCount++
+			expectDeps = map[string][]string{
+				"all": {"libpcap", "glibc", "123"},
+			}
+		}
+		assert.Equal(t, expectDeps, pkg.Build.GetDependencies())
+	}
+	assert.Equal(t, 2, verifyCount)
 }
 
 type manifestTestVariant struct {
