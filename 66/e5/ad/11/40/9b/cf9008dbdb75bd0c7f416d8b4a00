@@ -1,0 +1,23 @@
+{
+  "": {
+    "commit": "66e5ad11409bcf9008dbdb75bd0c7f416d8b4a00"
+  },
+  "barney.ci/alpine": {
+    "commit": "fb1ae6f324425a5f9260d60d7cc113146bb97913"
+  },
+  "barney.ci/barneyfile": {
+    "commit": "89784fadb98fdcde5733d34da4173f0ee3cfd99f"
+  },
+  "barney.ci/docker": {
+    "commit": "845cd5dc497c60746370e6e2f12f0bab1bf463de"
+  },
+  "barney.ci/golang": {
+    "commit": "711b3944183c0938ea918e0a123dc2009ce7dae4"
+  },
+  "barney.ci/model": {
+    "commit": "19ea63f27704b59941b731ccb110b27fce63718c"
+  },
+  "github.com/golang/go": {
+    "commit": "dddf0ae40fa0c1223aba191d73a44425a08e1035"
+  }
+}
