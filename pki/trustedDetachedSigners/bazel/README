@@ -1,0 +1,10 @@
+On https://bazel.build/install/compile-source they say
+"You should verify the signature made by Bazel's release key 3D5919B448457EE0"
+
+I've downloaded the key [3D5919B448457EE0] from their link and named it as
+bazelPubKey.pem:
+
+    curl -L -o bazelPubKey.pem https://bazel.build/bazel-release.pub.gpg
+
+
+[3D5919B448457EE0]: https://bazel.build/bazel-release.pub.gpg
