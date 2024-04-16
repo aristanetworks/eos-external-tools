@@ -30,19 +30,30 @@ func testMockConfig(t *testing.T, chained bool) {
 	srcDir := filepath.Join(testWorkingDir, "src")
 	workDir := filepath.Join(testWorkingDir, "work")
 	destDir := filepath.Join(testWorkingDir, "dest")
-
+	srpmsDir := filepath.Join(destDir, "SRPMS")
 	for _, subdir := range []string{srcDir, workDir, destDir} {
 		os.Mkdir(subdir, 0775)
 	}
 
+	var sampleManifestFile string
+	var dependencyList []string
+	if chained {
+		sampleManifestFile = "manifest-with-deps.yaml"
+		dependencyList = []string{"foo"}
+	} else {
+		sampleManifestFile = "manifest.yaml"
+		dependencyList = []string{}
+	}
+
 	t.Log("Copy testData/manifest to src directory")
 	pkg := "pkg1"
-	testutil.SetupManifest(t, srcDir, pkg, "manifest.yaml")
+	testutil.SetupManifest(t, srcDir, pkg, sampleManifestFile)
 
 	testutil.SetupViperConfig(
 		srcDir,
 		workDir,
 		destDir,
+		srpmsDir,
 		"",                        // depsDir
 		"https://foo.org",         // repoHost
 		"testData/dnfconfig.yaml", // dnfConfigFile
@@ -57,11 +68,6 @@ func testMockConfig(t *testing.T, chained bool) {
 	require.NoError(t, err)
 	require.NotNil(t, manifestObj)
 
-	// Force chained attr in manifest
-	if chained {
-		manifestObj.Package[0].Build.LocalDeps = true
-	}
-
 	t.Log("Load dnfconfig.yaml")
 	dnfConfig, loadErr := dnfconfig.LoadDnfConfig()
 	require.NoError(t, loadErr)
@@ -75,6 +81,7 @@ func testMockConfig(t *testing.T, chained bool) {
 			eextSignature:   "my-signature",
 			buildSpec:       &manifestObj.Package[0].Build,
 			dnfConfig:       dnfConfig,
+			dependencyList:  dependencyList,
 		},
 	}
 

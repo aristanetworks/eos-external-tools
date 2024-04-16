@@ -6,10 +6,14 @@ package impl
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
+
+	"golang.org/x/exp/slices"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
 	"code.arista.io/eos/tools/eext/manifest"
@@ -48,31 +52,22 @@ func (bldr *mockBuilder) setupStageErrPrefix(stage string) {
 }
 
 func (bldr *mockBuilder) fetchSrpm() error {
-
-	pkgSrpmsDir := getPkgSrpmsDir(bldr.pkg)
-	pkgSrpmsDestDir := getPkgSrpmsDestDir(bldr.pkg)
-
-	var srpmDir string
-	if util.CheckPath(pkgSrpmsDir, true, false) == nil {
-		srpmDir = pkgSrpmsDir
-	} else if util.CheckPath(pkgSrpmsDestDir, true, false) == nil {
-		srpmDir = pkgSrpmsDestDir
-	} else {
-		return fmt.Errorf("%sExpected one of these directories to be present: %s:%s",
-			bldr.errPrefix, pkgSrpmsDir, pkgSrpmsDestDir)
+	pkgSrpmDir, pkgSrpmDirErr := getPkgSrpmsDir(bldr.errPrefix, bldr.pkg)
+	if pkgSrpmDirErr != nil {
+		return pkgSrpmDirErr
 	}
 
-	filesInPkgSrpmsDir, _ := filepath.Glob(filepath.Join(srpmDir, "*"))
+	filesInPkgSrpmsDir, _ := filepath.Glob(filepath.Join(pkgSrpmDir, "*"))
 	numFilesInPkgSrpmsDir := len(filesInPkgSrpmsDir)
 	var srpmPath string
 	if numFilesInPkgSrpmsDir == 0 {
 		return fmt.Errorf("%sFound no files in  %s, expected to find input .src.rpm file here",
-			bldr.errPrefix, srpmDir)
+			bldr.errPrefix, pkgSrpmDir)
 	}
 	if srpmPath = filesInPkgSrpmsDir[0]; numFilesInPkgSrpmsDir > 1 || !strings.HasSuffix(srpmPath, ".src.rpm") {
 		return fmt.Errorf("%sFound files %s in %s, expected only one .src.rpm file",
 			bldr.errPrefix,
-			strings.Join(filesInPkgSrpmsDir, ","), srpmDir)
+			strings.Join(filesInPkgSrpmsDir, ","), pkgSrpmDir)
 	}
 
 	bldr.srpmPath = srpmPath
@@ -99,6 +94,12 @@ func (bldr *mockBuilder) clean() error {
 
 func (bldr *mockBuilder) setupDeps() error {
 	bldr.log("starting")
+
+	if len(bldr.dependencyList) == 0 {
+		panic(fmt.Sprintf("%sUnexpected call to setupDeps "+
+			"(manifest doesn't specify any dependencies)",
+			bldr.errPrefix))
+	}
 	depsDir := viper.GetString("DepsDir")
 
 	// See if depsDir exists
@@ -106,17 +107,40 @@ func (bldr *mockBuilder) setupDeps() error {
 		return fmt.Errorf("%sProblem with DepsDir: %s", bldr.errPrefix, err)
 	}
 
+	var missingDeps []string
+	pathMap := make(map[string]string)
 	mockDepsDir := getMockDepsDir(bldr.pkg, bldr.arch)
-	if err := util.MaybeCreateDirWithParents(mockDepsDir, bldr.errPrefix); err != nil {
-		return err
+	for _, dep := range bldr.dependencyList {
+		depStatisfied := false
+		for _, arch := range []string{"noarch", bldr.arch} {
+			depDirWithArch := filepath.Join(depsDir, arch, dep)
+			if util.CheckPath(depDirWithArch, true, false) == nil {
+				rpmFileGlob := fmt.Sprintf("*.%s.rpm", arch)
+				pathGlob := filepath.Join(depDirWithArch, rpmFileGlob)
+				paths, globErr := filepath.Glob(pathGlob)
+				if globErr != nil {
+					panic(fmt.Sprintf("Bad glob pattern %s: %s", pathGlob, globErr))
+				}
+				if paths != nil {
+					depStatisfied = true
+					copyDestDir := filepath.Join(mockDepsDir, arch, dep)
+					pathMap[copyDestDir] = pathGlob
+				}
+			}
+		}
+		if !depStatisfied {
+			missingDeps = append(missingDeps, dep)
+		}
 	}
 
-	depsToCopy := filepath.Join(depsDir, "*")
-	if err := util.CopyToDestDir(
-		depsToCopy, mockDepsDir, bldr.errPrefix); err != nil {
-		return err
+	if missingDeps != nil {
+		return fmt.Errorf("%sMissing/Empty deps: %s in depDir: %s",
+			bldr.errPrefix, strings.Join(missingDeps, ","), depsDir)
 	}
 
+	if copyErr := filterAndCopy(pathMap, bldr.errPrefix); copyErr != nil {
+		return copyErr
+	}
 	createRepoErr := util.RunSystemCmd("createrepo", mockDepsDir)
 	if createRepoErr != nil {
 		return fmt.Errorf("%screaterepo %s errored out with %s",
@@ -170,6 +194,20 @@ func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
 	bldr.log("Running mock %s", strings.Join(mockArgs, " "))
 	mockErr := util.RunSystemCmd("mock", mockArgs...)
 	if mockErr != nil {
+		resultdir := getMockResultsDir(bldr.pkg, bldr.arch)
+		buildLogPath := filepath.Join(resultdir, "build.log")
+		if util.CheckPath(buildLogPath, false, false) == nil {
+			bldr.log("--- start of mock build.log ---")
+			dumpLogCmd := exec.Command("cat", buildLogPath)
+			dumpLogCmd.Stderr = os.Stderr
+			dumpLogCmd.Stdout = os.Stdout
+			if dumpLogCmd.Run() != nil {
+				bldr.log("Dumping logfile failed")
+			}
+			bldr.log("--- end of build.log ---")
+		} else {
+			bldr.log("No build.log found")
+		}
 		return fmt.Errorf("%smock %s errored out with %s",
 			bldr.errPrefix, strings.Join(mockArgs, " "), mockErr)
 	}
@@ -204,6 +242,9 @@ func (bldr *mockBuilder) runFedoraMockStages() error {
 	buildArgs := []string{"--no-clean", "--rebuild"}
 	if bldr.noCheck {
 		buildArgs = append(buildArgs, "--nocheck")
+	}
+	if bldr.enableNetwork {
+		buildArgs = append(buildArgs, "--enable-network")
 	}
 	bldr.log("starting")
 	if err := bldr.runMockCmd(buildArgs); err != nil {
@@ -251,7 +292,9 @@ func (bldr *mockBuilder) runStages() error {
 		return err
 	}
 
-	if bldr.buildSpec.LocalDeps {
+	// Checking if the package has any dependencies for the target build arch.
+	// Using length check of dependency list, since bldr.Build.Dependencies might be set for other arch deps.
+	if len(bldr.dependencyList) != 0 {
 		bldr.setupStageErrPrefix("setupDeps")
 		if err := bldr.setupDeps(); err != nil {
 			return err
@@ -285,9 +328,21 @@ func (bldr *mockBuilder) runStages() error {
 // Mock calls fedora mock to build the RPMS for the specified target
 // from the already built SRPMs and places the results in
 // <DestDir>/RPMS/<rpmArch>/<package>/
+// 'arch' cannot be empty, needs to be a valid architecture.
 func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) error {
 	if err := setup(); err != nil {
 		return err
+	}
+
+	// Check if target arch has been set
+	allowedArchTypes := []string{"i686", "x86_64", "aarch64"}
+	if arch == "" {
+		return fmt.Errorf("Arch is not set, please input a valid build architecture.")
+	}
+	// Check if target arch is a valid arch value
+	if !slices.Contains(allowedArchTypes, arch) {
+		panic(fmt.Sprintf("'%s' is not a valid build arch, must be one of %s", arch,
+			strings.Join(allowedArchTypes, ", ")))
 	}
 
 	// Error out early if source is not available.
@@ -334,6 +389,11 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 			return err
 		}
 
+		dependencyMap := pkgSpec.Build.Dependencies
+		// golang allows accessing keys of an empty/nil map, without throwing an error.
+		// If a key is not present in the map, it returns an empty instance of the value.
+		dependencyList := append(dependencyMap["all"], dependencyMap[arch]...)
+
 		bldr := &mockBuilder{
 			builderCommon: &builderCommon{
 				pkg:               thisPkgName,
@@ -345,6 +405,8 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				buildSpec:         &pkgSpec.Build,
 				dnfConfig:         dnfConfig,
 				errPrefix:         errPrefix,
+				dependencyList:    dependencyList,
+				enableNetwork:     pkgSpec.Build.EnableNetwork,
 			},
 			onlyCreateCfg: extraArgs.OnlyCreateCfg,
 			noCheck:       extraArgs.NoCheck,

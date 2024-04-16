@@ -96,12 +96,16 @@ func getPkgSrpmsDestDir(pkg string) string {
 	return filepath.Join(getAllSrpmsDestDir(), pkg)
 }
 
-func getAllSrpmsDir() string {
-	return "/SRPMS"
-}
-
-func getPkgSrpmsDir(pkg string) string {
-	return filepath.Join(getAllSrpmsDir(), pkg)
+func getPkgSrpmsDir(errPrefix util.ErrPrefix, pkg string) (string, error) {
+	srpmsDirs := viper.GetString("SrpmsDir")
+	for _, srpmsDir := range strings.Split(srpmsDirs, ":") {
+		thisPath := filepath.Join(srpmsDir, pkg)
+		if util.CheckPath(thisPath, true, false) == nil {
+			return thisPath, nil
+		}
+	}
+	return "", fmt.Errorf("%ssubpath %s not found in any item in SrpmsDir %s",
+		errPrefix, pkg, srpmsDirs)
 }
 
 func getAllRpmsDestDir() string {
@@ -196,6 +200,10 @@ func download(srcURL string, targetDir string,
 
 	if uri.Scheme == "file" {
 		pkgDirInRepo := getPkgDirInRepo(repo, pkg, isPkgSubdirInRepo)
+		if uri.Path == "" {
+			return "", fmt.Errorf("%sBad URL %s. Example usage: file:///foo",
+				errPrefix, srcURL)
+		}
 		srcAbsPath := filepath.Join(pkgDirInRepo, uri.Path)
 		if err := util.CheckPath(srcAbsPath, false, false); err != nil {
 			return "", fmt.Errorf("%supstream file %s not found in repo",
@@ -225,6 +233,13 @@ func download(srcURL string, targetDir string,
 			return "", GetErr
 		}
 
+		if response.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("%sutil.download: GET %s returned %d %s",
+				errPrefix, srcURL, response.StatusCode,
+				http.StatusText(response.StatusCode))
+
+		}
+
 		defer response.Body.Close()
 		_, ioErr := io.Copy(file, response.Body)
 		if ioErr != nil {
@@ -237,7 +252,7 @@ func download(srcURL string, targetDir string,
 // filterAndCopy copies files from srcDirPath to a specified
 // destDirPath depending on filename.
 // pathMap is a map from destDirPath to a glob pattern.
-// We walk through all the entries of movePath and then copy files matching
+// We walk through all the entries of pathMap and then copy files matching
 // the glob to the the corresponding destDirPath.
 // Note that we make sure destDirPath is created with parents before copying.
 func filterAndCopy(pathMap map[string]string, errPrefix util.ErrPrefix) error {

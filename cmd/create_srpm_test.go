@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,11 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"code.arista.io/eos/tools/eext/testutil"
+	"code.arista.io/eos/tools/eext/util"
 )
 
 func testCreateSrpm(t *testing.T,
 	repoName string, expectedPkgName string, quiet bool,
-	expectedFiles []string,
+	expectedOutputFile string,
+	expectedTags map[string]string,
 	sources []string) {
 	t.Log("Create temporary working directory")
 	workingDir, err := os.MkdirTemp("", "createSrpm-wd-test")
@@ -38,6 +41,7 @@ func testCreateSrpm(t *testing.T,
 		"",                                    // srcDir
 		workingDir,                            // workingDir
 		destDir,                               // destDir
+		"",                                    // srpmsDir
 		"",                                    // depsDir
 		"",                                    // repoHost,
 		"",                                    // dnfConfigFile
@@ -58,9 +62,14 @@ func testCreateSrpm(t *testing.T,
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
 
 	require.DirExists(t, expectedSrpmDestDir)
-	for _, filename := range expectedFiles {
-		path := filepath.Join(expectedSrpmDestDir, filename)
-		require.FileExists(t, path)
+	expectedPath := filepath.Join(expectedSrpmDestDir, expectedOutputFile)
+	require.FileExists(t, expectedPath)
+
+	for tag, expVal := range expectedTags {
+		qfField := fmt.Sprintf("--qf=%%{%s}", tag)
+		tagVal, rpmErr := util.CheckOutput("rpm", "-q", qfField, "-p", expectedPath)
+		require.NoError(t, rpmErr)
+		require.Equal(t, expVal, tagVal)
 	}
 }
 
@@ -68,7 +77,11 @@ func TestCreateSrpmFromSrpm(t *testing.T) {
 	t.Log("Test createSrpm from SRPM")
 	testCreateSrpm(t,
 		"debugedit-1", "debugedit", false,
-		[]string{"debugedit-5.0-eng.src.rpm"},
+		"debugedit-5.0-eng.src.rpm",
+		map[string]string{
+			"BUILDHOST": testutil.ExpectedBuildHost,
+			"BUILDTIME": testutil.DebugeditChangeLogTs,
+		},
 		nil)
 }
 
@@ -80,11 +93,15 @@ func TestCreateSrpmFromTarball(t *testing.T) {
 	}
 	testCreateSrpm(t,
 		"mrtparse-1", "mrtparse", true,
-		[]string{"mrtparse-2.0.1-deadbee_beefdea.src.rpm"},
+		"mrtparse-2.0.1-deadbee_beefdea.src.rpm",
+		map[string]string{
+			"BUILDHOST": testutil.ExpectedBuildHost,
+			"BUILDTIME": testutil.MrtParseChangeLogTs,
+		},
 		sources)
 }
 
-func TestCreateSrpmUnmodified(t *testing.T) {
+func TestCreateSrpmFromUnmodifiedSrpm(t *testing.T) {
 	t.Log("Test createSrpm for unmodified")
 	var sources = []string{
 		"code.arista.io/eos/tools/eext#deadbeefdeadbeefdead",
@@ -92,6 +109,10 @@ func TestCreateSrpmUnmodified(t *testing.T) {
 	}
 	testCreateSrpm(t,
 		"debugedit-2", "debugedit", true,
-		[]string{"debugedit-5.0-3.el9.src.rpm"},
+		"debugedit-5.0-3.el9.deadbee_beefdea.src.rpm",
+		map[string]string{
+			"BUILDHOST": testutil.ExpectedBuildHost,
+			"BUILDTIME": testutil.DebugeditChangeLogTs,
+		},
 		sources)
 }

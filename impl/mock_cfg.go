@@ -35,6 +35,8 @@ type builderCommon struct {
 	buildSpec         *manifest.Build
 	dnfConfig         *dnfconfig.DnfConfig
 	errPrefix         util.ErrPrefix
+	dependencyList    []string
+	enableNetwork     bool
 }
 
 type mockCfgBuilder struct {
@@ -104,7 +106,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 		}
 	}
 
-	if cfgBldr.buildSpec.LocalDeps {
+	if len(cfgBldr.dependencyList) != 0 {
 		localRepo := &dnfconfig.DnfRepoParams{
 			Name:     "local-deps",
 			BaseURL:  "file://" + getMockDepsDir(cfgBldr.pkg, arch),

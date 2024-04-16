@@ -35,6 +35,10 @@ func SetViperDefaults() {
 	viper.SetDefault("SrcDir", "")
 	viper.SetDefault("WorkingDir", "/var/eext")
 	viper.SetDefault("DestDir", "/dest")
+
+	// colon separated search paths
+	viper.SetDefault("SrpmsDir", "/dest/SRPMS:/SRPMS")
+
 	viper.SetDefault("DepsDir", "/RPMS")
 
 	viper.SetDefault("MockCfgTemplate", "/usr/share/eext/mock.cfg.template")

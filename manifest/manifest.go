@@ -24,12 +24,76 @@ type RepoBundle struct {
 	DnfRepoParamsOverride map[string]dnfconfig.DnfRepoParamsOverride `yaml:"override"`
 }
 
+// MultilibRpmFilenamePattern spec
+//
+// Patterns: Specifies a list of patterns of RPM filenames.
+// Remove: Specifies if the patterns are to be removed/kept.
+type MultilibRpmFilenamePattern struct {
+	Patterns []string `yaml:"patterns"`
+	Remove   bool     `yaml:"remove"`
+}
+
+// MultiLib spec for a specific native arch
+//
+// NativeArchPattern specifies list of patterns of native-arch RPMs
+// to be removed/kept in the multilib image.
+//
+// OtherArchPattern specifies list of patterns of other-arch RPMs
+// to be removed/kept in the multilib image.
+type Multilib struct {
+	NativeArchPattern MultilibRpmFilenamePattern `yaml:"native-arch"`
+	OtherArchPattern  MultilibRpmFilenamePattern `yaml:"other-arch"`
+}
+
+// Generator spec
+// Used only by the eextgen barney generator to generate eext commands to build barney images
+//
+// CmdOptions specifies extra options to be added to the default command. It's index by
+// the command name(mock/create-srpm) and the value is a list of extra-options.
+//
+//	Valid options for mock are [ --nocheck ]
+//	Valid options for create-srpm are [ --skip-build-prep ]
+//
+// MultiLib specifies MultiLib spec to generate multilib. It's indexed by native-arch (i686/x86_64).
+//
+// ExternalDependencies is indexed by the dependency name and the value is the barney repo
+// this dependency needs to fetched from
+type Generator struct {
+	CmdOptions           map[string][]string `yaml:"cmd-options"`
+	Multilib             map[string]Multilib `yaml:"multilib"`
+	ExternalDependencies map[string]string   `yaml:"external-dependencies"`
+}
+
 // Build spec
 // mock cfg is generated for each target depending on this
+//
+// RepoBundle specifies while bundles should the eext tool look into,
+// to download required upstream dependencies. (Eg: el9, epel9)
+// Defined in config/dnfconfig.yaml.
+//
+// Dependencies helps eext determine, based on the target arch, which package dependencies are required.
+// Archs can be of type ['all', 'i686', 'x86_64', 'aarch64'].
+// The map specifies the list of package dependencies eext should build locally, based on the current build arch.
+// Use 'all' if the dependencies are common for all archs, else use arch specific dependencies.
+// Eg:
+//
+//	dependencies:
+//	  all:
+//	    - pkgDep1
+//	  i686:
+//	    - pkgDep2
+//
+// In this case, for 'i686' build, eext will need to build both pkgDep1 and pkgDep2.
+// Whereas for 'x86_64' build, only pkgDep1 needs to be built.
+//
+// Generator specifies commands for eext generator
+// Refer to Generator struct denifition above.
 type Build struct {
-	Include    []string     `yaml:"include"`
-	RepoBundle []RepoBundle `yaml:"repo-bundle"`
-	LocalDeps  bool         `yaml:"local-deps"`
+	Include       []string            `yaml:"include"`
+	RepoBundle    []RepoBundle        `yaml:"repo-bundle"`
+	Dependencies  map[string][]string `yaml:"dependencies"`
+	Generator     Generator           `yaml:"eextgen"`
+	EnableNetwork bool                `yaml:"enable-network"`
 }
 
 // DetachedSignature spec
@@ -64,9 +128,8 @@ type UpstreamSrc struct {
 }
 
 // Package spec
-// In the general case, there will only be one package/
-// But each git repo can have multiple packages if there is
-// a dependency order to be maintained.
+// In the general case, there will only be one package.
+// But we can have a bundle repo with multiple pakcages too.
 type Package struct {
 	Name            string        `yaml:"name"`
 	Subdir          bool          `yaml:"subdir"`
@@ -93,12 +156,31 @@ func (m Manifest) sanityCheck() error {
 
 		if !slices.Contains(allowedPkgTypes, pkgSpec.Type) {
 			return fmt.Errorf("Bad type '%s' for package %s",
-				pkgSpec.Name, pkgSpec.Type)
+				pkgSpec.Type, pkgSpec.Name)
 		}
 
 		if pkgSpec.Build.RepoBundle == nil {
 			return fmt.Errorf("No repo-bundle specified for Build in package %s",
 				pkgSpec.Name)
+		}
+
+		if pkgSpec.Build.Dependencies != nil {
+			dependencyMap := pkgSpec.Build.Dependencies
+			allowedArchs := []string{"all", "i686", "x86_64", "aarch64"}
+			duplicatePkgCheckList := make(map[string]string)
+			for arch := range dependencyMap {
+				if !slices.Contains(allowedArchs, arch) {
+					return fmt.Errorf("'%v' is not a valid/supported arch, use one of %v", arch, allowedArchs)
+				}
+				for _, depPkg := range dependencyMap[arch] {
+					otherArch, exists := duplicatePkgCheckList[depPkg]
+					if exists && (arch == "all" || otherArch == "all") {
+						return fmt.Errorf("Dependency package %v cannot belong to 'all' and '%v', choose any one arch",
+							depPkg, arch)
+					}
+					duplicatePkgCheckList[depPkg] = arch
+				}
+			}
 		}
 
 		for _, upStreamSrc := range pkgSpec.UpstreamSrc {

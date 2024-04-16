@@ -24,7 +24,8 @@ var mockCmd = &cobra.Command{
 		pkg, _ := cmd.Flags().GetString("package")
 		extraArgs := impl.MockExtraCmdlineArgs{
 			NoCheck:       commonArgs.noCheck,
-			OnlyCreateCfg: onlyCreateCfg}
+			OnlyCreateCfg: onlyCreateCfg,
+		}
 		if err := impl.Mock(repo, pkg, commonArgs.arch, extraArgs); err != nil {
 			return err
 		}

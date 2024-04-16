@@ -19,8 +19,9 @@ var pkgName string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "eext",
-	Short: "Build external packages for EOS",
+	Use:          "eext",
+	SilenceUsage: true,
+	Short:        "Build external packages for EOS",
 	Long: `Modified external packages for EOS Abuild can be specified using a git repository.
 The repository would have a manifest which specifies the upstream SRPM/tarball,
 any Arista specific patches and the modified spec file. The patches and the spec file are also

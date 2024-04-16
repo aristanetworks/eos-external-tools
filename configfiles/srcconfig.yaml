@@ -8,3 +8,5 @@ source-bundle:
     default-src-suffix: .tar.gz
     default-sig-suffix: .sig
     has-detached-sig: true
+  epel-srpm:
+    url-format: "{{.Host}}/{{.PathPrefix}}/source-bundles/epel-srpm/{{.PkgName}}/{{.PkgName}}-{{.Version}}.src.rpm"
