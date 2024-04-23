@@ -5,56 +5,154 @@ generators:
 
 images:
 
-  internal/alma-9.1-bootstrap:
+  internal/bootstrap/iso-extraction-floor:
     units:
-      - image: barney.ci/docker%image/quay.io/almalinuxorg/9-minimal//9.4-20240506
+      - image: barney.ci/alpine%pkg/alpine-base
+      - image: barney.ci/alpine%pkg/wget
+      - image: barney.ci/alpine%network
+      - image: barney.ci/alpine%apk-finalizers
+
+  internal/bootstrap/base.tar.xz:
+    description: |
+      Downloading a recent-ish centos container base from the upstream
+      centos registry. Note that we cache this step separately for quick
+      development.
+    no-create-mountpoints: true
+    units:
+      - floor: .%internal/bootstrap/iso-extraction-floor
+        sources: []
+        build: |
+          arch=$(uname -m)
+          case "$arch" in
+            x86_64)
+              arch=x86_64
+              cksum=63b7ddb444b23a07cb851398c338595e410fb3fac2dd72061d0292c653e5afe6
+              ;;
+            i?86)
+              arch=x86_64
+              cksum=63b7ddb444b23a07cb851398c338595e410fb3fac2dd72061d0292c653e5afe6
+              ;;
+            aarch64)
+              arch=arm64
+              cksum=312a833dfe646ce5b41f362cae577df9797955b85ced96173be8e88e5ebd5990
+              ;;
+            *)
+              >&2 echo unsupported architecture "$arch"
+              exit 1
+              ;;
+          esac
+
+          cd /dest
+          wget https://cloud.centos.org/centos/9-stream/${arch}/images/CentOS-Stream-Container-Base-9-20230501.0.${arch}.tar.xz \
+            --output-document base.tar.xz
+
+          echo "$cksum  base.tar.xz" | sha256sum -c
+
+  internal/bootstrap/extract/1:
+    no-create-mountpoints: true
+    units:
+      - floor: .%internal/bootstrap/iso-extraction-floor
+        sources: []
+        mappings:
+          /src/base: .%internal/bootstrap/base.tar.xz
+        build: |
+          tar --strip-components=1 -xf /src/base/base.tar.xz -C /dest
+
+  internal/bootstrap/extract/2:
+    description: |
+      Extract our bootstrapping environment and remove any pre-configured
+      yum repos. This bootstrapping environment will be centos 9 stream,
+      but because we will install el9 repos under /etc/yum.repos.d, the
+      environments that we boostrap will be el9.
+    no-create-mountpoints: true
+    units:
+      - floor: .%internal/bootstrap/iso-extraction-floor
+        sources: []
+        mappings:
+          /src/layer: .%internal/bootstrap/extract/1
+        build: |
+          tar -xf /src/layer/layer.tar -C /dest
+          rm /dest/etc/yum.repos.d/*
+
+  internal/bootstrap/install-rpms:
+    description: |
+      The install-rpms command accepts a list of packages and installs them
+      (along with dependencies) into /dest. This is useful for creating new
+      chroot environments with an arbitrary set of yum repos.
+    no-create-mountpoints: true
+    units:
       - sources: []
         build: |
-          mkdir -p /dest/etc
-          touch /dest/etc/resolv.conf
-    finalizers:
-      - |
-          export DNF_HOST="https://artifactory.infra.corp.arista.io/artifactory"
+          mkdir -p /dest/usr/bin
+          chmod 555 /dest/usr/bin
+          echo '#!/bin/sh
+          dnf --assumeyes --installroot=/dest --noplugins \
+              --config=/etc/dnf/dnf.conf \
+              --setopt=cachedir=/var/cache/microdnf \
+              --setopt=reposdir=/etc/yum.repos.d \
+              --setopt=varsdir=/etc/dnf --releasever=9.1 install "$@"
+          ' > /dest/usr/bin/install-rpms
+          chmod 755 /dest/usr/bin/install-rpms
+
+  internal/bootstrap/repos:
+    description: |
+      Install yum repos associated with el9 under /etc/yum.repos.d. Intended to
+      be used in combination with the install-rpms script.
+    no-create-mountpoints: true
+    units:
+      - sources: []
+        entry:
+          env:
+            DNF_HOST: ${eext-dnf-host.url:-https://artifactory.infra.corp.arista.io/artifactory}
+        build: |
           export DNF_ARCH="$(arch)"
           export DNF_DISTRO_REPO="alma-vault/9.1"
           export DNF_EPEL9_REPO_VERSION="v20240127-1"
           export DNF_EPEL9_REPO="eext-snapshots-local/epel9/${DNF_EPEL9_REPO_VERSION}/9/Everything"
-          echo '#!/bin/sh
-          microdnf --assumeyes --installroot=/dest --noplugins --config=/etc/dnf/dnf.conf \
-                   --setopt=cachedir=/var/cache/microdnf --setopt=reposdir=/etc/yum.repos.d \
-                   --setopt=varsdir=/etc/dnf --releasever=9.1 install "$@"
-          ' > /usr/bin/install-rpms
-          chmod 755 /usr/bin/install-rpms
-          rm -rf /etc/yum.repos.d
-          mkdir -p /etc/yum.repos.d
+          mkdir -p /dest/etc/yum.repos.d
           echo "[epel9-subset]
           baseurl=${DNF_HOST}/${DNF_EPEL9_REPO}/${DNF_ARCH}/
           enabled=1
           gpgcheck=0
-          " > /etc/yum.repos.d/eext-externaldeps.repo
+          " > /dest/etc/yum.repos.d/eext-externaldeps.repo
           echo "[BaseOS]
           baseurl=${DNF_HOST}/${DNF_DISTRO_REPO}/BaseOS/${DNF_ARCH}/os/
+          gpgcheck=0
           enabled=1
-          " > /etc/yum.repos.d/BaseOS.repo
+          " > /dest/etc/yum.repos.d/BaseOS.repo
           echo "[AppStream]
           baseurl=${DNF_HOST}/${DNF_DISTRO_REPO}/AppStream/${DNF_ARCH}/os/
           exclude=podman
+          gpgcheck=0
           enabled=1
-          " > /etc/yum.repos.d/AppStream.repo
+          " > /dest/etc/yum.repos.d/AppStream.repo
 
+  internal/bootstrap/network:
     entry:
       share-net: true
       mounts:
         - source: /etc/resolv.conf
           target: /etc/resolv.conf
           options: ro,bind
+
+  internal/bootstrap:
+    description: |
+      Minimal bootstrapping environment. Do not run builds in
+      this directly, but instead use it to create images that
+      contain a specific set of dependencies.
+    entry:
       mutables:
         - /var/cache
         - /var/lib/dnf
+    units:
+      - image: .%internal/bootstrap/extract/2
+      - image: .%internal/bootstrap/repos
+      - image: .%internal/bootstrap/install-rpms
+      - image: .%internal/bootstrap/network
 
   base-image:
     units:
-      - floor: .%internal/alma-9.1-bootstrap
+      - floor: .%internal/bootstrap
         sources: []
         build: install-rpms autoconf automake coreutils git rpm rpmdevtools rpm-build make mock python3-devel quilt
 
@@ -103,7 +201,7 @@ images:
       - build: |
           mkdir -p /dest/var/cache/go
           mkdir -p /dest/var/ext
-      - floor: .%internal/alma-9.1-bootstrap
+      - floor: .%internal/bootstrap
         sources: []
         build: |
           install-rpms autoconf automake coreutils golang git rpm rpmdevtools rpm-build make mock python3-devel quilt
