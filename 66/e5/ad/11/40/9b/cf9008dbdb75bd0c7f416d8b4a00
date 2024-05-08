@@ -9,7 +9,7 @@
     "commit": "482ce362bb85321defe866e2149d18d3567e8352"
   },
   "barney.ci/docker": {
-    "commit": "805d9362315d807613e6ee22723295d272824e6e"
+    "commit": "845cd5dc497c60746370e6e2f12f0bab1bf463de"
   },
   "barney.ci/golang": {
     "commit": "fd7924d7bd05bbd7845c1117b38f35922e25f5b2"
