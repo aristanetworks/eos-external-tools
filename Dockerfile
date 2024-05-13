@@ -12,7 +12,7 @@ CMD ["bash"]
 
 FROM base as builder
 USER root
-RUN dnf install -y golang-1.20.* && dnf clean all
+RUN dnf install -y golang-1.21.* && dnf clean all
 RUN mkdir -p /src/code.arista.io/eos/tools/eext && mkdir -p /usr/bin
 WORKDIR /src/code.arista.io/eos/tools/eext
 COPY ./go.mod ./
