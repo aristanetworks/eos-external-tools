@@ -22,7 +22,7 @@ repo-bundle:
       extras:
         enabled: false
     version-labels:
-      default: 9.2
+      default: 9.3
 # --------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ repo-bundle:
       # Each version points to a timestamped snapshot of the repo cache of the epel9-unsafe repo.
       # The eext team is responsible for creating these snapshots.
       # default points to the latest such snapshot.
-      default: v20240127-1
+      default: v20240522-1
 # --------------------------------------------------------------------------------------------
 
 # ********************************************************************************************
@@ -103,7 +103,7 @@ repo-bundle:
     version-labels:
       # default always points to upstream latest dot release 9.x's beta version,
       # which upstream updates regularly.
-      default: 9.3-beta
+      default: 9.4-beta
 # --------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.3
-FROM quay.io/almalinuxorg/9-minimal:9.3-20231124 AS base
+FROM quay.io/almalinuxorg/9-minimal:9.4-20240506 AS base
 RUN microdnf install -y dnf-4.* && microdnf clean all
 RUN dnf install -y epel-release-9* git-2.* jq-1.* \
     openssl-3.* python3-pip-21.* python3-pyyaml-5.* \
