@@ -175,6 +175,54 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	return nil
 }
 
+// Download the git repo, and create a tarball at the provided commit/tag.
+func archiveGitRepo(srcURL string, targetDir string, version string, revision string,
+	errPrefix util.ErrPrefix) (string, string, error) {
+	urlSplit := strings.Split(srcURL, "/")
+	pkg := urlSplit[len(urlSplit)-1]
+
+	// rpmName generated should be same as the one mentioned in .spec file.
+	rpmName := pkg + "-" + version
+	gitArchiveFile := rpmName + ".tar.gz"
+	gitArchiveFilePath := filepath.Join(targetDir, gitArchiveFile)
+
+	// Cloning the git repo to a temporary directory
+	// We won't delete the tmpDir here, since we need it to verify the git repo.
+	cloneDir, err := os.MkdirTemp("", rpmName)
+	if err != nil {
+		return "", "", fmt.Errorf("%serror while creating tempDir for %s, %s", errPrefix, pkg, err)
+	}
+	err = util.RunSystemCmdInDir(cloneDir, "git", "init")
+	if err != nil {
+		return "", "", fmt.Errorf("%sgit init at %s failed: %s", errPrefix, cloneDir, err)
+	}
+	err = util.RunSystemCmdInDir(cloneDir, "git", "remote", "add", "origin", srcURL)
+	if err != nil {
+		return "", "", fmt.Errorf("%sadding %s as git remote failed: %s", errPrefix, srcURL, err)
+	}
+	err = util.RunSystemCmdInDir(cloneDir, "git", "fetch", "origin", revision)
+	if err != nil {
+		return "", "", fmt.Errorf("%sfetching revision %s failed for %s: %s", errPrefix, revision, pkg, err)
+	}
+	err = util.RunSystemCmdInDir(cloneDir, "git", "reset", "--hard", "FETCH_HEAD")
+	if err != nil {
+		return "", "", fmt.Errorf("%sfetching HEAD at %s failed: %s", errPrefix, revision, err)
+	}
+
+	// Create the tarball from the specified commit/tag revision
+	archiveCmd := []string{"archive",
+		"--prefix", rpmName + "/",
+		"-o", gitArchiveFilePath,
+		revision,
+	}
+	err = util.RunSystemCmdInDir(cloneDir, "git", archiveCmd...)
+	if err != nil {
+		return "", "", fmt.Errorf("%sgit archive of %s failed: %s", errPrefix, pkg, err)
+	}
+
+	return gitArchiveFile, cloneDir, nil
+}
+
 // Download the resource srcURL to targetDir
 // srcURL could be URL or file path
 // If it is a file:// path, root directory is the
