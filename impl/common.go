@@ -175,6 +175,39 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	return nil
 }
 
+// Clone the git repo, and create a tarball at the provided commit/tag.
+// TODO: Maybe have a param to clone repo persistent
+func archiveGitRepo(srcURL string, targetDir string, version string, revision string, pkg string,
+	errPrefix util.ErrPrefix) (string, string, error) {
+	rpmName := pkg + "-" + version
+	gitArchiveFile := rpmName + ".tar.gz"
+	gitArchiveFilePath := filepath.Join(targetDir, gitArchiveFile)
+
+	// Cloning the git repo to a temporary directory
+	// We won't delete the tmpDir here, since we need it to verify the git repo.
+	cloneDir, err := os.MkdirTemp("", rpmName)
+	if err != nil {
+		return "", "", fmt.Errorf("%serror while creating tempDir for %s, %s", errPrefix, pkg, err)
+	}
+	err = util.RunSystemCmd("git", "clone", srcURL, cloneDir)
+	if err != nil {
+		return "", "", fmt.Errorf("%sgit clone of %s from %s failed: %s", errPrefix, pkg, srcURL, err)
+	}
+
+	// Create the tarball from the specified commit/tag revision
+	archiveCmd := []string{"archive",
+		"--prefix", rpmName + "/",
+		"-o", gitArchiveFilePath,
+		revision,
+	}
+	err = util.RunSystemCmdInDir(cloneDir, "git", archiveCmd...)
+	if err != nil {
+		return "", "", fmt.Errorf("%sgit archive of %s failed: %s", errPrefix, pkg, err)
+	}
+
+	return gitArchiveFile, cloneDir, nil
+}
+
 // Download the resource srcURL to targetDir
 // srcURL could be URL or file path
 // If it is a file:// path, root directory is the

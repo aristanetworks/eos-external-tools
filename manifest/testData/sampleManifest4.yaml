@@ -1,0 +1,51 @@
+---
+package:
+  - name: libpcap1
+    upstream-sources:
+      - full-url: https://github.com/the-tcpdump-group/libpcap
+        snapshot:
+          rel-version: 1.10.4
+          commit: 104271ba4a14de6743e43bcf87536786d8fddea4
+        signature:
+          skip-check: true
+          detached-sig:
+            public-key: mrtparse/mrtparsePubKey.pem
+    type: git
+    build:
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar
+
+  - name: libpcap2
+    upstream-sources:
+      - full-url: https://github.com/the-tcpdump-group/libpcap
+        snapshot:
+          rel-version: 1.10.1
+          tag: libpcap-1.10.1
+        signature:
+          skip-check: true
+          detached-sig:
+            public-key: mrtparse/mrtparsePubKey.pem
+    type: git
+    build:
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar
+#
+#  - name: libpcap3
+#    upstream-sources:
+#      - snapshot:
+#          rel-version: 1.10.4
+#          commit: 104271ba4a14de6743e43bcf87536786d8fddea4
+#        signature:
+#          skip-check: true
+#          detached-sig:
+#            public-key: mrtparse/mrtparsePubKey.pem
+#    type: local-eextsubdir
+#    build:
+#      repo-bundle:
+#        - name: foo
+#          version: v1
+#        - name: bar
