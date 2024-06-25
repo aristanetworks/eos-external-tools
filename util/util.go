@@ -15,6 +15,14 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// Constant keys to access create_srpm.upstreamSrcSprc.gitSnapshot entries
+const (
+	Version  = "version"
+	Commit   = "commit"
+	Tag      = "tag"
+	CloneDir = "cloneDir"
+)
+
 // Globals type struct exported for global flags
 type Globals struct {
 	Quiet bool
@@ -29,6 +37,20 @@ type ErrPrefix string
 // RunSystemCmd runs a command on the shell and pipes to stdout and stderr
 func RunSystemCmd(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
+	cmd.Stderr = os.Stderr
+	if !GlobalVar.Quiet {
+		cmd.Stdout = os.Stdout
+	} else {
+		cmd.Stdout = io.Discard
+	}
+	err := cmd.Run()
+	return err
+}
+
+// Runs the system command from a specified directory
+func RunSystemCmdInDir(dir string, name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
+	cmd.Dir = dir
 	cmd.Stderr = os.Stderr
 	if !GlobalVar.Quiet {
 		cmd.Stdout = os.Stdout
@@ -200,6 +222,52 @@ func VerifyTarballSignature(
 		return fmt.Errorf("%sError verifying signature %s for tarball %s with pubkey %s."+
 			"\ngpg --verify err: %sstdout:%s",
 			errPrefix, tarballSigPath, tarballPath, pubKeyPath, err, output)
+	}
+
+	return nil
+}
+
+// VerifyGitSignature verifies that the git repo commit/tag is signed.
+func VerifyGitSignature(pubKeyPath string, gitSnapshot map[string]string, errPrefix ErrPrefix) error {
+	tmpDir, mkdtErr := os.MkdirTemp("", "eext-keyring")
+	if mkdtErr != nil {
+		return fmt.Errorf("%sError '%s'creating temp dir for keyring",
+			errPrefix, mkdtErr)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	keyRingPath := filepath.Join(tmpDir, "eext.gpg")
+	baseArgs := []string{
+		"--homedir", tmpDir,
+		"--no-default-keyring", "--keyring", keyRingPath}
+	gpgCmd := "gpg"
+
+	// Create keyring
+	createKeyRingCmdArgs := append(baseArgs, "--fingerprint")
+	if err := RunSystemCmd(gpgCmd, createKeyRingCmdArgs...); err != nil {
+		return fmt.Errorf("%sError '%s'creating keyring",
+			errPrefix, err)
+	}
+
+	// Import public key
+	importKeyCmdArgs := append(baseArgs, "--import", pubKeyPath)
+	if err := RunSystemCmd(gpgCmd, importKeyCmdArgs...); err != nil {
+		return fmt.Errorf("%sError '%s' importing public-key %s",
+			errPrefix, err, pubKeyPath)
+	}
+
+	var verifyRepoCmd []string
+	commit := gitSnapshot[Commit]
+	tag := gitSnapshot[Tag]
+	if commit != "" {
+		verifyRepoCmd = []string{"verify-commit", "-v", commit}
+	} else {
+		verifyRepoCmd = []string{"verify-tag", "-v", tag}
+	}
+	cloneDir := gitSnapshot[CloneDir]
+	err := RunSystemCmdInDir(cloneDir, "git", verifyRepoCmd...)
+	if err != nil {
+		return fmt.Errorf("%serror during git archive: %s", errPrefix, err)
 	}
 
 	return nil

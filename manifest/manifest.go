@@ -5,7 +5,7 @@ package manifest
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"golang.org/x/exp/slices"
@@ -118,12 +118,19 @@ type SourceBundle struct {
 	SrcRepoParamsOverride srcconfig.SrcRepoParamsOverride `yaml:"override"`
 }
 
+type GitSnapshot struct {
+	Version string `yaml:"rel-version"`
+	Tag     string `yaml:"tag"`
+	Commit  string `yaml:"commit"`
+}
+
 // UpstreamSrc spec
 // Lists each source bundle(tarball/srpm) and
 // detached signature file for tarball.
 type UpstreamSrc struct {
 	SourceBundle SourceBundle `yaml:"source-bundle"`
 	FullURL      string       `yaml:"full-url"`
+	Snapshot     GitSnapshot  `yaml:"snapshot"`
 	Signature    Signature    `yaml:"signature"`
 }
 
@@ -147,7 +154,7 @@ type Manifest struct {
 }
 
 func (m Manifest) sanityCheck() error {
-	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone"}
+	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone", "git"}
 
 	for _, pkgSpec := range m.Package {
 		if pkgSpec.Name == "" {
@@ -202,6 +209,24 @@ func (m Manifest) sanityCheck() error {
 				return fmt.Errorf("Conflicting signatures for Build in package %s, provide full-url or source-bundle",
 					pkgSpec.Name)
 			}
+
+			if pkgSpec.Type == "git" {
+				version := (upStreamSrc.Snapshot.Version != "")
+				if !version {
+					return fmt.Errorf("please provide a release version for git repo of package %s", pkgSpec.Name)
+				}
+
+				specifiedCommit := (upStreamSrc.Snapshot.Commit != "")
+				specifiedTag := (upStreamSrc.Snapshot.Tag != "")
+				if !specifiedCommit && !specifiedTag {
+					return fmt.Errorf("please provide a commit/tag for git repo of package %s", pkgSpec.Name)
+				}
+				if specifiedCommit && specifiedTag {
+					return fmt.Errorf(
+						"conflicting commit and tag provided for git repo of package %s, provide either one",
+						pkgSpec.Name)
+				}
+			}
 		}
 	}
 	return nil
@@ -213,9 +238,9 @@ func LoadManifest(repo string) (*Manifest, error) {
 	repoDir := util.GetRepoDir(repo)
 
 	yamlPath := filepath.Join(repoDir, "eext.yaml")
-	yamlContents, readErr := ioutil.ReadFile(yamlPath)
+	yamlContents, readErr := os.ReadFile(yamlPath)
 	if readErr != nil {
-		return nil, fmt.Errorf("manifest.LoadManifest: ioutil.ReadFile on %s returned %s", yamlPath, readErr)
+		return nil, fmt.Errorf("manifest.LoadManifest: os.ReadFile on %s returned %s", yamlPath, readErr)
 	}
 
 	var manifest Manifest
