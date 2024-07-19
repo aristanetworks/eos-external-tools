@@ -54,6 +54,23 @@ func TestDefaultDnfRepoConfig(t *testing.T) {
 			},
 			defaultVersion: "9.3",
 		},
+		"el9-snapshot": ExpectedDefaultRepoBundle{
+			repoToURLFormatString: map[string]string{
+				"BaseOS": "%s/artifactory/%s/el9/default/%s/BaseOS/%s/os",
+				"CRB":    "%s/artifactory/%s/el9/default/%s/CRB/%s/os",
+			},
+			archToArtifactoryRepo: map[string]string{
+				"i686":    "eext-snapshots-local",
+				"x86_64":  "eext-snapshots-local",
+				"aarch64": "eext-snapshots-local",
+			},
+			archToURLFormatArch: map[string]string{
+				"i686":    "i686",
+				"x86_64":  "x86_64",
+				"aarch64": "aarch64",
+			},
+			defaultVersion: "9",
+		},
 		"el9-unsafe": ExpectedDefaultRepoBundle{
 			repoToURLFormatString: map[string]string{
 				"BaseOS": "%s/artifactory/%s/%s/BaseOS/%s/os",

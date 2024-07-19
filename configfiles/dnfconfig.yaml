@@ -49,11 +49,34 @@ repo-bundle:
 # DO NOT use any repo bundles below this unless you know what you're doing.
 # ********************************************************************************************
 
+#---------------------------------------------------------------------------------------------
+  el9-snapshot:
+    # DO NOT use el9-snapshot as a repo-bundle in your eext.yaml, unless recommended to you by the eext team.
+    # el9-snapshot is a snapshot of the repo cache of el9-unsafe.
+    # The eext team is responsible for creating these snapshots.
+
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
+    baseurl: '{{.Host}}/artifactory/eext-snapshots-local/el9/{{.Version}}/9/{{.RepoName}}/{{.Arch}}/os'
+    repo:
+      AppStream:
+        enabled: true
+      BaseOS:
+        enabled: true
+      CRB:
+        enabled: true
+      devel:
+        enabled: false
+      extras:
+        enabled: false
+#---------------------------------------------------------------------------------------------
+
 # --------------------------------------------------------------------------------------------
   el9-unsafe:
     # DO NOT use el9-unsafe as a repo-bundle in your eext.yaml unless you know what you're doing.
     # Use el9 because the defaults there will ensure build reproducibility.
     # el9-unsafe is used by the eext team for experiments.
+
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
 
