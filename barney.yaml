@@ -58,7 +58,7 @@ images:
             BOOTSTRAP_PATH: eext-sources/bootstrap/CentOS-Stream
             BOOTSTRAP_FILE: CentOS-Stream-Container-Base-9-20240715.0
             BOOTSTRAP_EXTENSION: tar.xz
-            DNF_DISTRO_REPO: alma-vault
+            DNF_DISTRO_REPO: eext-alma-vault
             DNF_DISTRO_REPO_VERSION: "9.3"
             DNF_EPEL_REPO: eext-snapshots-local/epel9
             DNF_EPEL_REPO_SNAPSHOT_VERSION: v20240127-1
