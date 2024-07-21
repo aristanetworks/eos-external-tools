@@ -1,0 +1,5 @@
+# Specify extra rpms to be installed in the devel base-image
+# Use a path specification for local rpm, otherwise it'll be installed
+# from one of the repos used for bootstrapping.
+/RPMS/eext-repos-devel.rpm
+golang

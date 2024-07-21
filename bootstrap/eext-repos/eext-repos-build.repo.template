@@ -1,0 +1,16 @@
+[baseos]
+baseurl=${DNF_HOST}/${DNF_DISTRO_REPO}/${DNF_DISTRO_REPO_VERSION}/BaseOS/${ARCH}/os/
+enabled=1
+gpgkey=file:///usr/share/eext-gpg-keys/alma9-b86b3716-gpg-pubkey.pem
+
+[appstream]
+baseurl=${DNF_HOST}/${DNF_DISTRO_REPO}/${DNF_DISTRO_REPO_VERSION}/AppStream/${ARCH}/os/
+exclude=podman
+enabled=1
+gpgkey=file:///usr/share/eext-gpg-keys/alma9-b86b3716-gpg-pubkey.pem
+
+[epel9-snapshot]
+baseurl=${DNF_HOST}/${DNF_EPEL_SNAPSHOT_REPO}/${DNF_EPEL_SNAPSHOT_REPO_VERSION}/${DNF_EPEL_DISTRO_VERSION}/Everything/${ARCH}/
+enabled=1
+gpgkey=file:///usr/share/eext-gpg-keys/epel9-3228467c-gpg-pubkey.pem
+
