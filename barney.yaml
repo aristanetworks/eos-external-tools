@@ -5,29 +5,22 @@ generators:
 
 images:
 
-  internal/bootstrap/iso-extraction-floor:
+  internal/bootstrap/extract-floor:
     entry:
       mutables:
         - /var/work
     units:
       - image: barney.ci/alpine%pkg/alpine-base
-      - image: barney.ci/alpine%pkg/gettext
+      - image: barney.ci/alpine%pkg/bash
       - image: barney.ci/alpine%pkg/wget
       - image: barney.ci/alpine%network
       - image: barney.ci/alpine%apk-finalizers
       - build: |
           mkdir -p /dest/var/work
+          cp -a bootstrap/extract /dest
 
-  internal/bootstrap/src-deps:
+  internal/bootstrap/extract:
     no-create-mountpoints: true
-    units:
-      - build: |
-          cp -a bootstrap/* /dest/
-          cp -a pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem /dest/
-          cp -a pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem /dest/
-          rm -f /dest/README*
-
-  internal/bootstrap:
     description: |
       Minimal bootstrapping environment used to bootstrap almalinux.
 
@@ -36,11 +29,7 @@ images:
       is readily available on the mirror. This is seldom changed and
       any change here will update all eext snapshots.
 
-      We wipe out the dnf/yum repo configuration in the tarball,
-      and setup our own curated set of frozen almalinux repos.
-
-      We also include an install-rpms script which is used to bootstrap
-      the almalinux image.
+      We wipe out the dnf/yum repo configuration in the tarball.
     entry:
       share-net: true
       mounts:
@@ -51,65 +40,105 @@ images:
         - /var/cache
         - /var/lib/dnf
     units:
-      - floor: .%internal/bootstrap/iso-extraction-floor
+      - floor: .%internal/bootstrap/extract-floor
         entry:
           env:
             DNF_HOST: ${eext-dnf-host.url:-https://artifactory.infra.corp.arista.io/artifactory}
-            BOOTSTRAP_PATH: eext-sources/bootstrap/CentOS-Stream
-            BOOTSTRAP_FILE: CentOS-Stream-Container-Base-9-20240715.0
-            BOOTSTRAP_EXTENSION: tar.xz
-            DNF_DISTRO_REPO: eext-alma-vault
-            DNF_DISTRO_REPO_VERSION: "9.3"
-            DNF_EPEL_REPO: eext-snapshots-local/epel9
-            DNF_EPEL_REPO_SNAPSHOT_VERSION: v20240127-1
-            DNF_EPEL_REPO_DISTRO_VERSION: "9"
         sources: []
-        mappings:
-          /src/bootstrap: .%internal/bootstrap/src-deps
         build: |
-          # URL of tarball with OS image
-          export ARCH=$(uname -m)
-          bootstrap_filename="${BOOTSTRAP_FILE}.${ARCH}.${BOOTSTRAP_EXTENSION}"
-          bootstrap_url="${DNF_HOST}/${BOOTSTRAP_PATH}/${bootstrap_filename}"
-
-          # Download the tarball into the mutable working dir
           cd /var/work
-          wget ${bootstrap_url}
+          /extract/extract.bash /extract
+          touch $DESTDIR/etc/resolv.conf
 
-          # Validate downloaded tarball
-          grep "${bootstrap_filename}" /src/bootstrap/CHECKSUM | sha256sum -wc
+  internal/bootstrap/eext-repos-floor:
+    description: |
+      Alpine floor with the eext-repos src directory mapped in.
+      gettext provides envsubst used by generate-repo-file.bash called from generate.bash
+      rpm-dev provides rpmbuild used by generate.bash.
+    entry:
+      mutables:
+        - /var/work
+        - /var/tmp
+    units:
+      - image: barney.ci/alpine%pkg/alpine-base
+      - image: barney.ci/alpine%pkg/bash
+      - image: barney.ci/alpine%pkg/gettext
+      - image: barney.ci/alpine%pkg/rpm-dev
+      - image: barney.ci/alpine%apk-finalizers
+      - build: |
+          mkdir -p /dest/var/work
+          cp -a bootstrap/eext-repos /dest
+          cp -a pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem /dest/eext-repos
+          cp -a pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem /dest/eext-repos
 
-          # Extract tarball and setup rootfs
-          # This is a nested tarball, the real rootfs is in layer.tar
-          # Extract the firt level tarball inside the extr subdirectory
-          # within the working directory and and then extract the
-          # second level layer.tar directly to /dest
-          mkdir extr
-          tar --strip-components=1 -C ./extr -xf ./${bootstrap_filename}
-          tar -xf ./extr/layer.tar -C /dest
+  internal/bootstrap/eext-repos:
+    no-create-mountpoints: true
+    description: |
+      Setup curated frozen dnf repo list for build reproducibility.
+      There're two files, eext-repo-build.repo and eext-repo-devel.repo. These files are
+      installed in /eext-repos directory.
+      We also install the eext-repo-build.repo in /etc/yum.repos.d to be used for base image
+      bootstrap.
 
-          # Now modify the extracted file system to remove unwanted
-          # stuff and add extra stuff.
+      We also build an rpm each with the contents being the repo file,
+      and instructions to install at /etc/yum.repos.d.
+      The RPMs are named eext-repos-build and eext-repos-devel with approiate architecture
+      and .rpm extensions. They are installed in /RPMS.
+    units:
+      - floor: .%internal/bootstrap/eext-repos-floor
+        entry:
+          env:
+            DNF_HOST: ${eext-dnf-host.url:-https://artifactory.infra.corp.arista.io/artifactory}
+        sources: []
+        build: |
+          cd /var/work
+          /eext-repos/generate.bash /eext-repos
 
-          # Remove any pre-configured yum repos
-          rm /dest/etc/yum.repos.d/*
-          # Setup install-rpms shell script
-          mkdir -p /dest/usr/bin
-          chmod 555 /dest/usr/bin
-          cp -a /src/bootstrap/install-rpms /dest/usr/bin/
-          chmod 0755 /dest/usr/bin/install-rpms
-          # Setup gpg keys
-          mkdir -p /dest/usr/share/distribution-gpg-keys
-          chmod 555 /dest/usr/share/distribution-gpg-keys
-          cp -a /src/bootstrap/*.pem /dest/usr/share/distribution-gpg-keys/
-          # Setup curated frozen dnf repo list for build reproducibility
-          envsubst < /src/bootstrap/eext-repos-build.repo.template > /dest/etc/yum.repos.d/eext-repos-build.repo
+  internal/bootstrap/install-rpms:
+    no-create-mountpoints: true
+    description: |
+      Setup install-rpm scripts and collaterals for bootstrapping
+    units:
+      - build: |
+          cp -a bootstrap/install-rpms /dest
 
-  base-image:
+  internal/bootstrap/dnf-dirs:
+    no-create-mountpoints: true
+    description: |
+      Setup empty directories needed by dnf
+    units:
+      - sources: []
+        build: |
+          mkdir -p /dest/var/lib/dnf
+          chmod 755 /dest/var/lib/dnf
+
+  internal/bootstrap:
+    description: |
+      Final bootstrap layer used as floor to build base images.
+    units:
+      - image: .%internal/bootstrap/dnf-dirs
+      - image: .%internal/bootstrap/extract
+      - image: .%internal/bootstrap/eext-repos
+      - image: .%internal/bootstrap/install-rpms
+
+  base-image-build:
     units:
       - floor: .%internal/bootstrap
         sources: []
-        build: install-rpms autoconf automake coreutils git rpm rpmdevtools rpm-build make mock python3-devel quilt
+        build: |
+          echo "install rpms"
+          /install-rpms/install-rpms.bash \
+            --common-rpms-file /install-rpms/rpms-common \
+            --extra-rpms-file /install-rpms/rpms-build
+
+  base-image-devel:
+    units:
+      - floor: .%internal/bootstrap
+        sources: []
+        build: |
+          /install-rpms/install-rpms.bash \
+            --common-rpms-file /install-rpms/rpms-common \
+            --extra-rpms-file /install-rpms/rpms-devel
 
   go-binaries:
     description: |
@@ -124,10 +153,8 @@ images:
           cp -a /src/static/usr/bin /dest/usr/bin
           chmod 555 /dest/usr/bin
 
-  eext:
+  eext-configfiles:
     units:
-      - image: .%base-image
-      - image: .%go-binaries
       - build: |
           mkdir -p $DESTDIR/usr/share/eext
           cp -a ./configfiles/* $DESTDIR/usr/share/eext
@@ -135,6 +162,16 @@ images:
           cp -a ./pki/* $DESTDIR/etc/pki/eext
           mkdir -p $DESTDIR/etc
           touch $DESTDIR/etc/resolv.conf
+
+  eext:
+    units:
+      - image: .%base-image-build
+      - image: .%go-binaries
+      - image: .%eext-configfiles
+      - build: |
+          mkdir -p $DESTDIR/etc
+          touch $DESTDIR/etc/resolv.conf
+
     entry:
       mutables: &eext-mutables
         - /var/eext
@@ -159,8 +196,11 @@ images:
       - floor: .%internal/bootstrap
         sources: []
         build: |
-          install-rpms autoconf automake coreutils golang git rpm rpmdevtools rpm-build make mock python3-devel quilt
+          /install-rpms/install-rpms.bash \
+            --common-rpms-file /install-rpms/rpms-common \
+            --extra-rpms-file /install-rpms/rpms-devel
           touch $DESTDIR/etc/resolv.conf
+
     entry:
       env:
         GOCACHE: /tmp/gocache

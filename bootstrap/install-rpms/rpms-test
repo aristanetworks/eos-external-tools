@@ -1,0 +1,4 @@
+# Specify extra rpms to be installed for the testfloor
+# Use a path specification for local rpm, otherwise it'll be installed
+# from one of the repos used for bootstrapping.
+golang

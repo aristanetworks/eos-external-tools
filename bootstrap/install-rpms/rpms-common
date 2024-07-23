@@ -1,0 +1,15 @@
+# Specify common rpms to be installed in all base-images
+# Use a path specification for local rpm, otherwise it'll be installed
+# from one of the repos used for bootstrapping.
+autoconf
+automake
+coreutils
+git
+make
+mock
+python3-devel
+quilt
+rpm
+rpmdevtools
+rpm-build
+/RPMS/eext-gpg-keys.rpm
