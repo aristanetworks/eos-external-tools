@@ -12,6 +12,7 @@ repo-bundle:
     version-labels:
       latest: 999
       default: 1
+    priority: 2
   bundle2:
     baseurl: "{{.Host}}/bundle2-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
     use-base-arch: true
@@ -23,3 +24,4 @@ repo-bundle:
     version-labels:
       latest: 999
       default: 1
+    priority: 3

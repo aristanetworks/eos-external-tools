@@ -15,6 +15,7 @@ package:
             rfoo:
               enabled: true
               exclude: "rfoo.rpm"
+              priority: 4
         - name: bar
   - name: tcpdump
     upstream-sources:

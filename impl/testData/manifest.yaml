@@ -13,6 +13,7 @@ package:
               exclude: "roo1-rpm.rpm"
             repo-roo12:
               enabled: false
+              priority: 3
         - name: bundle-boo2
           version: v2
         - name: bundle-boo2

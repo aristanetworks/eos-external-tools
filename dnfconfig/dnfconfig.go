@@ -6,7 +6,6 @@ package dnfconfig
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"text/template"
 
@@ -17,8 +16,7 @@ import (
 )
 
 const (
-	RepoHighPriority     int = 1
-	RepoStandardPriority     = 2
+	RepoHighPriority int = 1
 )
 
 // DnfRepoConfig holds baseURL format template(/string)
@@ -35,6 +33,7 @@ type DnfRepoBundleConfig struct {
 	UseBaseArch           bool                      `yaml:"use-base-arch"`
 	DnfRepoConfig         map[string]*DnfRepoConfig `yaml:"repo"`
 	VersionLabels         map[string]string         `yaml:"version-labels"`
+	Priority              int                       `yaml:"priority"`
 	baseURLFormatTemplate *template.Template
 }
 
@@ -54,8 +53,9 @@ type DnfRepoURLData struct {
 // RepoParamsOverride spec
 // this is used to override default parameters for repos in the bundle.
 type DnfRepoParamsOverride struct {
-	Enabled bool   `yaml:"enabled"`
-	Exclude string `yaml:"exclude"`
+	Enabled  bool   `yaml:"enabled"`
+	Exclude  string `yaml:"exclude"`
+	Priority int    `yaml:"priority"`
 }
 
 // RepoData holds dnf repo name and baseurl for mock.cfg generation
@@ -149,14 +149,28 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 		return nil, err
 	}
 
+	repoPriority := b.Priority
+
 	var enabled bool
 	var exclude string
+	var priority int
 	repoOverride, isOverride := repoOverrides[repoName]
 	if isOverride {
 		enabled = repoOverride.Enabled
 		exclude = repoOverride.Exclude
+		priorityOverride := repoOverride.Priority
+		if priorityOverride != 0 {
+			if priorityOverride == 1 {
+				return nil, fmt.Errorf("%sRepo %s priority cannot be 1. Provide a priority > 1", errPrefix, repoName)
+			} else {
+				priority = priorityOverride
+			}
+		} else {
+			priority = repoPriority
+		}
 	} else {
 		enabled = repoConfig.Enabled
+		priority = repoPriority
 	}
 
 	return &DnfRepoParams{
@@ -166,7 +180,7 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 		Exclude:  exclude,
 		GpgCheck: b.GpgCheck,
 		GpgKey:   b.GpgKey,
-		Priority: RepoStandardPriority,
+		Priority: priority,
 	}, nil
 }
 
@@ -185,9 +199,9 @@ func LoadDnfConfig() (*DnfConfig, error) {
 			cfgPath, statErr)
 	}
 
-	yamlContents, readErr := ioutil.ReadFile(cfgPath)
+	yamlContents, readErr := os.ReadFile(cfgPath)
 	if readErr != nil {
-		return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: ioutil.ReadFile on %s returned %s",
+		return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: os.ReadFile on %s returned %s",
 			cfgPath, readErr)
 	}
 
@@ -206,6 +220,17 @@ func LoadDnfConfig() (*DnfConfig, error) {
 				repoBundleConfig.BaseURLFormat, bundleName)
 		}
 		repoBundleConfig.baseURLFormatTemplate = t
+
+		priority := repoBundleConfig.Priority
+		if priority > 0 {
+			if priority == 1 {
+				return nil, fmt.Errorf(
+					"dnfconfig.LoadDnfConfig: Priority 1 is reserved for local deps, please provide a priority > 1")
+			}
+		} else {
+			return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: Wrong priority %d provided / Priority not set."+
+				" Please provide a valid priority > 1", priority)
+		}
 	}
 	return &config, nil
 }

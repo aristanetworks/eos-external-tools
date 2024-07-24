@@ -15,6 +15,7 @@ repo-bundle:
         enabled: true
     version-labels:
       default: v1
+    priority: 2
   bundle-boo2:
     baseurl: "{{.Host}}/boo2-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
     use-base-arch: true
@@ -24,6 +25,7 @@ repo-bundle:
     version-labels:
       default: v1
       latest: v3
+    priority: 2
   bundle-boo3:
     baseurl: "{{.Host}}/boo3-{{.Version}}/{{.RepoName}}/{{.Arch}}/"
     repo:
@@ -32,3 +34,4 @@ repo-bundle:
     version-labels:
       default: v1
       latest: v3
+    priority: 3

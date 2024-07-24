@@ -14,3 +14,4 @@ package:
       repo-bundle:
         - name: el9
           version: 9.1
+          priority: 2

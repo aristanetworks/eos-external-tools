@@ -23,6 +23,7 @@ repo-bundle:
         enabled: false
     version-labels:
       default: 9.3
+    priority: 2
 # --------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------
@@ -43,6 +44,7 @@ repo-bundle:
       # The eext team is responsible for creating these snapshots.
       # default points to the latest such snapshot.
       default: v20240522-1
+    priority: 2
 # --------------------------------------------------------------------------------------------
 
 # ********************************************************************************************
@@ -57,7 +59,7 @@ repo-bundle:
 
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
-    baseurl: '{{.Host}}/artifactory/eext-snapshots-local/el9/{{.Version}}/9/{{.RepoName}}/{{.Arch}}/os'
+    baseurl: "{{.Host}}/artifactory/eext-snapshots-local/el9/{{.Version}}/9/{{.RepoName}}/{{.Arch}}/os"
     repo:
       AppStream:
         enabled: true
@@ -69,6 +71,7 @@ repo-bundle:
         enabled: false
       extras:
         enabled: false
+    priority: 2
 #---------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------
@@ -98,6 +101,7 @@ repo-bundle:
       # default=9 always points to upstream latest dot release 9.x,
       # which upstream updates regularly.
       default: 9
+    priority: 2
 # --------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------
@@ -127,6 +131,7 @@ repo-bundle:
       # default always points to upstream latest dot release 9.x's beta version,
       # which upstream updates regularly.
       default: 9.4-beta
+    priority: 2
 # --------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------
@@ -151,6 +156,7 @@ repo-bundle:
     version-labels:
       # default always points to upstream stable repo which receives updates.
       default: 9
+    priority: 2
 # --------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------
@@ -174,4 +180,5 @@ repo-bundle:
     version-labels:
       # default always points to upstream next/beta repo which receives updates.
       default: 9
+    priority: 2
 # --------------------------------------------------------------------------------------------
