@@ -149,7 +149,7 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 		return nil, err
 	}
 
-	repoPriority := b.Priority
+	repoBundlePriority := b.Priority
 
 	var enabled bool
 	var exclude string
@@ -159,18 +159,21 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 		enabled = repoOverride.Enabled
 		exclude = repoOverride.Exclude
 		priorityOverride := repoOverride.Priority
-		if priorityOverride != 0 {
-			if priorityOverride == 1 {
+		if priorityOverride == 0 {
+			// If repo priority not set, use repo-bundle priority
+			priority = repoBundlePriority
+		} else {
+			if priorityOverride > 1 {
+				priority = priorityOverride
+			} else if priorityOverride == 1 {
 				return nil, fmt.Errorf("%sRepo %s priority cannot be 1. Provide a priority > 1", errPrefix, repoName)
 			} else {
-				priority = priorityOverride
+				return nil, fmt.Errorf("%sInvaid repo priority %d. Provide a priority > 1", errPrefix, priorityOverride)
 			}
-		} else {
-			priority = repoPriority
 		}
 	} else {
 		enabled = repoConfig.Enabled
-		priority = repoPriority
+		priority = repoBundlePriority
 	}
 
 	return &DnfRepoParams{
@@ -222,14 +225,14 @@ func LoadDnfConfig() (*DnfConfig, error) {
 		repoBundleConfig.baseURLFormatTemplate = t
 
 		priority := repoBundleConfig.Priority
-		if priority > 0 {
-			if priority == 1 {
-				return nil, fmt.Errorf(
-					"dnfconfig.LoadDnfConfig: Priority 1 is reserved for local deps, please provide a priority > 1")
-			}
-		} else {
-			return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: Wrong priority %d provided / Priority not set."+
-				" Please provide a valid priority > 1", priority)
+		if priority == 0 {
+			return nil, fmt.Errorf("dnfconfig.LoadDnfConfig: Priority not set. Please provide a valid priority > 1")
+		} else if priority == 1 {
+			return nil, fmt.Errorf(
+				"dnfconfig.LoadDnfConfig: Priority 1 is reserved for local deps, please provide a priority > 1")
+		} else if priority < 0 {
+			return nil, fmt.Errorf(
+				"dnfconfig.LoadDnfConfig: Wrong priority %d provided Please provide a valid priority > 1", priority)
 		}
 	}
 	return &config, nil
