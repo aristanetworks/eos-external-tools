@@ -4,6 +4,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -26,9 +27,68 @@ var GlobalVar Globals
 // ErrPrefix is a container type for error prefix strings.
 type ErrPrefix string
 
+type GitSpec struct {
+	Revision  string
+	ClonedDir string
+}
+
+// Returns if the provided revision is a "COMMIT" or a "TAG"
+func (spec *GitSpec) typeOfGitRevision() (string, error) {
+	repoPath := spec.ClonedDir
+	revision := spec.Revision
+	if err := CheckPath(repoPath, true, false); err != nil {
+		return "", fmt.Errorf("git repo is not available at %s", repoPath)
+	}
+
+	cmd := exec.Command("git", "show")
+	cmd.Dir = repoPath
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("git show of repo %s failed", repoPath)
+	}
+
+	topLine := strings.SplitAfterN(out.String(), "\n", 2)[0]
+	if !strings.Contains(topLine, revision) {
+		return "", fmt.Errorf("revision %s not found in repo %s, please provide valid commit/tag", revision, repoPath)
+	}
+	tagFormat := "tag: " + revision
+	if strings.Contains(topLine, tagFormat) {
+		return "TAG", nil
+	} else {
+		return "COMMIT", nil
+	}
+}
+
+// Returns a unique version number based on the commit/tag
+func (spec *GitSpec) GetVersionFromRevision() (string, error) {
+	revision := spec.Revision
+	// If short hash is provided, return as is.
+	// For long hash, return the first 7 charachters.
+	if len(revision) <= 10 {
+		return revision, nil
+	} else {
+		return revision[:10], nil
+	}
+}
+
 // RunSystemCmd runs a command on the shell and pipes to stdout and stderr
 func RunSystemCmd(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
+	cmd.Stderr = os.Stderr
+	if !GlobalVar.Quiet {
+		cmd.Stdout = os.Stdout
+	} else {
+		cmd.Stdout = io.Discard
+	}
+	err := cmd.Run()
+	return err
+}
+
+// Runs the system command from a specified directory
+func RunSystemCmdInDir(dir string, name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
+	cmd.Dir = dir
 	cmd.Stderr = os.Stderr
 	if !GlobalVar.Quiet {
 		cmd.Stdout = os.Stdout
@@ -200,6 +260,57 @@ func VerifyTarballSignature(
 		return fmt.Errorf("%sError verifying signature %s for tarball %s with pubkey %s."+
 			"\ngpg --verify err: %sstdout:%s",
 			errPrefix, tarballSigPath, tarballPath, pubKeyPath, err, output)
+	}
+
+	return nil
+}
+
+// VerifyGitSignature verifies that the git repo commit/tag is signed.
+func VerifyGitSignature(pubKeyPath string, gitSpec GitSpec, errPrefix ErrPrefix) error {
+	tmpDir, mkdtErr := os.MkdirTemp("", "eext-keyring")
+	if mkdtErr != nil {
+		return fmt.Errorf("%sError '%s'creating temp dir for keyring",
+			errPrefix, mkdtErr)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	keyRingPath := filepath.Join(tmpDir, "eext.gpg")
+	baseArgs := []string{
+		"--homedir", tmpDir,
+		"--no-default-keyring", "--keyring", keyRingPath}
+	gpgCmd := "gpg"
+
+	// Create keyring
+	createKeyRingCmdArgs := append(baseArgs, "--fingerprint")
+	if err := RunSystemCmd(gpgCmd, createKeyRingCmdArgs...); err != nil {
+		return fmt.Errorf("%sError '%s'creating keyring",
+			errPrefix, err)
+	}
+
+	// Import public key
+	importKeyCmdArgs := append(baseArgs, "--import", pubKeyPath)
+	if err := RunSystemCmd(gpgCmd, importKeyCmdArgs...); err != nil {
+		return fmt.Errorf("%sError '%s' importing public-key %s",
+			errPrefix, err, pubKeyPath)
+	}
+
+	var verifyRepoCmd []string
+	revision := gitSpec.Revision
+	revisionType, err := gitSpec.typeOfGitRevision()
+	if err != nil {
+		return fmt.Errorf("%sinvalid revision %s provided, provide either a COMMIT or TAG", errPrefix, revision)
+	}
+	if revisionType == "COMMIT" {
+		verifyRepoCmd = []string{"verify-commit", "-v", revision}
+	} else if revisionType == "TAG" {
+		verifyRepoCmd = []string{"verify-tag", "-v", revision}
+	} else {
+		return fmt.Errorf("%sinvalid revision %s provided, provide either a COMMIT or TAG", errPrefix, revision)
+	}
+	clonedDir := gitSpec.ClonedDir
+	err = RunSystemCmdInDir(clonedDir, "git", verifyRepoCmd...)
+	if err != nil {
+		return fmt.Errorf("%serror during verifying git repo at %s: %s", errPrefix, clonedDir, err)
 	}
 
 	return nil

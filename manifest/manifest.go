@@ -5,7 +5,7 @@ package manifest
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"golang.org/x/exp/slices"
@@ -118,12 +118,18 @@ type SourceBundle struct {
 	SrcRepoParamsOverride srcconfig.SrcRepoParamsOverride `yaml:"override"`
 }
 
+type GitSpec struct {
+	Url      string `yaml:"url"`
+	Revision string `yaml:"revision"`
+}
+
 // UpstreamSrc spec
 // Lists each source bundle(tarball/srpm) and
 // detached signature file for tarball.
 type UpstreamSrc struct {
 	SourceBundle SourceBundle `yaml:"source-bundle"`
 	FullURL      string       `yaml:"full-url"`
+	GitSpec      GitSpec      `yaml:"git"`
 	Signature    Signature    `yaml:"signature"`
 }
 
@@ -147,7 +153,7 @@ type Manifest struct {
 }
 
 func (m Manifest) sanityCheck() error {
-	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone"}
+	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone", "git"}
 
 	for _, pkgSpec := range m.Package {
 		if pkgSpec.Name == "" {
@@ -184,23 +190,45 @@ func (m Manifest) sanityCheck() error {
 		}
 
 		for _, upStreamSrc := range pkgSpec.UpstreamSrc {
-			specifiedFullSrcURL := (upStreamSrc.FullURL != "")
-			specifiedSrcBundle := (upStreamSrc.SourceBundle != SourceBundle{})
-			if !specifiedFullSrcURL && !specifiedSrcBundle {
-				return fmt.Errorf("Specify source for Build in package %s, provide either full-url or source-bundle",
-					pkgSpec.Name)
-			}
+			if pkgSpec.Type == "git" {
+				specifiedUrl := (upStreamSrc.GitSpec.Url != "")
+				specifiedRevision := (upStreamSrc.GitSpec.Revision != "")
+				if !specifiedUrl {
+					return fmt.Errorf("please provide the url for git repo of package %s", pkgSpec.Name)
+				}
+				if !specifiedRevision {
+					return fmt.Errorf("please provide a commit/tag to define revision of package %s", pkgSpec.Name)
+				}
 
-			if specifiedFullSrcURL && specifiedSrcBundle {
-				return fmt.Errorf(
-					"Conflicting sources for Build in package %s, provide either full-url or source-bundle",
-					pkgSpec.Name)
-			}
+				specifiedSignature := (upStreamSrc.Signature != Signature{})
+				if specifiedSignature {
+					skipSigCheck := (upStreamSrc.Signature.SkipCheck)
+					specifiedPubKey := (upStreamSrc.Signature.DetachedSignature.PubKey != "")
+					if !skipSigCheck && !specifiedPubKey {
+						return fmt.Errorf(
+							"please provide the public key to verify git repo for package %s, or skip signature check",
+							pkgSpec.Name)
+					}
+				}
+			} else {
+				specifiedFullSrcURL := (upStreamSrc.FullURL != "")
+				specifiedSrcBundle := (upStreamSrc.SourceBundle != SourceBundle{})
+				if !specifiedFullSrcURL && !specifiedSrcBundle {
+					return fmt.Errorf("Specify source for Build in package %s, provide either full-url or source-bundle",
+						pkgSpec.Name)
+				}
 
-			specifiedFullSigURL := upStreamSrc.Signature.DetachedSignature.FullURL != ""
-			if specifiedFullSigURL && specifiedSrcBundle {
-				return fmt.Errorf("Conflicting signatures for Build in package %s, provide full-url or source-bundle",
-					pkgSpec.Name)
+				if specifiedFullSrcURL && specifiedSrcBundle {
+					return fmt.Errorf(
+						"Conflicting sources for Build in package %s, provide either full-url or source-bundle",
+						pkgSpec.Name)
+				}
+
+				specifiedFullSigURL := upStreamSrc.Signature.DetachedSignature.FullURL != ""
+				if specifiedFullSigURL && specifiedSrcBundle {
+					return fmt.Errorf("Conflicting signatures for Build in package %s, provide full-url or source-bundle",
+						pkgSpec.Name)
+				}
 			}
 		}
 	}
@@ -213,9 +241,9 @@ func LoadManifest(repo string) (*Manifest, error) {
 	repoDir := util.GetRepoDir(repo)
 
 	yamlPath := filepath.Join(repoDir, "eext.yaml")
-	yamlContents, readErr := ioutil.ReadFile(yamlPath)
+	yamlContents, readErr := os.ReadFile(yamlPath)
 	if readErr != nil {
-		return nil, fmt.Errorf("manifest.LoadManifest: ioutil.ReadFile on %s returned %s", yamlPath, readErr)
+		return nil, fmt.Errorf("manifest.LoadManifest: os.ReadFile on %s returned %s", yamlPath, readErr)
 	}
 
 	var manifest Manifest

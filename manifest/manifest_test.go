@@ -31,12 +31,15 @@ func TestManifest(t *testing.T) {
 	viper.Set("SrcDir", dir)
 	defer viper.Reset()
 
-	t.Log("Copy sample manifest to test directory")
-	testutil.SetupManifest(t, dir, "pkg1", "sampleManifest1.yaml")
+	testFiles := []string{"sampleManifest1.yaml", "sampleManifest4.yaml"}
+	for _, testFile := range testFiles {
+		t.Logf("Copy sample manifest %s to test directory", testFile)
+		testutil.SetupManifest(t, dir, "pkg1", testFile)
 
-	t.Log("Testing Load")
-	testLoad(t, "pkg1")
-	t.Log("Load test passed")
+		t.Log("Testing Load")
+		testLoad(t, "pkg1")
+		t.Log("Load test passed")
+	}
 }
 
 type manifestTestVariant struct {
