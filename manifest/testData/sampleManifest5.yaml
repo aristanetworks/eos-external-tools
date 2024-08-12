@@ -1,0 +1,13 @@
+---
+package:
+  - name: libpcap
+    upstream-sources:
+      - git:
+          url: https://github.com/the-tcpdump-group/libpcap
+          revision: 104271ba4a14de6743e43bcf87536786d8fddea4
+    type: git-upstream
+    build:
+      repo-bundle:
+        - name: foo
+          version: v1
+        - name: bar

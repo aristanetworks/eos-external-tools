@@ -6,7 +6,6 @@ package srcconfig
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -222,9 +221,9 @@ func LoadSrcConfig() (*SrcConfig, error) {
 			cfgPath, statErr)
 	}
 
-	yamlContents, readErr := ioutil.ReadFile(cfgPath)
+	yamlContents, readErr := os.ReadFile(cfgPath)
 	if readErr != nil {
-		return nil, fmt.Errorf("srcconfig.LoadSrcConfig: ioutil.ReadFile on %s returned %s",
+		return nil, fmt.Errorf("srcconfig.LoadSrcConfig: os.ReadFile on %s returned %s",
 			cfgPath, readErr)
 	}
 
