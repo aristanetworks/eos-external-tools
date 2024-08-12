@@ -5,7 +5,7 @@ package testutil
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -191,7 +191,7 @@ func setupQuiet() {
 
 func checkAndCleanupQuiet(t *testing.T) {
 	w.Close()
-	out, err := ioutil.ReadAll(r)
+	out, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}

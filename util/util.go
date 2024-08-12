@@ -39,6 +39,20 @@ func RunSystemCmd(name string, arg ...string) error {
 	return err
 }
 
+// Runs the system command from a specified directory
+func RunSystemCmdInDir(dir string, name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
+	cmd.Dir = dir
+	cmd.Stderr = os.Stderr
+	if !GlobalVar.Quiet {
+		cmd.Stdout = os.Stdout
+	} else {
+		cmd.Stdout = io.Discard
+	}
+	err := cmd.Run()
+	return err
+}
+
 // CheckOutput runs a command on the shell and returns stdout if it is successful
 // else it return the error
 func CheckOutput(name string, arg ...string) (
@@ -48,11 +62,11 @@ func CheckOutput(name string, arg ...string) (
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return string(output),
-				fmt.Errorf("Running '%s %s': exited with exit-code %d\nstderr:\n%s",
+				fmt.Errorf("running '%s %s': exited with exit-code %d\nstderr:\n%s",
 					name, strings.Join(arg, " "), exitErr.ExitCode(), exitErr.Stderr)
 		}
 		return string(output),
-			fmt.Errorf("Running '%s %s' failed with '%s'",
+			fmt.Errorf("running '%s %s' failed with '%s'",
 				name, strings.Join(arg, " "), err)
 	}
 	return string(output), nil
@@ -146,112 +160,4 @@ func GetRepoDir(repo string) string {
 		repoDir = "."
 	}
 	return repoDir
-}
-
-// VerifyRpmSignature verifies that the RPM specified at rpmPath
-// is signed with a valid key in the key ring and that the signatures
-// are valid.
-func VerifyRpmSignature(rpmPath string, errPrefix ErrPrefix) error {
-	output, err := CheckOutput("rpm", "-K", rpmPath)
-	if err != nil {
-		return fmt.Errorf("%s:%s", errPrefix, err)
-	}
-	if !strings.Contains(output, "digests signatures OK") {
-		return fmt.Errorf("%sSignature check of %s failed. rpm -K output:\n%s",
-			errPrefix, rpmPath, output)
-	}
-	return nil
-}
-
-// CheckValidSignature verifies that tarball anf signature
-// correspond to same package
-func CheckValidSignature(tarballPath, tarballSigPath string) (
-	bool, bool) {
-	lastDotIndex := strings.LastIndex(tarballSigPath, ".")
-	if lastDotIndex == -1 || !strings.HasPrefix(
-		tarballPath, tarballSigPath[:lastDotIndex]) {
-		return false, false
-	}
-	decompress := strings.Count(tarballPath[lastDotIndex:], ".")
-	dcmprsnReqd := false
-	if decompress > 0 {
-		dcmprsnReqd = true
-	}
-	return true, dcmprsnReqd
-}
-
-// UncompressTarball decompresses the compression one layer at a time
-// to match the tarball with its valid signature
-func uncompressTarball(tarballPath string, downloadDir string) (string, error) {
-	if err := RunSystemCmd(
-		"7za", "x",
-		"-y", tarballPath,
-		"-o"+downloadDir); err != nil {
-		return "", err
-	}
-	lastDotIndex := strings.LastIndex(tarballPath, ".")
-	return tarballPath[:lastDotIndex], nil
-}
-
-// MatchtarballSignCmprsn evaluvates and finds correct compressed/uncompressed tarball
-// that matches with the sign file.
-func MatchtarballSignCmprsn(tarballPath string, tarballSigPath string,
-	downloadDir string, errPrefix ErrPrefix) (string, error) {
-	uncompressedTarball := ""
-	ok, dcmprsnReqd := CheckValidSignature(tarballPath, tarballSigPath)
-	if !ok {
-		return uncompressedTarball, fmt.Errorf("%sError while matching tarball and signature",
-			errPrefix)
-	}
-	if dcmprsnReqd {
-		newTarball, err := uncompressTarball(tarballPath, downloadDir)
-		if err != nil {
-			return uncompressedTarball, fmt.Errorf("%sError '%s' while decompressing trarball",
-				errPrefix, err)
-		}
-		uncompressedTarball = newTarball
-	}
-	return uncompressedTarball, nil
-}
-
-// VerifyTarballSignature verifies that the detached signature of the tarball
-// is valid.
-func VerifyTarballSignature(
-	tarballPath string, tarballSigPath string, pubKeyPath string,
-	errPrefix ErrPrefix) error {
-	tmpDir, mkdtErr := os.MkdirTemp("", "eext-keyring")
-	if mkdtErr != nil {
-		return fmt.Errorf("%sError '%s'creating temp dir for keyring",
-			errPrefix, mkdtErr)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	keyRingPath := filepath.Join(tmpDir, "eext.gpg")
-	baseArgs := []string{
-		"--homedir", tmpDir,
-		"--no-default-keyring", "--keyring", keyRingPath}
-	gpgCmd := "gpg"
-
-	// Create keyring
-	createKeyRingCmdArgs := append(baseArgs, "--fingerprint")
-	if err := RunSystemCmd(gpgCmd, createKeyRingCmdArgs...); err != nil {
-		return fmt.Errorf("%sError '%s'creating keyring",
-			errPrefix, err)
-	}
-
-	// Import public key
-	importKeyCmdArgs := append(baseArgs, "--import", pubKeyPath)
-	if err := RunSystemCmd(gpgCmd, importKeyCmdArgs...); err != nil {
-		return fmt.Errorf("%sError '%s' importing public-key %s",
-			errPrefix, err, pubKeyPath)
-	}
-
-	verifySigArgs := append(baseArgs, "--verify", tarballSigPath, tarballPath)
-	if output, err := CheckOutput(gpgCmd, verifySigArgs...); err != nil {
-		return fmt.Errorf("%sError verifying signature %s for tarball %s with pubkey %s."+
-			"\ngpg --verify err: %sstdout:%s",
-			errPrefix, tarballSigPath, tarballPath, pubKeyPath, err, output)
-	}
-
-	return nil
 }

@@ -23,6 +23,7 @@ type upstreamSrcSpec struct {
 	sigFile      string
 	pubKeyPath   string
 	skipSigCheck bool
+	gitSpec      gitSpec
 }
 
 type srpmBuilder struct {
@@ -77,9 +78,6 @@ func (bldr *srpmBuilder) clean() error {
 // Put them into downloadDir and populate bldr.upstreamSrc
 func (bldr *srpmBuilder) fetchUpstream() error {
 	bldr.log("starting")
-	repo := bldr.repo
-	pkg := bldr.pkgSpec.Name
-	isPkgSubdirInRepo := bldr.pkgSpec.Subdir
 
 	// First fetch upstream source
 	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
@@ -89,70 +87,18 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 	}
 
 	for _, upstreamSrcFromManifest := range bldr.pkgSpec.UpstreamSrc {
-		srcParams, err := srcconfig.GetSrcParams(
-			bldr.pkgSpec.Name,
-			upstreamSrcFromManifest.FullURL,
-			upstreamSrcFromManifest.SourceBundle.Name,
-			upstreamSrcFromManifest.Signature.DetachedSignature.FullURL,
-			upstreamSrcFromManifest.SourceBundle.SrcRepoParamsOverride,
-			upstreamSrcFromManifest.Signature.DetachedSignature.OnUncompressed,
-			bldr.srcConfig,
-			bldr.errPrefix)
+		upstreamSrcType := bldr.pkgSpec.Type
+		var upstreamSrc *upstreamSrcSpec
+		var err error
+		if upstreamSrcType == "git-upstream" {
+			upstreamSrc, err = bldr.getUpstreamSourceForGit(upstreamSrcFromManifest, downloadDir)
+		} else {
+			upstreamSrc, err = bldr.getUpstreamSourceForOthers(upstreamSrcFromManifest, downloadDir)
+		}
 		if err != nil {
-			return fmt.Errorf("%sUnable to get source params for %s",
-				err, upstreamSrcFromManifest.SourceBundle.Name)
+			return err
 		}
-
-		var downloadErr error
-		upstreamSrc := upstreamSrcSpec{}
-
-		bldr.log("downloading %s", srcParams.SrcURL)
-		// Download source
-		if upstreamSrc.sourceFile, downloadErr = download(
-			srcParams.SrcURL,
-			downloadDir,
-			repo, pkg, isPkgSubdirInRepo,
-			bldr.errPrefix); downloadErr != nil {
-			return downloadErr
-		}
-		bldr.log("downloaded")
-
-		upstreamSrc.skipSigCheck = upstreamSrcFromManifest.Signature.SkipCheck
-		pubKey := upstreamSrcFromManifest.Signature.DetachedSignature.PubKey
-
-		if bldr.pkgSpec.Type == "tarball" && !upstreamSrc.skipSigCheck {
-			if srcParams.SignatureURL == "" || pubKey == "" {
-				return fmt.Errorf("%sNo detached-signature/public-key specified for upstream-sources entry %s",
-					bldr.errPrefix, srcParams.SrcURL)
-			}
-			if upstreamSrc.sigFile, downloadErr = download(
-				srcParams.SignatureURL,
-				downloadDir,
-				repo, pkg, isPkgSubdirInRepo,
-				bldr.errPrefix); downloadErr != nil {
-				return downloadErr
-			}
-
-			pubKeyPath := filepath.Join(getDetachedSigDir(), pubKey)
-			if pathErr := util.CheckPath(pubKeyPath, false, false); pathErr != nil {
-				return fmt.Errorf("%sCannot find public-key at path %s",
-					bldr.errPrefix, pubKeyPath)
-			}
-			upstreamSrc.pubKeyPath = pubKeyPath
-		} else if bldr.pkgSpec.Type == "srpm" || bldr.pkgSpec.Type == "unmodified-srpm" {
-			// We don't expect SRPMs to have detached signature or
-			// to be validated with a public-key specified in manifest.
-			if srcParams.SignatureURL != "" {
-				return fmt.Errorf("%sUnexpected detached-sig specified for SRPM",
-					bldr.errPrefix)
-			}
-			if pubKey != "" {
-				return fmt.Errorf("%sUnexpected public-key specified for SRPM",
-					bldr.errPrefix)
-			}
-		}
-
-		bldr.upstreamSrc = append(bldr.upstreamSrc, upstreamSrc)
+		bldr.upstreamSrc = append(bldr.upstreamSrc, *upstreamSrc)
 	}
 
 	bldr.log("successful")
@@ -201,7 +147,7 @@ func (bldr *srpmBuilder) verifyUpstreamSrpm() error {
 	}
 
 	if !upstreamSrc.skipSigCheck {
-		if err := util.VerifyRpmSignature(upstreamSrpmFilePath, bldr.errPrefix); err != nil {
+		if err := verifyRpmSignature(upstreamSrpmFilePath, bldr.errPrefix); err != nil {
 			return err
 		}
 	}
@@ -216,6 +162,15 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 		if err := bldr.verifyUpstreamSrpm(); err != nil {
 			return err
 		}
+	} else if bldr.pkgSpec.Type == "git-upstream" {
+		for _, upstreamSrc := range bldr.upstreamSrc {
+			if !upstreamSrc.skipSigCheck {
+				err := verifyGitSignature(upstreamSrc.pubKeyPath, upstreamSrc.gitSpec, bldr.errPrefix)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	} else {
 		downloadDir := getDownloadDir(bldr.pkgSpec.Name)
 
@@ -223,17 +178,17 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 			if !upstreamSrc.skipSigCheck {
 				upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
 				upstreamSigFilePath := filepath.Join(downloadDir, upstreamSrc.sigFile)
-				uncompressedTarball, err := util.MatchtarballSignCmprsn(
+				uncompressedTarballPath, err := matchTarballSignCmprsn(
 					upstreamSourceFilePath, upstreamSigFilePath,
 					downloadDir, bldr.errPrefix)
 				if err != nil {
 					return err
 				}
-				if uncompressedTarball != "" {
-					upstreamSourceFilePath = uncompressedTarball
-					defer os.Remove(uncompressedTarball)
+				if uncompressedTarballPath != "" {
+					upstreamSourceFilePath = uncompressedTarballPath
+					defer os.Remove(uncompressedTarballPath)
 				}
-				if err := util.VerifyTarballSignature(
+				if err := verifyTarballSignature(
 					upstreamSourceFilePath,
 					upstreamSigFilePath,
 					upstreamSrc.pubKeyPath,
@@ -281,7 +236,7 @@ func (bldr *srpmBuilder) setupRpmbuildTreeSrpm() error {
 // also checks tarball signature
 func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 
-	supportedTypes := []string{"tarball", "standalone"}
+	supportedTypes := []string{"tarball", "standalone", "git-upstream"}
 	if !slices.Contains(supportedTypes, bldr.pkgSpec.Type) {
 		panic(fmt.Sprintf("%ssetupRpmbuildTreeNonSrpm called for unsupported type %s",
 			bldr.errPrefix, bldr.pkgSpec.Type))
@@ -294,7 +249,7 @@ func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 		return err
 	}
 
-	if bldr.pkgSpec.Type == "tarball" {
+	if bldr.pkgSpec.Type == "tarball" || bldr.pkgSpec.Type == "git-upstream" {
 		downloadDir := getDownloadDir(bldr.pkgSpec.Name)
 		for _, upstreamSrc := range bldr.upstreamSrc {
 			upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
@@ -389,7 +344,8 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 		if err := bldr.setupRpmbuildTreeSrpm(); err != nil {
 			return err
 		}
-	} else if bldr.pkgSpec.Type == "tarball" || bldr.pkgSpec.Type == "standalone" {
+	} else if bldr.pkgSpec.Type == "tarball" || bldr.pkgSpec.Type == "standalone" ||
+		bldr.pkgSpec.Type == "git-upstream" {
 		if err := bldr.setupRpmbuildTreeNonSrpm(); err != nil {
 			return err
 		}

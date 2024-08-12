@@ -31,12 +31,15 @@ func TestManifest(t *testing.T) {
 	viper.Set("SrcDir", dir)
 	defer viper.Reset()
 
-	t.Log("Copy sample manifest to test directory")
-	testutil.SetupManifest(t, dir, "pkg1", "sampleManifest1.yaml")
+	testFiles := []string{"sampleManifest1.yaml", "sampleManifest4.yaml"}
+	for _, testFile := range testFiles {
+		t.Logf("Copy sample manifest %s to test directory", testFile)
+		testutil.SetupManifest(t, dir, "pkg1", testFile)
 
-	t.Log("Testing Load")
-	testLoad(t, "pkg1")
-	t.Log("Load test passed")
+		t.Log("Testing Load")
+		testLoad(t, "pkg1")
+		t.Log("Load test passed")
+	}
 }
 
 type manifestTestVariant struct {
@@ -57,15 +60,20 @@ func TestManifestNegative(t *testing.T) {
 	defer viper.Reset()
 
 	testCases := map[string]manifestTestVariant{
-		"testBundleAndFullURL": manifestTestVariant{
+		"testBundleAndFullURL": {
 			TestPkg:      "pkg2",
 			ManifestFile: "sampleManifest2.yaml",
 			ExpectedErr:  "Conflicting sources for Build in package libpcap, provide either full-url or source-bundle",
 		},
-		"testBundleAndSignature": manifestTestVariant{
+		"testBundleAndSignature": {
 			TestPkg:      "pkg3",
 			ManifestFile: "sampleManifest3.yaml",
 			ExpectedErr:  "Conflicting signatures for Build in package tcpdump, provide full-url or source-bundle",
+		},
+		"testGitUpstreamWithoutSignature": {
+			TestPkg:      "pkg5",
+			ManifestFile: "sampleManifest5.yaml",
+			ExpectedErr:  "signature fields not specified for package libpcap, provide public key or skip signature check",
 		},
 	}
 	for testName, variant := range testCases {
