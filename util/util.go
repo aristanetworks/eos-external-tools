@@ -163,6 +163,57 @@ func VerifyRpmSignature(rpmPath string, errPrefix ErrPrefix) error {
 	return nil
 }
 
+// CheckValidSignature verifies that tarball anf signature
+// correspond to same package
+func CheckValidSignature(tarballPath, tarballSigPath string) (
+	bool, bool) {
+	lastDotIndex := strings.LastIndex(tarballSigPath, ".")
+	if lastDotIndex == -1 || !strings.HasPrefix(
+		tarballPath, tarballSigPath[:lastDotIndex]) {
+		return false, false
+	}
+	decompress := strings.Count(tarballPath[lastDotIndex:], ".")
+	dcmprsnReqd := false
+	if decompress > 0 {
+		dcmprsnReqd = true
+	}
+	return true, dcmprsnReqd
+}
+
+// UncompressTarball decompresses the compression one layer at a time
+// to match the tarball with its valid signature
+func uncompressTarball(tarballPath string, downloadDir string) (string, error) {
+	if err := RunSystemCmd(
+		"7za", "x",
+		"-y", tarballPath,
+		"-o"+downloadDir); err != nil {
+		return "", err
+	}
+	lastDotIndex := strings.LastIndex(tarballPath, ".")
+	return tarballPath[:lastDotIndex], nil
+}
+
+// MatchtarballSignCmprsn evaluvates and finds correct compressed/uncompressed tarball
+// that matches with the sign file.
+func MatchtarballSignCmprsn(tarballPath string, tarballSigPath string,
+	downloadDir string, errPrefix ErrPrefix) (string, error) {
+	uncompressedTarball := ""
+	ok, dcmprsnReqd := CheckValidSignature(tarballPath, tarballSigPath)
+	if !ok {
+		return uncompressedTarball, fmt.Errorf("%sError while matching tarball and signature",
+			errPrefix)
+	}
+	if dcmprsnReqd {
+		newTarball, err := uncompressTarball(tarballPath, downloadDir)
+		if err != nil {
+			return uncompressedTarball, fmt.Errorf("%sError '%s' while decompressing trarball",
+				errPrefix, err)
+		}
+		uncompressedTarball = newTarball
+	}
+	return uncompressedTarball, nil
+}
+
 // VerifyTarballSignature verifies that the detached signature of the tarball
 // is valid.
 func VerifyTarballSignature(
