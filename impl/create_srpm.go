@@ -218,11 +218,21 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 		}
 	} else {
 		downloadDir := getDownloadDir(bldr.pkgSpec.Name)
-		for _, upstreamSrc := range bldr.upstreamSrc {
-			upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
 
+		for _, upstreamSrc := range bldr.upstreamSrc {
 			if !upstreamSrc.skipSigCheck {
+				upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
 				upstreamSigFilePath := filepath.Join(downloadDir, upstreamSrc.sigFile)
+				uncompressedTarball, err := util.MatchtarballSignCmprsn(
+					upstreamSourceFilePath, upstreamSigFilePath,
+					downloadDir, bldr.errPrefix)
+				if err != nil {
+					return err
+				}
+				if uncompressedTarball != "" {
+					upstreamSourceFilePath = uncompressedTarball
+					defer os.Remove(uncompressedTarball)
+				}
 				if err := util.VerifyTarballSignature(
 					upstreamSourceFilePath,
 					upstreamSigFilePath,
