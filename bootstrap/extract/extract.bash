@@ -12,9 +12,9 @@ if [ $# -ne 1 ]; then
    usage
 fi
 
-COLLATERALS_DIR=$1
-if [ ! -d "$COLLATERALS_DIR" ]; then
-   echo "Error: Collaterals directory '$COLLATERALS_DIR' not found."
+CHECKSUM_FILE=$1
+if [ ! -f "$CHECKSUM_FILE" ]; then
+   echo "Error: Checksum file '$CHECKSUM_FILE' not found."
    exit 1
 fi
 
@@ -32,7 +32,7 @@ bootstrap_url="${DNF_HOST}/${bootstrap_file_repodir_path}/${bootstrap_filename}"
 wget ${bootstrap_url}
 
 # Validate downloaded tarball
-grep "${bootstrap_filename}" "${COLLATERALS_DIR}/CHECKSUM" | sha256sum -wc
+grep "${bootstrap_filename}" "${CHECKSUM_FILE}" | sha256sum -wc
 
 # Extract tarball and setup rootfs
 # This is a nested tarball, the real rootfs is in layer.tar

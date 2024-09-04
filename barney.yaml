@@ -5,7 +5,15 @@ generators:
 
 images:
 
-  internal/bootstrap/extract-floor:
+  internal/bootstrap/extract/sources:
+    units:
+      - files:
+        - from: .
+          paths:
+            - 'bootstrap/extract/extract.bash'
+            - 'bootstrap/extract/CHECKSUM'
+         
+  internal/bootstrap/extract/floor:
     entry:
       mutables:
         - /var/work
@@ -15,9 +23,7 @@ images:
       - image: barney.ci/alpine%pkg/wget
       - image: barney.ci/alpine%network
       - image: barney.ci/alpine%apk-finalizers
-      - build: |
-          mkdir -p /dest/var/work
-          cp -a bootstrap/extract /dest
+      - image: .%internal/bootstrap/extract/sources
 
   internal/bootstrap/extract:
     no-create-mountpoints: true
@@ -40,17 +46,26 @@ images:
         - /var/cache
         - /var/lib/dnf
     units:
-      - floor: .%internal/bootstrap/extract-floor
+      - floor: .%internal/bootstrap/extract/floor
         entry:
           env:
             DNF_HOST: ${eext-dnf-host.url:-https://artifactory.infra.corp.arista.io/artifactory}
         sources: []
         build: |
           cd /var/work
-          /extract/extract.bash /extract
+          bash /bootstrap/extract/extract.bash /bootstrap/extract/CHECKSUM
           touch $DESTDIR/etc/resolv.conf
 
-  internal/bootstrap/eext-repos-floor:
+  internal/bootstrap/eext-repos/sources:
+    units:
+      - files:
+        - from: .
+          match:
+            - 'bootstrap/eext-repos/*'
+            - 'pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem'
+            - 'pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem'
+         
+  internal/bootstrap/eext-repos/floor:
     description: |
       Alpine floor with the eext-repos src directory mapped in.
       gettext provides envsubst used by generate-repo-file.bash called from generate.bash
@@ -65,11 +80,10 @@ images:
       - image: barney.ci/alpine%pkg/gettext
       - image: barney.ci/alpine%pkg/rpm-dev
       - image: barney.ci/alpine%apk-finalizers
-      - build: |
+      - image: .%internal/bootstrap/eext-repos/sources
+      - sources: []
+        build: |
           mkdir -p /dest/var/work
-          cp -a bootstrap/eext-repos /dest
-          cp -a pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem /dest/eext-repos
-          cp -a pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem /dest/eext-repos
 
   internal/bootstrap/eext-repos:
     no-create-mountpoints: true
@@ -85,22 +99,46 @@ images:
       The RPMs are named eext-repos-build and eext-repos-devel with approiate architecture
       and .rpm extensions. They are installed in /RPMS.
     units:
-      - floor: .%internal/bootstrap/eext-repos-floor
+      - floor: .%internal/bootstrap/eext-repos/floor
         entry:
           env:
             DNF_HOST: ${eext-dnf-host.url:-https://artifactory.infra.corp.arista.io/artifactory}
         sources: []
         build: |
           cd /var/work
-          /eext-repos/generate.bash /eext-repos
+          # First argument is collaterals dir, further args are pem files
+          bash /bootstrap/eext-repos/generate.bash /bootstrap/eext-repos /pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem /pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem
 
-  internal/bootstrap/install-rpms:
+  internal/bootstrap/install-rpms/sources/common:
     no-create-mountpoints: true
     description: |
-      Setup install-rpm scripts and collaterals for bootstrapping
+      install-rpms script and common rpms list
     units:
-      - build: |
-          cp -a bootstrap/install-rpms /dest
+      - files:
+        - from: .
+          paths:
+            - 'bootstrap/install-rpms/install-rpms.bash'
+            - 'bootstrap/install-rpms/rpms-common'
+
+  internal/bootstrap/install-rpms/sources/build:
+    no-create-mountpoints: true
+    description: |
+      build specific rpms list
+    units:
+      - files:
+        - from: .
+          paths:
+            - 'bootstrap/install-rpms/rpms-build'
+
+  internal/bootstrap/install-rpms/sources/devel:
+    no-create-mountpoints: true
+    description: |
+      devel/test specific rpms list
+    units:
+      - files:
+        - from: .
+          paths:
+            - 'bootstrap/install-rpms/rpms-devel'
 
   internal/bootstrap/dnf-dirs:
     no-create-mountpoints: true
@@ -112,33 +150,44 @@ images:
           mkdir -p /dest/var/lib/dnf
           chmod 755 /dest/var/lib/dnf
 
-  internal/bootstrap:
+  internal/bootstrap-build:
     description: |
-      Final bootstrap layer used as floor to build base images.
+      Final bootstrap layer used as floor for build images
     units:
       - image: .%internal/bootstrap/dnf-dirs
       - image: .%internal/bootstrap/extract
       - image: .%internal/bootstrap/eext-repos
-      - image: .%internal/bootstrap/install-rpms
+      - image: .%internal/bootstrap/install-rpms/sources/common
+      - image: .%internal/bootstrap/install-rpms/sources/build
+
+  internal/bootstrap-devel:
+    description: |
+      Final bootstrap layer used as floor for devel images
+    units:
+      - image: .%internal/bootstrap/dnf-dirs
+      - image: .%internal/bootstrap/extract
+      - image: .%internal/bootstrap/eext-repos
+      - image: .%internal/bootstrap/install-rpms/sources/common
+      - image: .%internal/bootstrap/install-rpms/sources/devel
 
   base-image-build:
     units:
-      - floor: .%internal/bootstrap
+      - floor: .%internal/bootstrap-build
         sources: []
         build: |
           echo "install rpms"
-          /install-rpms/install-rpms.bash \
-            --common-rpms-file /install-rpms/rpms-common \
-            --extra-rpms-file /install-rpms/rpms-build
+          bash /bootstrap/install-rpms/install-rpms.bash \
+            --common-rpms-file /bootstrap/install-rpms/rpms-common \
+            --extra-rpms-file /bootstrap/install-rpms/rpms-build
 
   base-image-devel:
     units:
-      - floor: .%internal/bootstrap
+      - floor: .%internal/bootstrap-devel
         sources: []
         build: |
-          /install-rpms/install-rpms.bash \
-            --common-rpms-file /install-rpms/rpms-common \
-            --extra-rpms-file /install-rpms/rpms-devel
+          bash /bootstrap/install-rpms/install-rpms.bash \
+            --common-rpms-file /bootstrap/install-rpms/rpms-common \
+            --extra-rpms-file /bootstrap/install-rpms/rpms-devel
 
   go-binaries:
     description: |
@@ -148,27 +197,51 @@ images:
     units:
       - mappings:
           /src/static: .%go/static
+        sources: []
         build: |
           mkdir -p /dest/usr
           cp -a /src/static/usr/bin /dest/usr/bin
           chmod 555 /dest/usr/bin
 
-  eext-configfiles:
+  src/configfiles:
+    description: |
+      Configuration files for eext
     units:
-      - build: |
+      - files:
+        - from: .
+          match:
+            - 'configfiles/*'
+
+  src/pki:
+    description: |
+      pki files for eext
+    units:
+      - files:
+        - from: .
+          match:
+            - 'pki/**/*'
+            - 'pki/**/**/*'
+
+  eext-staticfiles:
+    no-create-mountpoints: true
+    units:
+      - mappings:
+          /src/1: .%src/configfiles
+          /src/2: .%src/pki
+        sources: []
+        build: |
           mkdir -p $DESTDIR/usr/share/eext
-          cp -a ./configfiles/* $DESTDIR/usr/share/eext
+          cp /src/1/configfiles/* $DESTDIR/usr/share/eext
           mkdir -p $DESTDIR/etc/pki/eext
-          cp -a ./pki/* $DESTDIR/etc/pki/eext
-          mkdir -p $DESTDIR/etc
-          touch $DESTDIR/etc/resolv.conf
+          cp -a /src/2/pki/* $DESTDIR/etc/pki/eext 
 
   eext:
     units:
       - image: .%base-image-build
       - image: .%go-binaries
-      - image: .%eext-configfiles
-      - build: |
+      - image: .%eext-staticfiles
+      - sources: []
+        build: |
           mkdir -p $DESTDIR/etc
           touch $DESTDIR/etc/resolv.conf
 
@@ -193,12 +266,12 @@ images:
       - build: |
           mkdir -p /dest/var/cache/go
           mkdir -p /dest/var/ext
-      - floor: .%internal/bootstrap
+      - floor: .%internal/bootstrap-devel
         sources: []
         build: |
-          /install-rpms/install-rpms.bash \
-            --common-rpms-file /install-rpms/rpms-common \
-            --extra-rpms-file /install-rpms/rpms-devel
+          bash /bootstrap/install-rpms/install-rpms.bash \
+            --common-rpms-file /bootstrap/install-rpms/rpms-common \
+            --extra-rpms-file /bootstrap/install-rpms/rpms-devel
           touch $DESTDIR/etc/resolv.conf
 
     entry:
