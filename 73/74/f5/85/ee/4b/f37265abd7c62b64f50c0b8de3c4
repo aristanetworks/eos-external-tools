@@ -1,6 +1,7 @@
 {
   "": {
-    "commit": "7374f585ee4bf37265abd7c62b64f50c0b8de3c4"
+    "commit": "7374f585ee4bf37265abd7c62b64f50c0b8de3c4",
+    "url": "https://github.com/aristanetworks/eos-external-tools.git"
   },
   "barney.ci/alpine": {
     "commit": "8725c311a245c7aadc4174cd9d851f655c657492"
@@ -18,6 +19,6 @@
     "commit": "5e45f4f5d84591798dfe23a44c5e9e7d5735c580"
   },
   "github.com/golang/go": {
-    "commit": "6885bad7dd86880be6929c02085e5c7a67ff2887"
+    "commit": "69234ded30614a471c35cef5d87b0e0d3c136cd9"
   }
 }
