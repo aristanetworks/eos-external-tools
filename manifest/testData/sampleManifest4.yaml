@@ -1,0 +1,20 @@
+---
+package:
+  - name: openssl
+    upstream-sources:
+      - source-bundle:
+          name: srpm
+          override:
+            version: 3.0.7-27.el9
+    type: srpm
+    build:
+      repo-bundle:
+        - name: el9
+      dependencies:
+        all:
+          - crypto-policies
+          - openssl3-fips
+      eextgen:
+        external-dependencies:
+          crypto-policies:
+          openssl3-fips: code.arista.io/eos/eext/openssl3-fips/

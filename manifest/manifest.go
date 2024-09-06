@@ -148,7 +148,7 @@ type Manifest struct {
 
 func (m Manifest) sanityCheck() error {
 	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone"}
-
+	allowedArchs := []string{"i686", "x86_64"}
 	for _, pkgSpec := range m.Package {
 		if pkgSpec.Name == "" {
 			return fmt.Errorf("Package name not specified in manifest")
@@ -203,6 +203,20 @@ func (m Manifest) sanityCheck() error {
 					pkgSpec.Name)
 			}
 		}
+
+		for pkgName, pkgPath := range pkgSpec.Build.Generator.ExternalDependencies {
+			if pkgPath == "" {
+				return fmt.Errorf("Empty repo path in yaml:external-dependencies for package %s",
+					pkgName)
+			}
+		}
+
+		for arch := range pkgSpec.Build.Generator.Multilib {
+			if !slices.Contains(allowedArchs, arch) {
+				return fmt.Errorf("Architecture %s not suported", arch)
+			}
+		}
+
 	}
 	return nil
 }

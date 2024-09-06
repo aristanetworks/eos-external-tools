@@ -67,6 +67,16 @@ func TestManifestNegative(t *testing.T) {
 			ManifestFile: "sampleManifest3.yaml",
 			ExpectedErr:  "Conflicting signatures for Build in package tcpdump, provide full-url or source-bundle",
 		},
+		"testEmptyExtDepsRepoPath": manifestTestVariant{
+			TestPkg:      "pkg4",
+			ManifestFile: "sampleManifest4.yaml",
+			ExpectedErr:  "Empty repo path in yaml:external-dependencies for package crypto-policies",
+		},
+		"testUnsupportedArch": manifestTestVariant{
+			TestPkg:      "pkg5",
+			ManifestFile: "sampleManifest5.yaml",
+			ExpectedErr:  "Architecture aarch64 not suported",
+		},
 	}
 	for testName, variant := range testCases {
 		t.Logf("%s: Copy sample manifest to test directory", testName)

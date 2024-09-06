@@ -1,0 +1,23 @@
+---
+package:
+  - name: openssl
+    upstream-sources:
+      - source-bundle:
+          name: srpm
+          override:
+            version: 3.0.7-27.el9
+    type: srpm
+    build:
+      repo-bundle:
+        - name: el9
+      dependencies:
+        all:
+          - crypto-policies
+          - openssl3-fips
+      eextgen:
+        multilib:
+          aarch64:
+            other-arch:
+              patterns:
+                - "openssl-devel*.rpm"
+              remove: True
