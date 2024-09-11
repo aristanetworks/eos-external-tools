@@ -189,19 +189,58 @@ images:
             --common-rpms-file /bootstrap/install-rpms/rpms-common \
             --extra-rpms-file /bootstrap/install-rpms/rpms-devel
 
+  go-buildfloor:
+    description: |
+      Build floor for the eext go binary.
+      This buildfloor is used to manually run go build instead of using
+      the go generator to avoid adding the repo commit hash into the
+      snapshot hash.
+
+      TODO: We cannot use .%go/modules here as one of the image units
+      because that also maps in all the sources to run go mod tidy.
+      As a workaround, we're turning on the network and foregoing any
+      benefits from the go generator's cache.
+    units:
+      - image: barney.ci/golang%dev
+      - image: barney.ci/alpine%network
+    entry:
+      mutables:
+        - /go/pkg/mod 
+
+  go-sources:
+    description: |
+      Image with source files need to build the eext static binary.
+    units:
+      - files:
+        - from: .
+          match:
+            - 'go.mod'
+            - 'go.sum'
+            - 'main.go'
+            - 'cmd/*.go'
+            - 'dnfconfig/*.go'
+            - 'impl/*.go'
+            - 'manifest/*.go'
+            - 'srcconfig/*.go'
+            - 'util/*.go'
+
   go-binaries:
     description: |
-      This image is a copy of .%go/static, but with /usr/bin
-      permissions changed to 0555, so that it can combine properly
-      with redhat-style images.
+      We avoid using the go generator directly for two reasons:
+      1. We want redhat style directory permissions of 0555
+      2. We want to present a filtered view of sources, mapping in only
+         the go sources. This makes sure we use a content hash of the go sources
+         and not the SHA of the repo to generate the snapshot hash of .%go-binaries.
     units:
-      - mappings:
-          /src/static: .%go/static
-        sources: []
+      - sources: []
+        mappings:
+          /src: .%go-sources
+        floor: .%go-buildfloor
         build: |
-          mkdir -p /dest/usr
-          cp -a /src/static/usr/bin /dest/usr/bin
-          chmod 555 /dest/usr/bin
+          mkdir -p /dest/usr/bin
+          chmod 0555 /dest/usr/bin 
+          cd /src
+          CGO_ENABLED=0 go build -o /dest/usr/bin -ldflags '-extldflags "-static"' ./...
 
   src/configfiles:
     description: |
