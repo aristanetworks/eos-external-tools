@@ -4,7 +4,7 @@
     "url": "https://github.com/aristanetworks/eos-external-tools.git"
   },
   "barney.ci/alpine": {
-    "commit": "94fcebc578aebb21fdd40e7732df0d21c9ab3a73"
+    "commit": "fdbcb201d094f0a6a4821baa8eca22158c925366"
   },
   "barney.ci/barneyfile": {
     "commit": "8b93658284ea9984354c4d5ffdaad6cb3531169b"
