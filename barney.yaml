@@ -12,7 +12,7 @@ images:
           paths:
             - 'bootstrap/extract/extract.bash'
             - 'bootstrap/extract/CHECKSUM'
-         
+
   internal/bootstrap/extract/floor:
     entry:
       mutables:
@@ -64,7 +64,7 @@ images:
             - 'bootstrap/eext-repos/*'
             - 'pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem'
             - 'pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem'
-         
+
   internal/bootstrap/eext-repos/floor:
     description: |
       Alpine floor with the eext-repos src directory mapped in.
@@ -205,7 +205,7 @@ images:
       - image: barney.ci/alpine%network
     entry:
       mutables:
-        - /go/pkg/mod 
+        - /go/pkg/mod
 
   go-sources:
     description: |
@@ -238,7 +238,7 @@ images:
         floor: .%go-buildfloor
         build: |
           mkdir -p /dest/usr/bin
-          chmod 0555 /dest/usr/bin 
+          chmod 0555 /dest/usr/bin
           cd /src
           CGO_ENABLED=0 go build -o /dest/usr/bin -ldflags '-extldflags "-static"' ./...
 
@@ -272,7 +272,7 @@ images:
           mkdir -p $DESTDIR/usr/share/eext
           cp /src/1/configfiles/* $DESTDIR/usr/share/eext
           mkdir -p $DESTDIR/etc/pki/eext
-          cp -a /src/2/pki/* $DESTDIR/etc/pki/eext 
+          cp -a /src/2/pki/* $DESTDIR/etc/pki/eext
 
   eext:
     units:
