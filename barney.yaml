@@ -8,10 +8,10 @@ images:
   internal/bootstrap/extract/sources:
     units:
       - files:
-        - from: .
-          paths:
-            - 'bootstrap/extract/extract.bash'
-            - 'bootstrap/extract/CHECKSUM'
+          - from: .
+            paths:
+              - 'bootstrap/extract/extract.bash'
+              - 'bootstrap/extract/CHECKSUM'
 
   internal/bootstrap/extract/floor:
     entry:
@@ -59,11 +59,11 @@ images:
   internal/bootstrap/eext-repos/sources:
     units:
       - files:
-        - from: .
-          match:
-            - 'bootstrap/eext-repos/*'
-            - 'pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem'
-            - 'pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem'
+          - from: .
+            match:
+              - 'bootstrap/eext-repos/*'
+              - 'pki/rpmkeys/alma9-b86b3716-gpg-pubkey.pem'
+              - 'pki/rpmkeys/epel9-3228467c-gpg-pubkey.pem'
 
   internal/bootstrap/eext-repos/floor:
     description: |
@@ -115,10 +115,10 @@ images:
       install-rpms script and common rpms list
     units:
       - files:
-        - from: .
-          paths:
-            - 'bootstrap/install-rpms/install-rpms.bash'
-            - 'bootstrap/install-rpms/rpms-common'
+          - from: .
+            paths:
+              - 'bootstrap/install-rpms/install-rpms.bash'
+              - 'bootstrap/install-rpms/rpms-common'
 
   internal/bootstrap/install-rpms/sources/build:
     no-create-mountpoints: true
@@ -126,9 +126,9 @@ images:
       build specific rpms list
     units:
       - files:
-        - from: .
-          paths:
-            - 'bootstrap/install-rpms/rpms-build'
+          - from: .
+            paths:
+              - 'bootstrap/install-rpms/rpms-build'
 
   internal/bootstrap/install-rpms/sources/devel:
     no-create-mountpoints: true
@@ -136,9 +136,9 @@ images:
       devel/test specific rpms list
     units:
       - files:
-        - from: .
-          paths:
-            - 'bootstrap/install-rpms/rpms-devel'
+          - from: .
+            paths:
+              - 'bootstrap/install-rpms/rpms-devel'
 
   internal/bootstrap/dnf-dirs:
     no-create-mountpoints: true
@@ -212,17 +212,17 @@ images:
       Image with source files need to build the eext static binary.
     units:
       - files:
-        - from: .
-          match:
-            - 'go.mod'
-            - 'go.sum'
-            - 'main.go'
-            - 'cmd/*.go'
-            - 'dnfconfig/*.go'
-            - 'impl/*.go'
-            - 'manifest/*.go'
-            - 'srcconfig/*.go'
-            - 'util/*.go'
+          - from: .
+            match:
+              - 'go.mod'
+              - 'go.sum'
+              - 'main.go'
+              - 'cmd/*.go'
+              - 'dnfconfig/*.go'
+              - 'impl/*.go'
+              - 'manifest/*.go'
+              - 'srcconfig/*.go'
+              - 'util/*.go'
 
   go-binaries:
     description: |
@@ -247,19 +247,19 @@ images:
       Configuration files for eext
     units:
       - files:
-        - from: .
-          match:
-            - 'configfiles/*'
+          - from: .
+            match:
+              - 'configfiles/*'
 
   src/pki:
     description: |
       pki files for eext
     units:
       - files:
-        - from: .
-          match:
-            - 'pki/**/*'
-            - 'pki/**/**/*'
+          - from: .
+            match:
+              - 'pki/**/*'
+              - 'pki/**/**/*'
 
   eext-staticfiles:
     no-create-mountpoints: true
