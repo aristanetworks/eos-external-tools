@@ -3,3 +3,4 @@
 # from one of the repos used for bootstrapping.
 /RPMS/eext-repos-devel.rpm
 golang
+sudo
