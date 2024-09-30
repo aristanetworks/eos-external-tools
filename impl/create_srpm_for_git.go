@@ -102,6 +102,10 @@ func getRpmNameFromSpecFile(repo, pkg string, isPkgSubdirInRepo bool) (string, e
 // We aren't using 'git clone' since it is slow for large repos.
 // This method is faster and only pulls necessary changes.
 func cloneGitRepo(pkg, srcURL, revision, targetDir string) (string, error) {
+	if srcURL == "" {
+		return ".", nil
+	}
+
 	// Cloning the git repo to a temporary directory
 	cloneDir, err := os.MkdirTemp(targetDir, pkg)
 	if err != nil {
