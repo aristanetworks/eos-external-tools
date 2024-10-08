@@ -19,11 +19,10 @@ func TestDefaultDnfRepoConfig(t *testing.T) {
 	repoHost := "https://artifactory.infra.corp.arista.io"
 	viper.Set("DnfRepoHost",
 		"https://artifactory.infra.corp.arista.io")
-	viper.Set("DnfConfigFile", "../configfiles/dnfconfig.yaml")
 	defer viper.Reset()
 
 	t.Log("Testing YAML syntax")
-	dnfConfig, loadErr := LoadDnfConfig()
+	dnfConfig, loadErr := LoadDnfConfig("../configfiles/dnfconfig.yaml")
 	require.NoError(t, loadErr)
 	require.NotNil(t, dnfConfig)
 	t.Log("YAML syntax ok")
