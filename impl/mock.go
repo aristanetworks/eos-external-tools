@@ -358,8 +358,8 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 		util.ErrPrefix("mockBuilder: ")); err != nil {
 		return err
 	}
-
-	dnfConfig, dnfConfigErr := dnfconfig.LoadDnfConfig()
+	cfgPath := viper.GetString("DnfConfigFile")
+	dnfConfig, dnfConfigErr := dnfconfig.LoadDnfConfig(cfgPath)
 	if dnfConfigErr != nil {
 		return dnfConfigErr
 	}

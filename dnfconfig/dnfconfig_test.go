@@ -21,12 +21,11 @@ func TestRepoConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	viper.Set("DnfConfigFile", "testData/sample-dnfconfig.yaml")
 	viper.Set("DnfRepoHost", "http://foo.org")
 	defer viper.Reset()
 
 	t.Log("Testing Load")
-	dnfConfig, loadErr := LoadDnfConfig()
+	dnfConfig, loadErr := LoadDnfConfig("testData/sample-dnfconfig.yaml")
 	require.NoError(t, loadErr)
 	require.NotNil(t, dnfConfig)
 	require.Contains(t, dnfConfig.DnfRepoBundleConfig, "bundle1")

@@ -69,7 +69,8 @@ func testMockConfig(t *testing.T, chained bool) {
 	require.NotNil(t, manifestObj)
 
 	t.Log("Load dnfconfig.yaml")
-	dnfConfig, loadErr := dnfconfig.LoadDnfConfig()
+	cfgPath := viper.GetString("DnfConfigFile")
+	dnfConfig, loadErr := dnfconfig.LoadDnfConfig(cfgPath)
 	require.NoError(t, loadErr)
 	require.NotNil(t, dnfConfig)
 

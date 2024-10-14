@@ -190,8 +190,7 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 // Enabled computes enabled flags for a particular repo
 // LoadDnfConfig loads the dnf repo config file, parses it and
 // returns the data structure
-func LoadDnfConfig() (*DnfConfig, error) {
-	cfgPath := viper.GetString("DnfConfigFile")
+func LoadDnfConfig(cfgPath string) (*DnfConfig, error) {
 	_, statErr := os.Stat(cfgPath)
 	if statErr != nil {
 		if os.IsNotExist(statErr) {
