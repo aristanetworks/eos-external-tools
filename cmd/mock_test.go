@@ -2,7 +2,6 @@
 // Arista Networks, Inc. Confidential and Proprietary.
 
 //go:build privileged
-// +build privileged
 
 package cmd
 
