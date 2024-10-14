@@ -334,7 +334,6 @@ images:
           go test code.arista.io/eos/tools/eext/srcconfig
           go test code.arista.io/eos/tools/eext/manifest
           go test code.arista.io/eos/tools/eext/impl
-          go test code.arista.io/eos/tools/eext/cmd
           go test code.arista.io/eos/tools/eext/cmd -tags privileged
           go vet code.arista.io/eos/tools/eext/...
           test -z "$(gofmt -l .)"
