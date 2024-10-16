@@ -1,6 +1,3 @@
-# Specify common rpms to be installed in all base-images
-# Use a path specification for local rpm, otherwise it'll be installed
-# from one of the repos used for bootstrapping.
 autoconf
 automake
 coreutils
