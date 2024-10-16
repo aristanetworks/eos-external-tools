@@ -56,5 +56,4 @@ The developer just uses these repos to further install further packages in his b
 ### Base Image Contents
 Once the bootstrap image and repo configuration is ready, we run the `install-rpms/install-rpms.bash` script to build the base image.
 The set of rpms to be installed is specified in the text files: `install-rpms/rpms-common`, `install-rpms/rpms-build` and `install-rpms/rpms-devel`.
-The `install-rpms` script takes two arguments, `--common-rpms-file rpms-common` and `--extra-rpms-file (rpms-build | rpms-devel)`.
-
+The `install-rpms` script accepts one or more paths as its positional arguments, the files supplied this way should provide a list of packages to be installed.
