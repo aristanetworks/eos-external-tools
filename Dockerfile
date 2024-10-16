@@ -25,6 +25,8 @@ COPY ./testutil/ testutil/
 COPY ./manifest/ manifest/
 COPY ./dnfconfig/ dnfconfig/
 COPY ./srcconfig/ srcconfig/
+COPY ./configfiles/ configfiles/
+COPY ./pki /pki
 RUN go mod download && go build -o /usr/bin/eext
 
 FROM base as deploy
