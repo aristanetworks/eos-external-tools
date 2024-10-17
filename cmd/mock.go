@@ -36,7 +36,7 @@ var mockCmd = &cobra.Command{
 func init() {
 	mockCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (OPTIONAL)")
 	mockCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
-	mockCmd.Flags().StringVarP(&commonArgs.arch, "target", "t", defaultArch(), "target architecture for the rpmbuild (OPTIONAL)")
+	mockCmd.Flags().StringVarP(&commonArgs.arch, "target", "t", defaultArch, "target architecture for the rpmbuild (OPTIONAL)")
 	mockCmd.Flags().BoolVar(&onlyCreateCfg, "only-create-cfg", false, "Just create mock configuration, don't run mock (OPTIONAL)")
 	mockCmd.Flags().BoolVar(&commonArgs.noCheck, "nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
 	rootCmd.AddCommand(mockCmd)

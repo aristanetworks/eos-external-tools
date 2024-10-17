@@ -27,7 +27,7 @@ var buildCmd = &cobra.Command{
 			NoCheck: commonArgs.noCheck,
 		}
 
-		if err := impl.Build(repo, pkg, defaultArch(),
+		if err := impl.Build(repo, pkg, defaultArch,
 			extraCreateSrpmArgs, extraMockArgs); err != nil {
 			return err
 		}
