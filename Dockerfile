@@ -15,18 +15,18 @@ USER root
 RUN dnf install -y golang-1.21.* && dnf clean all
 RUN mkdir -p /src/code.arista.io/eos/tools/eext && mkdir -p /usr/bin
 WORKDIR /src/code.arista.io/eos/tools/eext
-COPY ./go.mod ./
-COPY ./go.sum ./
 COPY ./*.go ./
 COPY ./cmd/ cmd/
-COPY ./impl/ impl/
-COPY ./util/ util/
-COPY ./testutil/ testutil/
-COPY ./manifest/ manifest/
-COPY ./dnfconfig/ dnfconfig/
-COPY ./srcconfig/ srcconfig/
 COPY ./configfiles/ configfiles/
-COPY ./pki /pki
+COPY ./dnfconfig/ dnfconfig/
+COPY ./go.mod ./
+COPY ./go.sum ./
+COPY ./impl/ impl/
+COPY ./manifest/ manifest/
+COPY ./pki/ pki/
+COPY ./srcconfig/ srcconfig/
+COPY ./testutil/ testutil/
+COPY ./util/ util/
 RUN go mod download && go build -o /usr/bin/eext
 
 FROM base as deploy
