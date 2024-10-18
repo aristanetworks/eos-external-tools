@@ -330,12 +330,11 @@ images:
     units:
       - floor: .%eext-testfloor
         build: |
-          go test code.arista.io/eos/tools/eext/dnfconfig
-          go test code.arista.io/eos/tools/eext/srcconfig
-          go test code.arista.io/eos/tools/eext/manifest
-          go test code.arista.io/eos/tools/eext/impl
-          go test code.arista.io/eos/tools/eext/cmd
-          go test code.arista.io/eos/tools/eext/cmd -tags privileged
+          go test code.arista.io/eos/tools/eext/dnfconfig -tags containerized
+          go test code.arista.io/eos/tools/eext/srcconfig -tags containerized
+          go test code.arista.io/eos/tools/eext/manifest -tags containerized
+          go test code.arista.io/eos/tools/eext/impl -tags containerized
+          go test code.arista.io/eos/tools/eext/cmd -tags "privileged containerized"
           go vet code.arista.io/eos/tools/eext/...
           test -z "$(gofmt -l .)"
 
