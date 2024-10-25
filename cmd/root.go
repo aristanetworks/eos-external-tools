@@ -14,7 +14,6 @@ import (
 )
 
 var cfgFile string
-var repoName string
 var pkgName string
 
 // rootCmd represents the base command when called without any subcommands
