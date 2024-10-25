@@ -32,7 +32,7 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 }
 
 func init() {
-	createSrpmCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (OPTIONAL)")
+	createSrpmCmd.Flags().StringP("repo", "r", "", "Repository name (OPTIONAL)")
 	createSrpmCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
 	createSrpmCmd.Flags().BoolVar(&commonArgs.skipBuildPrep, "skip-build-prep", false, "Skips build-prep for cases where build-prep requires dependencies not in container(OPTIONAL)")
 	rootCmd.AddCommand(createSrpmCmd)
