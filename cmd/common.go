@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-var commonArgs = struct {
-	skipBuildPrep bool
-	arch          string
-	noCheck       bool
-}{}
-
 func defaultArch() string {
 	var output []byte
 	var err error

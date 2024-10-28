@@ -20,11 +20,13 @@ var buildCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
+		skipBuildPrep, _ := cmd.Flags().GetBool("skip-build-prep")
+		noCheck, _ := cmd.Flags().GetBool("nocheck")
 		extraCreateSrpmArgs := impl.CreateSrpmExtraCmdlineArgs{
-			SkipBuildPrep: commonArgs.skipBuildPrep,
+			SkipBuildPrep: skipBuildPrep,
 		}
 		extraMockArgs := impl.MockExtraCmdlineArgs{
-			NoCheck: commonArgs.noCheck,
+			NoCheck: noCheck,
 		}
 
 		if err := impl.Build(repo, pkg, defaultArch(),
@@ -38,7 +40,7 @@ var buildCmd = &cobra.Command{
 func init() {
 	buildCmd.Flags().StringP("repo", "r", "", "Repository name (OPTIONAL)")
 	buildCmd.Flags().StringP("package", "p", "", "package name (OPTIONAL)")
-	buildCmd.Flags().BoolVar(&commonArgs.skipBuildPrep, "skip-build-prep", false, "Skips build-prep during createSrpm for cases where build-prep requires dependencies not in container (OPTIONAL)")
-	buildCmd.Flags().BoolVar(&commonArgs.noCheck, "nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
+	buildCmd.Flags().Bool("skip-build-prep", false, "Skips build-prep during createSrpm for cases where build-prep requires dependencies not in container (OPTIONAL)")
+	buildCmd.Flags().Bool("nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
 	rootCmd.AddCommand(buildCmd)
 }

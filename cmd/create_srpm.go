@@ -23,8 +23,9 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
+		skipBuildPrep, _ := cmd.Flags().GetBool("skip-build-prep")
 		extraArgs := impl.CreateSrpmExtraCmdlineArgs{
-			SkipBuildPrep: commonArgs.skipBuildPrep,
+			SkipBuildPrep: skipBuildPrep,
 		}
 		err := impl.CreateSrpm(repo, pkg, extraArgs)
 		return err
@@ -34,6 +35,6 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 func init() {
 	createSrpmCmd.Flags().StringP("repo", "r", "", "Repository name (OPTIONAL)")
 	createSrpmCmd.Flags().StringP("package", "p", "", "package name (OPTIONAL)")
-	createSrpmCmd.Flags().BoolVar(&commonArgs.skipBuildPrep, "skip-build-prep", false, "Skips build-prep for cases where build-prep requires dependencies not in container(OPTIONAL)")
+	createSrpmCmd.Flags().Bool("skip-build-prep", false, "Skips build-prep for cases where build-prep requires dependencies not in container(OPTIONAL)")
 	rootCmd.AddCommand(createSrpmCmd)
 }
