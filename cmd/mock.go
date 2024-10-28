@@ -27,10 +27,7 @@ var mockCmd = &cobra.Command{
 			NoCheck:       noCheck,
 			OnlyCreateCfg: onlyCreateCfg,
 		}
-		if err := impl.Mock(repo, pkg, target, extraArgs); err != nil {
-			return err
-		}
-		return nil
+		return impl.Mock(repo, pkg, target, extraArgs)
 	},
 }
 
