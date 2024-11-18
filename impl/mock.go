@@ -182,6 +182,8 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 	}
 	if util.GlobalVar.Quiet {
 		baseArgs = append(baseArgs, "--quiet")
+	} else {
+		baseArgs = append(baseArgs, "--verbose")
 	}
 
 	mockArgs := append(baseArgs, extraArgs...)
