@@ -9,14 +9,14 @@ import (
 	"strings"
 )
 
-func defaultArch() string {
+var defaultArch = func() string {
 	var output []byte
 	var err error
 	if output, err = exec.Command("arch").Output(); err != nil {
 		panic(err)
 	}
 	return strings.TrimRight(string(output), "\n")
-}
+}()
 
 // SetViperDefaults sets defaults for viper configs
 func SetViperDefaults() {

@@ -29,7 +29,7 @@ func runMockAndVerify(t *testing.T, destDir string,
 	quiet bool,
 	expectedFiles []ExpectedRpmFile,
 	expectedTags map[string]string) {
-	args := []string{"mock", "--target", defaultArch(), "--repo", repoName}
+	args := []string{"mock", "--target", defaultArch, "--repo", repoName}
 	testutil.RunCmd(t, rootCmd, args, quiet, true)
 	for _, expectedFile := range expectedFiles {
 		fileAbsPath := filepath.Join(destDir, "RPMS",

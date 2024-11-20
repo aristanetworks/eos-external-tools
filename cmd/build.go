@@ -28,7 +28,7 @@ var buildCmd = &cobra.Command{
 		extraMockArgs := impl.MockExtraCmdlineArgs{
 			NoCheck: noCheck,
 		}
-		return impl.Build(repo, pkg, defaultArch(), extraCreateSrpmArgs, extraMockArgs)
+		return impl.Build(repo, pkg, defaultArch, extraCreateSrpmArgs, extraMockArgs)
 	},
 }
 
