@@ -15,6 +15,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
 )
@@ -273,7 +274,7 @@ func filterAndCopy(pathMap map[string]string, errPrefix util.ErrPrefix) error {
 
 var gpgKeysLoaded = false
 
-func loadGpgKeys() error {
+func loadGpgKeys(executor executor.Executor) error {
 	if gpgKeysLoaded {
 		return nil
 	}
@@ -372,11 +373,11 @@ func getEextSignature(errPrefix util.ErrPrefix) (
 		errPrefix)
 }
 
-func setup() error {
+func setup(executor executor.Executor) error {
 	if err := CheckEnv(); err != nil {
 		return err
 	}
-	if err := loadGpgKeys(); err != nil {
+	if err := loadGpgKeys(executor); err != nil {
 		return err
 	}
 	return nil

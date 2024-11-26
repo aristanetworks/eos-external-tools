@@ -332,7 +332,7 @@ func (bldr *mockBuilder) runStages() error {
 // <DestDir>/RPMS/<rpmArch>/<package>/
 // 'arch' cannot be empty, needs to be a valid architecture.
 func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs, executor executor.Executor) error {
-	if err := setup(); err != nil {
+	if err := setup(executor); err != nil {
 		return err
 	}
 
