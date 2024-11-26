@@ -19,6 +19,7 @@ COPY ./*.go ./
 COPY ./cmd/ cmd/
 COPY ./configfiles/ configfiles/
 COPY ./dnfconfig/ dnfconfig/
+COPY ./executor/ executor/
 COPY ./go.mod ./
 COPY ./go.sum ./
 COPY ./impl/ impl/
