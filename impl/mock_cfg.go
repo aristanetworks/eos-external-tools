@@ -38,7 +38,7 @@ type builderCommon struct {
 	errPrefix         util.ErrPrefix
 	dependencyList    []string
 	enableNetwork     bool
-	executor				executor.Executor
+	executor          executor.Executor
 }
 
 type mockCfgBuilder struct {

@@ -35,7 +35,7 @@ type srpmBuilder struct {
 	errPrefix     util.ErrPrefix
 	upstreamSrc   []upstreamSrcSpec
 	srcConfig     *srcconfig.SrcConfig
-	executor		  executor.Executor
+	executor      executor.Executor
 }
 
 // CreateSrpmExtraCmdlineArgs is a bundle of extra args for impl.CreateSrpm
@@ -591,7 +591,7 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs, e
 			skipBuildPrep: extraArgs.SkipBuildPrep,
 			errPrefixBase: errPrefixBase,
 			srcConfig:     srcConfig,
-			executor:		executor,
+			executor:      executor,
 		}
 		bldr.setupStageErrPrefix("")
 

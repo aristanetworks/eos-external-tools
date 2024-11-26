@@ -73,6 +73,7 @@ func initConfig() {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
 }
+
 // Select appropriate strategy for running commands based on the dry-run flag
 func selectExecutor() executor.Executor {
 	// In the executors ever grow to become expensive on unweildy to be created
