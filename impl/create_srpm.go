@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/srcconfig"
 	"code.arista.io/eos/tools/eext/util"
@@ -34,6 +35,7 @@ type srpmBuilder struct {
 	errPrefix     util.ErrPrefix
 	upstreamSrc   []upstreamSrcSpec
 	srcConfig     *srcconfig.SrcConfig
+	executor		  executor.Executor
 }
 
 // CreateSrpmExtraCmdlineArgs is a bundle of extra args for impl.CreateSrpm
@@ -550,7 +552,7 @@ func (bldr *srpmBuilder) runStages() error {
 // The packages(SRPMs) are specified in the manifest.
 // If a pkg is specified, only it is built. Otherwise, we walk over all the packages
 // in the manifest and build them.
-func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) error {
+func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs, executor executor.Executor) error {
 	if err := setup(); err != nil {
 		return err
 	}
@@ -589,6 +591,7 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) e
 			skipBuildPrep: extraArgs.SkipBuildPrep,
 			errPrefixBase: errPrefixBase,
 			srcConfig:     srcConfig,
+			executor:		executor,
 		}
 		bldr.setupStageErrPrefix("")
 

@@ -5,17 +5,19 @@ package impl
 
 import (
 	"log"
+
+	"code.arista.io/eos/tools/eext/executor"
 )
 
 // Build calls CreateSrpm and Mock in sequence
 func Build(repo string, pkg string, arch string,
 	extraCreateSrpmArgs CreateSrpmExtraCmdlineArgs,
-	extraMockArgs MockExtraCmdlineArgs) error {
-	if err := CreateSrpm(repo, pkg, extraCreateSrpmArgs); err != nil {
+	extraMockArgs MockExtraCmdlineArgs, executor executor.Executor) error {
+	if err := CreateSrpm(repo, pkg, extraCreateSrpmArgs, executor); err != nil {
 		return err
 	}
 
-	if err := Mock(repo, pkg, arch, extraMockArgs); err != nil {
+	if err := Mock(repo, pkg, arch, extraMockArgs, executor); err != nil {
 		return err
 	}
 	log.Println("SUCCESS: Build")

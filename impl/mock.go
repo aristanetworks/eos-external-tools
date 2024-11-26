@@ -15,6 +15,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
 )
@@ -330,7 +331,7 @@ func (bldr *mockBuilder) runStages() error {
 // from the already built SRPMs and places the results in
 // <DestDir>/RPMS/<rpmArch>/<package>/
 // 'arch' cannot be empty, needs to be a valid architecture.
-func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) error {
+func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs, executor executor.Executor) error {
 	if err := setup(); err != nil {
 		return err
 	}
@@ -408,6 +409,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				errPrefix:         errPrefix,
 				dependencyList:    dependencyList,
 				enableNetwork:     pkgSpec.Build.EnableNetwork,
+				executor:			 executor,
 			},
 			onlyCreateCfg: extraArgs.OnlyCreateCfg,
 			noCheck:       extraArgs.NoCheck,
