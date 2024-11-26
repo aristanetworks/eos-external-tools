@@ -280,7 +280,7 @@ func loadGpgKeys(executor executor.Executor) error {
 	}
 
 	// Remove any stale keys from rpmdb
-	if _, err := util.CheckOutput("rpm", "-e", "gpg-pubkey", "--allmatches"); err != nil {
+	if _, err := executor.Output("rpm", "-e", "gpg-pubkey", "--allmatches"); err != nil {
 		// Ignore error if no keys installed.
 		if !strings.Contains(err.Error(), "package gpg-pubkey is not installed") {
 			return fmt.Errorf("Error '%s' clearing gpg-pubkey from rpmdb", err)
@@ -290,7 +290,7 @@ func loadGpgKeys(executor executor.Executor) error {
 	// Now add the keys
 	pubKeys, _ := filepath.Glob(filepath.Join(getRpmKeysDir(), "*.pem"))
 	for _, pubKey := range pubKeys {
-		if err := util.RunSystemCmd("rpm", "--import", pubKey); err != nil {
+		if err := executor.Exec("rpm", "--import", pubKey); err != nil {
 			return fmt.Errorf("Error '%s' importing %s to rpmdb", err, pubKey)
 		}
 	}
