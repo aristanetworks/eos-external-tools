@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/testutil"
 )
 
@@ -75,7 +76,7 @@ func testCreateSrpmFromUnmodifiedSrpm(t *testing.T,
 	testutil.SetupSrcEnv(sources)
 	defer testutil.CleanupSrcEnv(sources)
 
-	createSrpmErr := CreateSrpm(pkg, pkg, CreateSrpmExtraCmdlineArgs{})
+	createSrpmErr := CreateSrpm(pkg, pkg, CreateSrpmExtraCmdlineArgs{}, &executor.OsExecutor{})
 	require.NoError(t, createSrpmErr)
 
 	srpmsResultDir := filepath.Join(destDir, "SRPMS", pkg)
