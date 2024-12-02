@@ -90,8 +90,8 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 		upstreamSrcType := bldr.pkgSpec.Type
 		var upstreamSrc *upstreamSrcSpec
 		var err error
-		if upstreamSrcType == "git-upstream" {
-			upstreamSrc, err = bldr.getUpstreamSourceForGit(upstreamSrcFromManifest, downloadDir)
+		if upstreamSrcType == "git-upstream" || upstreamSrcType == "git-worktree" {
+			upstreamSrc, err = bldr.getUpstreamSourceForGit(upstreamSrcFromManifest, upstreamSrcType, downloadDir)
 		} else {
 			upstreamSrc, err = bldr.getUpstreamSourceForOthers(upstreamSrcFromManifest, downloadDir)
 		}
@@ -162,7 +162,7 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 		if err := bldr.verifyUpstreamSrpm(); err != nil {
 			return err
 		}
-	} else if bldr.pkgSpec.Type == "git-upstream" {
+	} else if bldr.pkgSpec.Type == "git-upstream" || bldr.pkgSpec.Type == "git-worktree" {
 		for _, upstreamSrc := range bldr.upstreamSrc {
 			if !upstreamSrc.skipSigCheck {
 				err := verifyGitSignature(upstreamSrc.pubKeyPath, upstreamSrc.gitSpec, bldr.errPrefix)
@@ -236,7 +236,7 @@ func (bldr *srpmBuilder) setupRpmbuildTreeSrpm() error {
 // also checks tarball signature
 func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 
-	supportedTypes := []string{"tarball", "standalone", "git-upstream"}
+	supportedTypes := []string{"tarball", "standalone", "git-upstream", "git-worktree"}
 	if !slices.Contains(supportedTypes, bldr.pkgSpec.Type) {
 		panic(fmt.Sprintf("%ssetupRpmbuildTreeNonSrpm called for unsupported type %s",
 			bldr.errPrefix, bldr.pkgSpec.Type))
@@ -345,7 +345,7 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 			return err
 		}
 	} else if bldr.pkgSpec.Type == "tarball" || bldr.pkgSpec.Type == "standalone" ||
-		bldr.pkgSpec.Type == "git-upstream" {
+		bldr.pkgSpec.Type == "git-upstream" || bldr.pkgSpec.Type == "git-worktree" {
 		if err := bldr.setupRpmbuildTreeNonSrpm(); err != nil {
 			return err
 		}
