@@ -4,10 +4,8 @@
 package impl
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -20,62 +18,6 @@ type gitSpec struct {
 	SrcUrl    string
 	Revision  string
 	ClonedDir string
-}
-
-type GitRevisionType int
-
-const (
-	UNDEFINED GitRevisionType = 0
-	COMMIT    GitRevisionType = 1
-	TAG       GitRevisionType = 2
-)
-
-func (spec *gitSpec) typeOfGitRevisionFromRemote() (GitRevisionType, error) {
-	srcURL := spec.SrcUrl
-	revision := spec.Revision
-	cmd := exec.Command("git", "ls-remote", srcURL, revision)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
-		return UNDEFINED, fmt.Errorf("git ls-remote of repo %s failed: %s", srcURL, err)
-	}
-	if len(out.String()) == 0 {
-		return COMMIT, nil
-	} else if strings.Contains(out.String(), revision) {
-		return TAG, nil
-	} else {
-		return UNDEFINED, fmt.Errorf("revision %s not found in repo %s, please provide valid commit/tag", revision, srcURL)
-	}
-}
-
-func (spec *gitSpec) typeOfGitRevision() (GitRevisionType, error) {
-	repoPath := spec.ClonedDir
-	revision := spec.Revision
-	if err := util.CheckPath(repoPath, true, false); err != nil {
-		return spec.typeOfGitRevisionFromRemote()
-	}
-
-	cmd := exec.Command("git", "show", revision)
-	cmd.Dir = repoPath
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
-		return UNDEFINED, fmt.Errorf("git show of repo %s failed %s", repoPath, err)
-	}
-
-	tagCmd := exec.Command("git", "show-ref", "--tags", revision)
-	tagCmd.Dir = repoPath
-	tagCmd.Stdout = &out
-	if err := tagCmd.Run(); err == nil {
-		return TAG, nil
-	}
-
-	topLine := strings.SplitAfterN(out.String(), "\n", 2)[0]
-	if strings.Contains(topLine, revision) {
-		return COMMIT, nil
-	}
-
-	return UNDEFINED, fmt.Errorf("revision %s not found in repo %s, provide valid commit/tag", revision, repoPath)
 }
 
 func getRpmNameFromSpecFile(repo, pkg string, isPkgSubdirInRepo bool) (string, error) {
@@ -279,25 +221,15 @@ func verifyGitSignature(pubKeyPath string, gitSpec gitSpec, errPrefix util.ErrPr
 			errPrefix, err, pubKeyPath)
 	}
 
-	var verifyRepoCmd []string
-	revision := gitSpec.Revision
-	revisionType, err := gitSpec.typeOfGitRevision()
-	if err != nil {
-		return fmt.Errorf("%sinvalid revision %s provided, provide either a COMMIT or TAG %s", errPrefix, revision, err)
-	}
-	if revisionType == COMMIT {
-		verifyRepoCmd = []string{"verify-commit", "-v", revision}
-	} else if revisionType == TAG {
-		verifyRepoCmd = []string{"verify-tag", "-v", revision}
-	} else {
-		return fmt.Errorf("%sinvalid revision %s provided, provide either a COMMIT or TAG", errPrefix, revision)
-	}
-
 	clonedDir := gitSpec.ClonedDir
-	err = util.RunSystemCmdInDir(clonedDir, "git", verifyRepoCmd...)
-	if err != nil {
-		return fmt.Errorf("%serror during verifying git repo at %s: %s", errPrefix, clonedDir, err)
+	revision := gitSpec.Revision
+	if err := util.RunSystemCmdInDir(clonedDir, "git", "show-ref", "--quiet", "--tags"); err == nil {
+		// the provided ref is a tag
+		return util.RunSystemCmdInDir(clonedDir, "git", "verify-tag", "-v", revision)
 	}
-
-	return nil
+	if err := util.RunSystemCmdInDir(clonedDir, "git", "cat-file", "-e", revision); err == nil {
+		// found an object with that hash
+		return util.RunSystemCmdInDir(clonedDir, "git", "verify-commit", "-v", revision)
+	}
+	return fmt.Errorf("%sinvalid revision %s provided, provide either a COMMIT or TAG: %s", errPrefix, revision, err)
 }
