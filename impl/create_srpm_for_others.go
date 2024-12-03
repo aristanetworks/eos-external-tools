@@ -103,18 +103,17 @@ func verifyRpmSignature(rpmPath string, errPrefix util.ErrPrefix) error {
 	return nil
 }
 
-// checkValidSignature verifies that tarball anf signature
-// correspond to same package
-func checkValidSignature(tarballPath, tarballSigPath string) (
-	bool, bool) {
+// isSigfileApplicable checks if the tarball and sigfile paths correspond to the same package.
+// Returns two bools: if the sigfile is applicable and if decompression is required.
+func isSigfileApplicable(tarballPath, tarballSigPath string) (bool, bool) {
 	lastDotIndex := strings.LastIndex(tarballSigPath, ".")
 	if lastDotIndex == -1 || !strings.HasPrefix(
 		tarballPath, tarballSigPath[:lastDotIndex]) {
 		return false, false
 	}
-	decompress := strings.Count(tarballPath[lastDotIndex:], ".")
-	dcmprsnReqd := (decompress > 0)
-	return true, dcmprsnReqd
+	suffixCount := strings.Count(tarballPath[lastDotIndex:], ".")
+	decompressionRequired := suffixCount > 0
+	return true, decompressionRequired
 }
 
 // uncompressTarball decompresses the compression one layer at a time
@@ -134,7 +133,7 @@ func uncompressTarball(tarballPath string, downloadDir string) (string, error) {
 // that matches with the sign file.
 func matchTarballSignCmprsn(tarballPath string, tarballSigPath string,
 	downloadDir string, errPrefix util.ErrPrefix) (string, error) {
-	ok, dcmprsnReqd := checkValidSignature(tarballPath, tarballSigPath)
+	ok, dcmprsnReqd := isSigfileApplicable(tarballPath, tarballSigPath)
 	if !ok {
 		return "", fmt.Errorf("%sError while matching tarball and signature",
 			errPrefix)
