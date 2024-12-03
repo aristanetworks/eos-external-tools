@@ -9,8 +9,6 @@ import (
 	"code.arista.io/eos/tools/eext/impl"
 )
 
-var onlyCreateCfg bool
-
 var mockCmd = &cobra.Command{
 	Use:   "mock",
 	Short: "Build RPMs from SRPM.",
@@ -22,22 +20,22 @@ var mockCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repo, _ := cmd.Flags().GetString("repo")
 		pkg, _ := cmd.Flags().GetString("package")
+		target, _ := cmd.Flags().GetString("target")
+		onlyCreateCfg, _ := cmd.Flags().GetBool("only-create-cfg")
+		noCheck, _ := cmd.Flags().GetBool("nocheck")
 		extraArgs := impl.MockExtraCmdlineArgs{
-			NoCheck:       commonArgs.noCheck,
+			NoCheck:       noCheck,
 			OnlyCreateCfg: onlyCreateCfg,
 		}
-		if err := impl.Mock(repo, pkg, commonArgs.arch, extraArgs); err != nil {
-			return err
-		}
-		return nil
+		return impl.Mock(repo, pkg, target, extraArgs)
 	},
 }
 
 func init() {
-	mockCmd.Flags().StringVarP(&repoName, "repo", "r", "", "Repository name (OPTIONAL)")
-	mockCmd.Flags().StringVarP(&pkgName, "package", "p", "", "package name (OPTIONAL)")
-	mockCmd.Flags().StringVarP(&commonArgs.arch, "target", "t", defaultArch(), "target architecture for the rpmbuild (OPTIONAL)")
-	mockCmd.Flags().BoolVar(&onlyCreateCfg, "only-create-cfg", false, "Just create mock configuration, don't run mock (OPTIONAL)")
-	mockCmd.Flags().BoolVar(&commonArgs.noCheck, "nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
+	mockCmd.Flags().StringP("repo", "r", "", "Repository name (OPTIONAL)")
+	mockCmd.Flags().StringP("package", "p", "", "package name (OPTIONAL)")
+	mockCmd.Flags().StringP("target", "t", defaultArch(), "target architecture for the rpmbuild (OPTIONAL)")
+	mockCmd.Flags().Bool("only-create-cfg", false, "Just create mock configuration, don't run mock (OPTIONAL)")
+	mockCmd.Flags().Bool("nocheck", false, "Pass --nocheck to rpmbuild (OPTIONAL)")
 	rootCmd.AddCommand(mockCmd)
 }

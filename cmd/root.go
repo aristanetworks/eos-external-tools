@@ -13,10 +13,6 @@ import (
 	"code.arista.io/eos/tools/eext/util"
 )
 
-var cfgFile string
-var repoName string
-var pkgName string
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:          "eext",
@@ -48,7 +44,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is eext-viper.yaml in /etc or $HOME/.config)")
+	rootCmd.PersistentFlags().String("config", "", "config file (default is eext-viper.yaml in /etc or $HOME/.config)")
 	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
 
 	// Cobra also supports local flags, which will only run
@@ -58,7 +54,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
+	if cfgFile, err := rootCmd.Flags().GetString("config"); err != nil {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
