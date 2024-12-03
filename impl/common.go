@@ -299,14 +299,12 @@ func loadGpgKeys() error {
 }
 
 func combineSrcEnv(
-	onlyHash bool,
-	hashMaxWidth uint,
+	useHash bool,
 	sep string,
-	maxSources int,
 	errPrefix util.ErrPrefix) (string, error) {
 	envPrefix := viper.GetString("SrcEnvPrefix")
 	var releaseFields []string
-	for i := 0; i < maxSources; i++ {
+	for i := 0; ; i++ {
 		envVar := envPrefix + strconv.Itoa(i)
 		srcI := os.Getenv(envVar)
 		if srcI == "" {
@@ -320,13 +318,8 @@ func combineSrcEnv(
 		}
 
 		var field string
-		if onlyHash {
-			fullHash := srcIComps[1]
-			if hashMaxWidth != 0 {
-				field = fullHash[:hashMaxWidth]
-			} else {
-				field = fullHash
-			}
+		if useHash {
+			field = srcIComps[1][:7] // first 7 chars of the hash
 		} else {
 			field = srcI
 		}
@@ -338,8 +331,8 @@ func combineSrcEnv(
 // getRpmReleaseMacro returns the release rpm macro to be defined
 // for building srpms and rpms.
 // If the value is hardcoded in the manifest, we use that.
-// Otherwise it is constructed by combining the first <hashWidthInRelease>
-// characters of the commit hashes in the SRC_<N> env vars.
+// Otherwise it is constructed by combining a shortened hash of the
+// commit from the the SRC_<N> env vars.
 // If the env vars are unset, an empty string is returned.
 func getRpmReleaseMacro(pkgSpec *manifest.Package, errPrefix util.ErrPrefix) (
 	string, error) {
@@ -347,29 +340,14 @@ func getRpmReleaseMacro(pkgSpec *manifest.Package, errPrefix util.ErrPrefix) (
 		return pkgSpec.RpmReleaseMacro, nil
 	}
 
-	const hashWidthInRelease uint = 7
-	const maxSources int = 10
-	const sep string = "_"
-
-	return combineSrcEnv(
-		true, hashWidthInRelease,
-		sep,
-		maxSources,
-		errPrefix)
+	return combineSrcEnv(true, "_", errPrefix)
 }
 
 // getEextSignature returns a signature of the Source and BuildRequires
 // It is derived by combining the SRC_<N> environment variables.
 func getEextSignature(errPrefix util.ErrPrefix) (
 	string, error) {
-	const sep string = ","
-	const maxSources int = 10
-
-	return combineSrcEnv(
-		false, 0,
-		sep,
-		maxSources,
-		errPrefix)
+	return combineSrcEnv(false, ",", errPrefix)
 }
 
 func setup() error {
