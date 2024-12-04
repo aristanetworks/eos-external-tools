@@ -28,6 +28,12 @@ repo-bundle:
 
 # --------------------------------------------------------------------------------------------
   epel9:
+    # DO NOT use epel9-unsafe as a repo-bundle in your eext.yaml
+    # unless you know what you're doing. Use epel9 instead because the defaults
+    # there will ensure build reproducibility.
+    # epel9-unsafe is used by the eext team for creating repo cache snapshots
+    # that are further used to update the epel9 repo-bundle default pointer.
+
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
 
@@ -35,15 +41,13 @@ repo-bundle:
     # when target is i686. This means we can satisfy EPEL dependencies for i686 targets
     # provided the dependencies are all noarch.
     use-base-arch: true
-    baseurl: "{{.Host}}/artifactory/eext-snapshots-local/epel9/{{.Version}}/9/Everything/{{.Arch}}/"
+    baseurl: "{{.Host}}/artifactory/eext-epel/{{.Version}}/Everything/{{.Arch}}/"
     repo:
       epel9:
         enabled: true
     version-labels:
-      # Each version points to a timestamped snapshot of the repo cache of the epel9-unsafe repo.
-      # The eext team is responsible for creating these snapshots.
-      # default points to the latest such snapshot.
-      default: v20240522-1
+      # default always points to upstream stable repo which receives updates.
+      default: 9
     priority: 2
 # --------------------------------------------------------------------------------------------
 
