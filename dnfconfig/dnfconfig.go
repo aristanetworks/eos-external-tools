@@ -95,7 +95,7 @@ func (b *DnfRepoBundleConfig) getBaseURL(
 	}
 
 	var version string
-	if versionOverride == "" {
+	if versionOverride == "" || repoName == "epel9" {
 		version = "default"
 	} else {
 		version = versionOverride
