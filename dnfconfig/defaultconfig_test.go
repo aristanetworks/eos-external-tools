@@ -51,7 +51,7 @@ func TestDefaultDnfRepoConfig(t *testing.T) {
 				"x86_64":  "x86_64",
 				"aarch64": "aarch64",
 			},
-			defaultVersion: "9.3",
+			defaultVersion: "9.4",
 		},
 		"el9-snapshot": ExpectedDefaultRepoBundle{
 			repoToURLFormatString: map[string]string{
@@ -102,7 +102,7 @@ func TestDefaultDnfRepoConfig(t *testing.T) {
 				"x86_64":  "x86_64",
 				"aarch64": "aarch64",
 			},
-			defaultVersion: "9.4-beta",
+			defaultVersion: "9.5-beta",
 		},
 		"epel9": ExpectedDefaultRepoBundle{
 			repoToURLFormatString: map[string]string{
@@ -118,7 +118,7 @@ func TestDefaultDnfRepoConfig(t *testing.T) {
 				"x86_64":  "x86_64",
 				"aarch64": "aarch64",
 			},
-			defaultVersion: "v20240522-1",
+			defaultVersion: "v20250107-1",
 		},
 		"epel9-unsafe": ExpectedDefaultRepoBundle{
 			repoToURLFormatString: map[string]string{
