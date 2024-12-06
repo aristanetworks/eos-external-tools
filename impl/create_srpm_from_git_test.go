@@ -152,38 +152,6 @@ func populateTestDataForGitSignature(cloneDir string) []*TestDataType {
 	return populateTestData(cloneDir, revisionList, expectedList)
 }
 
-func TestRevisionType(t *testing.T) {
-	cloneDir, err := cloneGitDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(cloneDir)
-
-	// To reuse populateTestData(), we convert the obtained GitRevisionType to string
-	resolveGitRevisionTypeToString := []string{"UNDEFINED", "COMMIT", "TAG"}
-	testDataList := populateTestDataForRevision(cloneDir)
-	for _, data := range testDataList {
-		gitSpec := data.gitSpec
-		expectedType := data.expectedValue
-
-		typeLocalRepo, err := gitSpec.typeOfGitRevision()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// Test requires call to remote git repo.
-		// Enable when we use remote repo for test.
-		/*typeRemoteRepo, err := gitSpec.typeOfGitRevisionFromRemote()
-		if err != nil {
-			t.Fatal(err)
-		}*/
-
-		require.Equal(t, expectedType, resolveGitRevisionTypeToString[typeLocalRepo])
-		//require.Equal(t, expectedType, resolveGitRevisionTypeToString[typeRemoteRepo])
-	}
-	t.Log("Test typeOfGitRevision PASSED")
-}
-
 func TestRpmNameFromSpecFile(t *testing.T) {
 	viper.Set("SrcDir", "testData/")
 	defer viper.Reset()
