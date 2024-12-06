@@ -177,8 +177,8 @@ images:
         build: |
           echo "install rpms"
           bash /bootstrap/install-rpms/install-rpms.bash \
-            --common-rpms-file /bootstrap/install-rpms/rpms-common \
-            --extra-rpms-file /bootstrap/install-rpms/rpms-build
+            /bootstrap/install-rpms/rpms-common \
+            /bootstrap/install-rpms/rpms-build
 
   base-image-devel:
     units:
@@ -186,8 +186,8 @@ images:
         sources: []
         build: |
           bash /bootstrap/install-rpms/install-rpms.bash \
-            --common-rpms-file /bootstrap/install-rpms/rpms-common \
-            --extra-rpms-file /bootstrap/install-rpms/rpms-devel
+            /bootstrap/install-rpms/rpms-common \
+            /bootstrap/install-rpms/rpms-devel
 
   go-buildfloor:
     description: |
@@ -309,8 +309,8 @@ images:
         sources: []
         build: |
           bash /bootstrap/install-rpms/install-rpms.bash \
-            --common-rpms-file /bootstrap/install-rpms/rpms-common \
-            --extra-rpms-file /bootstrap/install-rpms/rpms-devel
+            /bootstrap/install-rpms/rpms-common \
+            /bootstrap/install-rpms/rpms-devel
           touch $DESTDIR/etc/resolv.conf
 
     entry:
