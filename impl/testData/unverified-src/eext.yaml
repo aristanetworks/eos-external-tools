@@ -1,0 +1,25 @@
+---
+package:
+  - name: foo1
+    upstream-sources:
+      - source-bundle:
+          name: srpm
+          override:
+            version: 1.7.7-1.fc40
+    type: srpm
+    build:
+      repo-bundle:
+        - name: el9
+
+  - name: foo2
+    upstream-sources:
+      - source-bundle:
+          name: srpm
+          override:
+            version: 1.7.7-1.fc40
+        signature:
+          skip-check: true
+    type: srpm
+    build:
+      repo-bundle:
+        - name: el9

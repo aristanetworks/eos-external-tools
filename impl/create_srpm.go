@@ -4,7 +4,9 @@
 package impl
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -74,6 +76,27 @@ func (bldr *srpmBuilder) clean() error {
 	return nil
 }
 
+// Generate SHA256 hash of the downloaded upstream source
+// and match it with the SHA256 hash in eext.yaml
+func generateSrcSha256Hash(srcFilePath string) (string, error) {
+
+	srcFile, err := os.Open(srcFilePath)
+	if err != nil {
+		return "", fmt.Errorf("errored with %s while creating file",
+			err)
+	}
+	defer srcFile.Close()
+
+	hashComputer := sha256.New()
+	if _, err := io.Copy(hashComputer, srcFile); err != nil {
+		return "", fmt.Errorf("errored with %s while generating hash",
+			err)
+	}
+	sha256Hash := fmt.Sprintf("%x", hashComputer.Sum(nil))
+
+	return sha256Hash, nil
+}
+
 // Fetch the upstream sources mentioned in the manifest.
 // Put them into downloadDir and populate bldr.upstreamSrc
 func (bldr *srpmBuilder) fetchUpstream() error {
@@ -98,6 +121,24 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 		if err != nil {
 			return err
 		}
+
+		if upstreamSrcFromManifest.Signature.SkipCheck && upstreamSrcFromManifest.Signature.SrcSha256Hash != "" {
+			srcFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+			sha256Hash, err := generateSrcSha256Hash(srcFilePath)
+			if err != nil {
+				return fmt.Errorf("%sError '%s'",
+					bldr.errPrefix, err)
+			}
+			eextSha256Hash := upstreamSrcFromManifest.Signature.SrcSha256Hash
+			fmt.Printf("calculated SHA hash is `%s`, hash in eext-yaml file is `%s` \n", sha256Hash, eextSha256Hash)
+			if sha256Hash != eextSha256Hash {
+				return fmt.Errorf("%sError:SHA256 hash '%s'is not matching with eext.yaml sha hash '%s' for upstream file '%s', package '%s'",
+					bldr.errPrefix, sha256Hash, eextSha256Hash, srcFilePath, bldr.pkgSpec.Name)
+			} else {
+				fmt.Printf("SHA-256 hash matched successfully, unmodified upstream source found \n")
+			}
+		}
+
 		bldr.upstreamSrc = append(bldr.upstreamSrc, *upstreamSrc)
 	}
 
