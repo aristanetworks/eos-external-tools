@@ -554,7 +554,7 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) e
 	if err := setup(); err != nil {
 		return err
 	}
-
+	fmt.Printf("repo is %s, pkg is %s", repo, pkg)
 	// Error out early if source is not available.
 	if err := checkRepo(repo,
 		"",    // pkg
