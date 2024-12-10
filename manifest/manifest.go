@@ -153,7 +153,7 @@ type Manifest struct {
 }
 
 func (m Manifest) sanityCheck() error {
-	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone", "git-upstream"}
+	allowedPkgTypes := []string{"srpm", "unmodified-srpm", "tarball", "standalone", "git-upstream", "git-worktree"}
 
 	for _, pkgSpec := range m.Package {
 		if pkgSpec.Name == "" {
@@ -190,10 +190,10 @@ func (m Manifest) sanityCheck() error {
 		}
 
 		for _, upStreamSrc := range pkgSpec.UpstreamSrc {
-			if pkgSpec.Type == "git-upstream" {
+			if pkgSpec.Type == "git-upstream" || pkgSpec.Type == "git-worktree" {
 				specifiedUrl := (upStreamSrc.GitBundle.Url != "")
 				specifiedRevision := (upStreamSrc.GitBundle.Revision != "")
-				if !specifiedUrl {
+				if !specifiedUrl && pkgSpec.Type == "git-upstream" {
 					return fmt.Errorf("please provide the url for git repo of package %s", pkgSpec.Name)
 				}
 				if !specifiedRevision {

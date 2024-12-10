@@ -163,11 +163,18 @@ func generateArchiveFile(targetDir, clonedDir, revision, repo, pkg string, isPkg
 }
 
 // Download the git repo, and create a tarball at the provided commit/tag.
-func archiveGitRepo(srcURL, targetDir, revision, repo, pkg string, isPkgSubdirInRepo bool,
+func archiveGitRepo(srcURL, targetDir, upstreamSrcType, revision, repo, pkg string, isPkgSubdirInRepo bool,
 	errPrefix util.ErrPrefix) (string, string, error) {
-	cloneDir, err := cloneGitRepo(pkg, srcURL, revision, targetDir)
-	if err != nil {
-		return "", "", fmt.Errorf("cloning git repo failed: %s", err)
+	// If package type is "git-worktree",
+	// then the directory containing 'eext.yaml' is the source.
+	// TODO: Determine the directory based on final location on 'eext.yaml'
+	cloneDir := "."
+	if upstreamSrcType == "git-upstream" {
+		var err error
+		cloneDir, err = cloneGitRepo(pkg, srcURL, revision, targetDir)
+		if err != nil {
+			return "", "", fmt.Errorf("cloning git repo failed: %s", err)
+		}
 	}
 
 	gitArchiveFile, err := generateArchiveFile(targetDir, cloneDir, revision, repo, pkg, isPkgSubdirInRepo, errPrefix)
@@ -178,7 +185,7 @@ func archiveGitRepo(srcURL, targetDir, revision, repo, pkg string, isPkgSubdirIn
 	return gitArchiveFile, cloneDir, nil
 }
 
-func getGitSpecAndSrcFile(srcUrl, revision, downloadDir, repo, pkg string,
+func getGitSpecAndSrcFile(srcUrl, revision, downloadDir, upstreamSrcType, repo, pkg string,
 	isPkgSubdirInRepo bool, errPrefix util.ErrPrefix) (*gitSpec, string, error) {
 	spec := gitSpec{
 		SrcUrl:   srcUrl,
@@ -188,6 +195,7 @@ func getGitSpecAndSrcFile(srcUrl, revision, downloadDir, repo, pkg string,
 	sourceFile, clonedDir, downloadErr := archiveGitRepo(
 		srcUrl,
 		downloadDir,
+		upstreamSrcType,
 		revision,
 		repo, pkg, isPkgSubdirInRepo,
 		errPrefix)
@@ -200,7 +208,7 @@ func getGitSpecAndSrcFile(srcUrl, revision, downloadDir, repo, pkg string,
 }
 
 func (bldr *srpmBuilder) getUpstreamSourceForGit(upstreamSrcFromManifest manifest.UpstreamSrc,
-	downloadDir string) (*upstreamSrcSpec, error) {
+	upstreamSrcType, downloadDir string) (*upstreamSrcSpec, error) {
 
 	repo := bldr.repo
 	pkg := bldr.pkgSpec.Name
@@ -225,7 +233,7 @@ func (bldr *srpmBuilder) getUpstreamSourceForGit(upstreamSrcFromManifest manifes
 	bldr.log("creating tarball for %s from repo %s", pkg, srcParams.SrcURL)
 	srcUrl := srcParams.SrcURL
 	revision := upstreamSrcFromManifest.GitBundle.Revision
-	spec, sourceFile, err := getGitSpecAndSrcFile(srcUrl, revision, downloadDir,
+	spec, sourceFile, err := getGitSpecAndSrcFile(srcUrl, revision, downloadDir, upstreamSrcType,
 		repo, pkg, isPkgSubdirInRepo, bldr.errPrefix)
 	if err != nil {
 		return nil, err
