@@ -4,6 +4,7 @@
 package util
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
@@ -160,4 +161,19 @@ func GetRepoDir(repo string) string {
 		repoDir = "."
 	}
 	return repoDir
+}
+
+// Generate SHA256 hash of file
+func GenerateSha256Hash(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("GenerateSha256Hash: %s", err)
+	}
+	defer file.Close()
+	hashComputer := sha256.New()
+	if _, err := io.Copy(hashComputer, file); err != nil {
+		return "", fmt.Errorf("GenerateSha256Hash: %s", err)
+	}
+	sha256Hash := fmt.Sprintf("%x", hashComputer.Sum(nil))
+	return sha256Hash, nil
 }

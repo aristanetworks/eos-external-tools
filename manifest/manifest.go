@@ -131,6 +131,7 @@ type UpstreamSrc struct {
 	FullURL      string       `yaml:"full-url"`
 	GitBundle    GitBundle    `yaml:"git"`
 	Signature    Signature    `yaml:"signature"`
+	Sha256       string       `yaml:"sha256"`
 }
 
 // Package spec

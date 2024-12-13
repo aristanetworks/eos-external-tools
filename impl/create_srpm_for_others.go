@@ -14,6 +14,20 @@ import (
 	"code.arista.io/eos/tools/eext/util"
 )
 
+func checkSHA256Hash(downloadDir string, sourceFile string,
+	sha256InManifest string, errPrefix util.ErrPrefix) error {
+	srcFilePath := filepath.Join(downloadDir, sourceFile)
+	sha256Hash, err := util.GenerateSha256Hash(srcFilePath)
+	if err != nil {
+		return fmt.Errorf("%s SHA256 generation failed with '%s'", errPrefix, err)
+	}
+	if sha256Hash != sha256InManifest {
+		return fmt.Errorf("%s bad SHA256: '%s' expected: '%s'",
+			errPrefix, sha256Hash, sha256InManifest)
+	}
+	return nil
+}
+
 func (bldr *srpmBuilder) getUpstreamSourceForOthers(upstreamSrcFromManifest manifest.UpstreamSrc,
 	downloadDir string) (*upstreamSrcSpec, error) {
 
@@ -49,6 +63,14 @@ func (bldr *srpmBuilder) getUpstreamSourceForOthers(upstreamSrcFromManifest mani
 		return nil, downloadErr
 	}
 	bldr.log("downloaded")
+
+	if upstreamSrcFromManifest.Sha256 != "" {
+		sha256InManifest := upstreamSrcFromManifest.Sha256
+		err := checkSHA256Hash(downloadDir, upstreamSrc.sourceFile, sha256InManifest, bldr.errPrefix)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	upstreamSrc.skipSigCheck = upstreamSrcFromManifest.Signature.SkipCheck
 	pubKey := upstreamSrcFromManifest.Signature.DetachedSignature.PubKey
