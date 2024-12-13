@@ -50,6 +50,20 @@ func (bldr *srpmBuilder) getUpstreamSourceForOthers(upstreamSrcFromManifest mani
 	}
 	bldr.log("downloaded")
 
+	if upstreamSrcFromManifest.Signature.SkipCheck && upstreamSrcFromManifest.SHA256 != "" {
+		srcFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
+		sha256Hash, err := util.GenerateSha256Hash(srcFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("'%s'", err)
+		}
+		sha256InManifest := upstreamSrcFromManifest.SHA256
+		if sha256Hash != sha256InManifest {
+			return nil, fmt.Errorf("SHA256 hash '%s'is not matching with "+
+				"eext.yaml sha hash '%s' for upstream file '%s', package '%s'",
+				sha256Hash, sha256InManifest, srcFilePath, bldr.pkgSpec.Name)
+		}
+	}
+
 	upstreamSrc.skipSigCheck = upstreamSrcFromManifest.Signature.SkipCheck
 	pubKey := upstreamSrcFromManifest.Signature.DetachedSignature.PubKey
 

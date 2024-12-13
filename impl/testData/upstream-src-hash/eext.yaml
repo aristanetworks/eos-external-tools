@@ -1,0 +1,16 @@
+---
+package:
+  - name: bandit
+    upstream-sources:
+      - source-bundle:
+          name: srpm
+          override:
+            version: 1.7.7-1.fc40
+        signature:
+          skip-check: true
+        sha256: c2b29c064e8c9dcf92fe21b416d2sfgsgsfg94d7850gbdfhghd
+    type: srpm
+    build:
+      repo-bundle:
+        - name: el9
+        - name: epel9
