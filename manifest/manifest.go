@@ -109,6 +109,7 @@ type DetachedSignature struct {
 type Signature struct {
 	SkipCheck         bool              `yaml:"skip-check"`
 	DetachedSignature DetachedSignature `yaml:"detached-sig"`
+	SrcSha256Hash     string            `yaml:"src-sha256-hash"`
 }
 
 // SourceBundle spec
