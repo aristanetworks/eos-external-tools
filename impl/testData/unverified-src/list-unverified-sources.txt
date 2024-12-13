@@ -1,0 +1,18 @@
+- source-bundle:
+    name: srpm
+    override:
+        version: 1.7.7-1.fc40
+        src-suffix: ""
+        sig-suffix: ""
+  full-url: ""
+  git:
+    url: ""
+    revision: ""
+  signature:
+    skip-check: true
+    detached-sig:
+        full-url: ""
+        public-key: ""
+        on-uncompressed: false
+  sha256: ""
+
