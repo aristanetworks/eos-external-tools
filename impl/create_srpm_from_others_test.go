@@ -44,3 +44,24 @@ func TestMatchTarballSignature(t *testing.T) {
 	os.Remove(intermediateTarball)
 	require.NoError(t, err)
 }
+
+func getSHA256hash(folderName string, sha256InManifest string) error {
+	sourceFile := "mrtparse-2.0.1.tar.gz"
+	cwd, _ := os.Getwd()
+	downloadDir := filepath.Join(cwd, folderName)
+	srcFilePath := filepath.Join(downloadDir, sourceFile)
+	checkSHA256HashErr := checkSHA256Hash(srcFilePath, sha256InManifest, "")
+	return checkSHA256HashErr
+}
+
+func TestUpstreamSourcesBadSHA256Hash(t *testing.T) {
+	sha256InManifest := "ac4456cda847db6a757fjhagdfjaghdfk3ee3b59e0d7ca224266aafa326163aec"
+	err := getSHA256hash("testData/upstream-hash-check-bad", sha256InManifest)
+	require.Error(t, err)
+}
+
+func TestUpstreamSourcesGoodSHA256Hash(t *testing.T) {
+	sha256InManifest := "ac4456cda847db6a757f0c27cb09ad9b3ee3b59e0d7ca224266aafa326163aec"
+	err := getSHA256hash("testData/upstream-hash-check-good", sha256InManifest)
+	require.NoError(t, err)
+}
