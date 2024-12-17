@@ -99,6 +99,23 @@ func getRpmNameFromSpecFile(repo, pkg string, isPkgSubdirInRepo bool) (string, e
 	return rpmName, nil
 }
 
+func runGitCommandInDirWithEnv(dir string, name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
+	cmd.Dir = dir
+
+	os.Setenv("GIT_SSH_COMMAND", "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null")
+	defer os.Unsetenv("GIT_SSH_COMMAND")
+	err := util.RunSystemCmd("sh", "-c", "echo $GIT_SSH_COMMAND")
+
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	fmt.Printf("DIr: %s", dir)
+
+	err = cmd.Run()
+	return err
+}
+
 // We aren't using 'git clone' since it is slow for large repos.
 // This method is faster and only pulls necessary changes.
 func cloneGitRepo(pkg, srcURL, revision, targetDir string) (string, error) {
@@ -107,28 +124,38 @@ func cloneGitRepo(pkg, srcURL, revision, targetDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error while creating tempDir for %s, %s", pkg, err)
 	}
+
+	// os.Setenv("GIT_SSH_COMMAND", "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null")
+	// defer os.Unsetenv("GIT_SSH_COMMAND")
+	// err = util.RunSystemCmd("sh", "-c", "echo $GIT_SSH_COMMAND")
+
+	fmt.Println("git init")
 	// Init the dir as a git repo
 	err = util.RunSystemCmdInDir(cloneDir, "git", "init")
 	if err != nil {
 		return "", fmt.Errorf("git init at %s failed: %s", cloneDir, err)
 	}
+	fmt.Println("git add oirign")
 	// Add the srcURL as the origin for the repo
 	err = util.RunSystemCmdInDir(cloneDir, "git", "remote", "add", "origin", srcURL)
 	if err != nil {
 		return "", fmt.Errorf("adding %s as git remote failed: %s", srcURL, err)
 	}
+	fmt.Println("git fetch tags")
 	// Fetch repo tags, for user inputs revision as TAG
-	err = util.RunSystemCmdInDir(cloneDir, "git", "fetch", "--tags")
+	err = runGitCommandInDirWithEnv(cloneDir, "git", "fetch", "--tags")
 	if err != nil {
 		return "", fmt.Errorf("fetching tags failed for %s: %s", pkg, err)
 	}
+	fmt.Println("git fetch origin")
 	// Fetch the code changes for the provided revision
-	err = util.RunSystemCmdInDir(cloneDir, "git", "fetch", "origin", revision)
+	err = runGitCommandInDirWithEnv(cloneDir, "git", "fetch", "origin", revision)
 	if err != nil {
 		return "", fmt.Errorf("fetching revision %s failed for %s: %s", revision, pkg, err)
 	}
+	fmt.Println("git pull")
 	// Pull code to repo at provided revision
-	err = util.RunSystemCmdInDir(cloneDir, "git", "reset", "--hard", "FETCH_HEAD")
+	err = runGitCommandInDirWithEnv(cloneDir, "git", "reset", "--hard", "FETCH_HEAD")
 	if err != nil {
 		return "", fmt.Errorf("fetching HEAD at %s failed: %s", revision, err)
 	}
