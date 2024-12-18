@@ -44,3 +44,12 @@ func TestMatchTarballSignature(t *testing.T) {
 	os.Remove(intermediateTarball)
 	require.NoError(t, err)
 }
+
+func TestUpstreamSourcesSHA256Hash(t *testing.T) {
+	pkg := "bandit"
+	cwd, _ := os.Getwd()
+	repo := filepath.Join(cwd, "testData/upstream-src-hash")
+	createSrpmErr := CreateSrpm(repo, pkg, CreateSrpmExtraCmdlineArgs{})
+	require.NotEqual(t, nil, createSrpmErr)
+	t.Log("TestupstreamSourcesSHA256Hash test passed")
+}
