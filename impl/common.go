@@ -15,6 +15,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
 )
@@ -273,13 +274,13 @@ func filterAndCopy(pathMap map[string]string, errPrefix util.ErrPrefix) error {
 
 var gpgKeysLoaded = false
 
-func loadGpgKeys() error {
+func loadGpgKeys(executor executor.Executor) error {
 	if gpgKeysLoaded {
 		return nil
 	}
 
 	// Remove any stale keys from rpmdb
-	if _, err := util.CheckOutput("rpm", "-e", "gpg-pubkey", "--allmatches"); err != nil {
+	if _, err := executor.Output("rpm", "-e", "gpg-pubkey", "--allmatches"); err != nil {
 		// Ignore error if no keys installed.
 		if !strings.Contains(err.Error(), "package gpg-pubkey is not installed") {
 			return fmt.Errorf("Error '%s' clearing gpg-pubkey from rpmdb", err)
@@ -289,7 +290,7 @@ func loadGpgKeys() error {
 	// Now add the keys
 	pubKeys, _ := filepath.Glob(filepath.Join(getRpmKeysDir(), "*.pem"))
 	for _, pubKey := range pubKeys {
-		if err := util.RunSystemCmd("rpm", "--import", pubKey); err != nil {
+		if err := executor.Exec("rpm", "--import", pubKey); err != nil {
 			return fmt.Errorf("Error '%s' importing %s to rpmdb", err, pubKey)
 		}
 	}
@@ -350,11 +351,11 @@ func getEextSignature(errPrefix util.ErrPrefix) (
 	return combineSrcEnv(false, ",", errPrefix)
 }
 
-func setup() error {
+func setup(executor executor.Executor) error {
 	if err := CheckEnv(); err != nil {
 		return err
 	}
-	if err := loadGpgKeys(); err != nil {
+	if err := loadGpgKeys(executor); err != nil {
 		return err
 	}
 	return nil

@@ -27,7 +27,7 @@ var mockCmd = &cobra.Command{
 			NoCheck:       noCheck,
 			OnlyCreateCfg: onlyCreateCfg,
 		}
-		return impl.Mock(repo, pkg, target, extraArgs)
+		return impl.Mock(repo, pkg, target, extraArgs, selectExecutor())
 	},
 }
 

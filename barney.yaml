@@ -219,6 +219,7 @@ images:
               - 'main.go'
               - 'cmd/*.go'
               - 'dnfconfig/*.go'
+              - 'executor/*.go'
               - 'impl/*.go'
               - 'manifest/*.go'
               - 'srcconfig/*.go'

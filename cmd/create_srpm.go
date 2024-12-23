@@ -27,7 +27,7 @@ In situations where multiple SRPMs need to be built in dependency order, the man
 		extraArgs := impl.CreateSrpmExtraCmdlineArgs{
 			SkipBuildPrep: skipBuildPrep,
 		}
-		err := impl.CreateSrpm(repo, pkg, extraArgs)
+		err := impl.CreateSrpm(repo, pkg, extraArgs, selectExecutor())
 		return err
 	},
 }

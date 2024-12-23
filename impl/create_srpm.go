@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/srcconfig"
 	"code.arista.io/eos/tools/eext/util"
@@ -34,6 +35,7 @@ type srpmBuilder struct {
 	errPrefix     util.ErrPrefix
 	upstreamSrc   []upstreamSrcSpec
 	srcConfig     *srcconfig.SrcConfig
+	executor      executor.Executor
 }
 
 // CreateSrpmExtraCmdlineArgs is a bundle of extra args for impl.CreateSrpm
@@ -140,7 +142,7 @@ func (bldr *srpmBuilder) verifyUpstreamSrpm() error {
 	}
 
 	// Check if downloaded file is a valid rpm
-	err := util.RunSystemCmd("rpm", "-q", "-p", upstreamSrpmFilePath)
+	err := bldr.executor.Exec("rpm", "-q", "-p", upstreamSrpmFilePath)
 	if err != nil {
 		return fmt.Errorf("%sDownloaded SRPM file is not a valid rpm: %s",
 			bldr.errPrefix, err)
@@ -212,7 +214,7 @@ func (bldr *srpmBuilder) setupRpmbuildTreeSrpm() error {
 		"-i", upstreamSrpmFilePath,
 	}
 
-	if err := util.RunSystemCmd("rpm", rpmInstArgs...); err != nil {
+	if err := bldr.executor.Exec("rpm", rpmInstArgs...); err != nil {
 		return fmt.Errorf("%sError '%s' installing upstream SRPM file %s",
 			bldr.errPrefix, err, upstreamSrpmFilePath)
 	}
@@ -284,7 +286,7 @@ func (bldr *srpmBuilder) patchUpstreamSpecFileWithEextRelease() error {
 
 	// Backup original spec file
 	origSpecFile := specFile + ".orig"
-	if err := util.RunSystemCmd("cp", specFile, origSpecFile); err != nil {
+	if err := bldr.executor.Exec("cp", specFile, origSpecFile); err != nil {
 		return fmt.Errorf("%scopying %s to %s errored out with '%s'",
 			bldr.errPrefix, specFile, origSpecFile, err)
 	}
@@ -295,7 +297,7 @@ func (bldr *srpmBuilder) patchUpstreamSpecFileWithEextRelease() error {
 
 	// Validate regex match on upstream spec file
 	grepCmdOptions := []string{"-c", releaseRegex, specFile}
-	if grepOutput, grepErr := util.CheckOutput("egrep", grepCmdOptions...); grepErr != nil {
+	if grepOutput, grepErr := bldr.executor.Output("egrep", grepCmdOptions...); grepErr != nil {
 		return fmt.Errorf("%s%s", bldr.errPrefix, grepErr)
 	} else {
 		numMatchingLinesStr := strings.TrimRight(grepOutput, "\n")
@@ -321,7 +323,7 @@ func (bldr *srpmBuilder) patchUpstreamSpecFileWithEextRelease() error {
 	// Run sed to patch the spec file
 	sedScript := fmt.Sprintf("s/%s/%s/", sedMatchPattern, sedReplacePattern)
 	sedCmdOptions := []string{"-i", "-e", sedScript, specFile}
-	if err := util.RunSystemCmd("sed", sedCmdOptions...); err != nil {
+	if err := bldr.executor.Exec("sed", sedCmdOptions...); err != nil {
 		return fmt.Errorf("%s%s", bldr.errPrefix, err)
 	}
 
@@ -443,7 +445,7 @@ func (bldr *srpmBuilder) build(prep bool) error {
 
 	rpmbuildArgs = append(rpmbuildArgs, specFile)
 
-	if err := util.RunSystemCmd("rpmbuild", rpmbuildArgs...); err != nil {
+	if err := bldr.executor.Exec("rpmbuild", rpmbuildArgs...); err != nil {
 		return fmt.Errorf("%sfailed", bldr.errPrefix)
 	}
 	bldr.log("succesful")
@@ -550,8 +552,8 @@ func (bldr *srpmBuilder) runStages() error {
 // The packages(SRPMs) are specified in the manifest.
 // If a pkg is specified, only it is built. Otherwise, we walk over all the packages
 // in the manifest and build them.
-func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) error {
-	if err := setup(); err != nil {
+func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs, executor executor.Executor) error {
+	if err := setup(executor); err != nil {
 		return err
 	}
 
@@ -589,6 +591,7 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs) e
 			skipBuildPrep: extraArgs.SkipBuildPrep,
 			errPrefixBase: errPrefixBase,
 			srcConfig:     srcConfig,
+			executor:      executor,
 		}
 		bldr.setupStageErrPrefix("")
 

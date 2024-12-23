@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/util"
 )
 
@@ -46,6 +47,7 @@ func init() {
 
 	rootCmd.PersistentFlags().String("config", "", "config file (default is eext-viper.yaml in /etc or $HOME/.config)")
 	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
+	rootCmd.PersistentFlags().BoolP("dry-run", "d", false, "Instead of running the commands, print what would be run")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -69,5 +71,17 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	}
+}
+
+// Select appropriate strategy for running commands based on the dry-run flag
+func selectExecutor() executor.Executor {
+	// In the executors ever grow to become expensive on unweildy to be created
+	// multiple times in one program session, sync.Once could be used
+	if dryRun, _ := rootCmd.PersistentFlags().GetBool("dry-run"); dryRun {
+		return &executor.DryRunExecutor{}
+	} else {
+		suppress, _ := rootCmd.PersistentFlags().GetBool("quiet")
+		return &executor.OsExecutor{Suppress: suppress}
 	}
 }

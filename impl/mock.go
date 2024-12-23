@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
 )
@@ -141,7 +141,7 @@ func (bldr *mockBuilder) setupDeps() error {
 	if copyErr := filterAndCopy(pathMap, bldr.errPrefix); copyErr != nil {
 		return copyErr
 	}
-	createRepoErr := util.RunSystemCmd("createrepo", mockDepsDir)
+	createRepoErr := bldr.executor.Exec("createrepo", mockDepsDir)
 	if createRepoErr != nil {
 		return fmt.Errorf("%screaterepo %s errored out with %s",
 			bldr.errPrefix, mockDepsDir, createRepoErr)
@@ -194,24 +194,19 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 func (bldr *mockBuilder) printLogFile(filename string) {
 	resultdir := getMockResultsDir(bldr.pkg, bldr.arch)
 	logPath := filepath.Join(resultdir, filename)
-	if util.CheckPath(logPath, false, false) == nil {
-		bldr.log("--- start of mock %s ---", filename)
-		dumpLogCmd := exec.Command("cat", logPath)
-		dumpLogCmd.Stderr = os.Stderr
-		dumpLogCmd.Stdout = os.Stdout
-		if dumpLogCmd.Run() != nil {
-			bldr.log("Dumping logfile failed")
-		}
-		bldr.log("--- end of %s ---", filename)
-	} else {
-		bldr.log("No %s found", filename)
+	contents, err := os.ReadFile(logPath)
+	if err != nil {
+		bldr.log("Dumping logfile %s failed. Error: %s", logPath, err)
 	}
+	bldr.log("--- start of mock %s ---", filename)
+	bldr.log(string(contents))
+	bldr.log("--- end of %s ---", filename)
 }
 
 func (bldr *mockBuilder) runMockCmd(extraArgs []string) error {
 	mockArgs := bldr.mockArgs(extraArgs)
 	bldr.log("Running mock %s", strings.Join(mockArgs, " "))
-	mockErr := util.RunSystemCmd("mock", mockArgs...)
+	mockErr := bldr.executor.Exec("mock", mockArgs...)
 	if mockErr != nil {
 		bldr.printLogFile("root.log")
 		bldr.printLogFile("build.log")
@@ -336,8 +331,8 @@ func (bldr *mockBuilder) runStages() error {
 // from the already built SRPMs and places the results in
 // <DestDir>/RPMS/<rpmArch>/<package>/
 // 'arch' cannot be empty, needs to be a valid architecture.
-func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) error {
-	if err := setup(); err != nil {
+func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs, executor executor.Executor) error {
+	if err := setup(executor); err != nil {
 		return err
 	}
 
@@ -414,6 +409,7 @@ func Mock(repo string, pkg string, arch string, extraArgs MockExtraCmdlineArgs) 
 				errPrefix:         errPrefix,
 				dependencyList:    dependencyList,
 				enableNetwork:     pkgSpec.Build.EnableNetwork,
+				executor:          executor,
 			},
 			onlyCreateCfg: extraArgs.OnlyCreateCfg,
 			noCheck:       extraArgs.NoCheck,

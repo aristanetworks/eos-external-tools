@@ -12,6 +12,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
 )
@@ -37,6 +38,7 @@ type builderCommon struct {
 	errPrefix         util.ErrPrefix
 	dependencyList    []string
 	enableNetwork     bool
+	executor          executor.Executor
 }
 
 type mockCfgBuilder struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/testutil"
 )
@@ -88,6 +89,7 @@ func TestSetupDeps(t *testing.T) {
 					arch:           targetArch,
 					buildSpec:      &manifestObj.Package[0].Build,
 					dependencyList: dependencyList,
+					executor:       &executor.OsExecutor{},
 				},
 			}
 
