@@ -54,8 +54,8 @@ func (ex *DryRunExecutor) Output(name string, arg ...string) (string, error) {
 }
 
 func (ex *DryRunExecutor) GenerateShellScript() string {
-	preambule := "#!/usr/bin/env sh\n"
-	return strings.Join(append([]string{preambule}, ex.shellScript...), "\n")
+	preamble := "#!/usr/bin/env sh\n"
+	return strings.Join(append([]string{preamble}, ex.shellScript...), "\n")
 }
 
 func (ex *DryRunExecutor) GenerateDescription() string {

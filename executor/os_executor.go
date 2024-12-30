@@ -44,7 +44,7 @@ func (ex *OsExecutor) Output(name string, arg ...string) (string, error) {
 }
 
 // Join strings in a way that preserves the shell token boundries. For instance
-// the args ["cat", "a file"] when simpy joined with strings. Join would result
+// the args ["cat", "a file"] when simply joined with strings.Join would result
 // in a string "cat a file" which has a different meaning to the original. This
 // function is a simple shell escaping join.
 func shellEscape(args []string) string {
