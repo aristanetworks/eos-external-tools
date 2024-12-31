@@ -42,41 +42,31 @@ func getRpmNameFromSpecFile(repo, pkg string, isPkgSubdirInRepo bool) (string, e
 }
 
 // Create a lightweight git repo containing only the `revision` pulled from
-// the repository specified in `srcURL`
+// the repository specified by `srcURL`
 // We aren't using 'git clone' since it is slow for large repos.
 // This method is faster and pulls only the necessary changes.
 func cloneGitRepo(pkg, srcURL, revision, targetDir string) (string, error) {
-	// Cloning the git repo to a temporary directory
+	git_commands := [][]string{
+		{"init"},
+		{"remote", "add", "origin", srcURL},
+		{"fetch", "--tags"},
+		{"fetch", "origin", revision},
+		{"reset", "--hard", "FETCH_HEAD"},
+	}
+
 	cloneDir, err := os.MkdirTemp(targetDir, pkg)
 	if err != nil {
 		return "", fmt.Errorf("error while creating tempDir for %s, %s", pkg, err)
 	}
-	// Init the dir as a git repo
-	err = util.RunSystemCmdInDir(cloneDir, "git", "init")
-	if err != nil {
-		return "", fmt.Errorf("git init at %s failed: %s", cloneDir, err)
-	}
-	// Add the srcURL as the origin for the repo
-	err = util.RunSystemCmdInDir(cloneDir, "git", "remote", "add", "origin", srcURL)
-	if err != nil {
-		return "", fmt.Errorf("adding %s as git remote failed: %s", srcURL, err)
-	}
-	// Fetch repo tags, for user inputs revision as TAG
-	err = util.RunSystemCmdInDir(cloneDir, "git", "fetch", "--tags")
-	if err != nil {
-		return "", fmt.Errorf("fetching tags failed for %s: %s", pkg, err)
-	}
-	// Fetch the code changes for the provided revision
-	err = util.RunSystemCmdInDir(cloneDir, "git", "fetch", "origin", revision)
-	if err != nil {
-		return "", fmt.Errorf("fetching revision %s failed for %s: %s", revision, pkg, err)
-	}
-	// Pull code to repo at provided revision
-	err = util.RunSystemCmdInDir(cloneDir, "git", "reset", "--hard", "FETCH_HEAD")
-	if err != nil {
-		return "", fmt.Errorf("fetching HEAD at %s failed: %s", revision, err)
-	}
+	for _, git_command := range(git_commands) {
+		err := util.RunSystemCmdInDir(cloneDir, "git", git_command...)
+		if err != nil {
+			return "", fmt.Errorf("Failed to obtain `%s` revision from `%s` for " +
+				"package `%s`.\nThe command `git %s` failed: %s",
+				revision, srcURL, pkg, strings.Join(git_command, " "), err)
 
+		}
+	}
 	return cloneDir, nil
 }
 
