@@ -58,10 +58,10 @@ func cloneGitRepo(pkg, srcURL, revision, targetDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error while creating tempDir for %s, %s", pkg, err)
 	}
-	for _, git_command := range(git_commands) {
+	for _, git_command := range git_commands {
 		err := util.RunSystemCmdInDir(cloneDir, "git", git_command...)
 		if err != nil {
-			return "", fmt.Errorf("Failed to obtain `%s` revision from `%s` for " +
+			return "", fmt.Errorf("Failed to obtain `%s` revision from `%s` for "+
 				"package `%s`.\nThe command `git %s` failed: %s",
 				revision, srcURL, pkg, strings.Join(git_command, " "), err)
 
