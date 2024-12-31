@@ -41,8 +41,10 @@ func getRpmNameFromSpecFile(repo, pkg string, isPkgSubdirInRepo bool) (string, e
 	return rpmName, nil
 }
 
+// Create a lightweight git repo containing only the `revision` pulled from
+// the repository specified in `srcURL`
 // We aren't using 'git clone' since it is slow for large repos.
-// This method is faster and only pulls necessary changes.
+// This method is faster and pulls only the necessary changes.
 func cloneGitRepo(pkg, srcURL, revision, targetDir string) (string, error) {
 	// Cloning the git repo to a temporary directory
 	cloneDir, err := os.MkdirTemp(targetDir, pkg)
