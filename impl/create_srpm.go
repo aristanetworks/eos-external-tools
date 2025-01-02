@@ -167,7 +167,7 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 	} else if bldr.pkgSpec.Type == "git-upstream" {
 		for _, upstreamSrc := range bldr.upstreamSrc {
 			if !upstreamSrc.skipSigCheck {
-				err := verifyGitSignature(upstreamSrc.pubKeyPath, upstreamSrc.gitSpec, bldr.errPrefix)
+				err := verifyGitSignature(upstreamSrc.pubKeyPath, upstreamSrc.gitSpec, bldr.errPrefix, bldr.executor)
 				if err != nil {
 					return err
 				}
