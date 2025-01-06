@@ -72,17 +72,13 @@ func cloneGitRepo(pkg, srcURL, revision, targetDir string, executor executor.Exe
 	return cloneDir, nil
 }
 
-func generateArchiveFile(targetDir, clonedDir, revision, repo, pkg string, isPkgSubdirInRepo bool,
+func generateArchiveFile(targetDir, clonedDir, revision, repo, pkg string, parentFolder string,
 	errPrefix util.ErrPrefix, executor executor.Executor) (string, error) {
 	// User should ensure the same fileName is specified in .spec file.
 	// We use Source0.tar.gz as the generated tarball path,
 	// since this can be extended to support multiple sources in future.
 	gitArchiveFile := "Source0.tar.gz"
 	gitArchiveFilePath := filepath.Join(targetDir, gitArchiveFile)
-	parentFolder, err := getRpmNameFromSpecFile(repo, pkg, isPkgSubdirInRepo, executor)
-	if err != nil {
-		return "", err
-	}
 
 	// Create the tarball from the specified commit/tag revision
 	archiveCmd := []string{"archive",
@@ -90,7 +86,7 @@ func generateArchiveFile(targetDir, clonedDir, revision, repo, pkg string, isPkg
 		"-o", gitArchiveFilePath,
 		revision,
 	}
-	err = executor.ExecInDir(clonedDir, "git", archiveCmd...)
+	err := executor.ExecInDir(clonedDir, "git", archiveCmd...)
 	if err != nil {
 		return "", fmt.Errorf("%sgit archive of %s failed: %s %v", errPrefix, pkg, err, archiveCmd)
 	}
@@ -106,7 +102,12 @@ func archiveGitRepo(srcURL, targetDir, revision, repo, pkg string, isPkgSubdirIn
 		return "", "", fmt.Errorf("cloning git repo failed: %s", err)
 	}
 
-	gitArchiveFile, err := generateArchiveFile(targetDir, cloneDir, revision, repo, pkg, isPkgSubdirInRepo, errPrefix, executor)
+	// parent folder should be the same as the RPM name
+	parentFolder, err := getRpmNameFromSpecFile(repo, pkg, isPkgSubdirInRepo, executor)
+	if err != nil {
+		return "", "", fmt.Errorf("getting RPM name from the spec failed: %s", err)
+	}
+	gitArchiveFile, err := generateArchiveFile(targetDir, cloneDir, revision, repo, pkg, parentFolder, errPrefix, executor)
 	if err != nil {
 		return "", "", fmt.Errorf("generating git archive failed: %s", err)
 	}
@@ -204,13 +205,13 @@ func verifyGitSignature(pubKeyPath string, gitSpec gitSpec, errPrefix util.ErrPr
 	}
 	defer os.Unsetenv("GNUPGHOME")
 
-	if err := executor.ExecInDir("gpg", "--fingerprint"); err != nil {
+	if err := executor.Exec("gpg", "--fingerprint"); err != nil {
 		return fmt.Errorf("%sError '%s'creating keyring",
 			errPrefix, err)
 	}
 
 	// Import public key
-	if err := executor.ExecInDir("gpg", "--import", pubKeyPath); err != nil {
+	if err := executor.Exec("gpg", "--import", pubKeyPath); err != nil {
 		return fmt.Errorf("%sError '%s' importing public-key %s",
 			errPrefix, err, pubKeyPath)
 	}
