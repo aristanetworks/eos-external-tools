@@ -217,7 +217,7 @@ func verifyGitSignature(pubKeyPath string, gitSpec gitSpec, errPrefix util.ErrPr
 
 	clonedDir := gitSpec.ClonedDir
 	revision := gitSpec.Revision
-	if err := executor.ExecInDir(clonedDir, "git", "show-ref", "--quiet", "--tags"); err == nil {
+	if err := executor.ExecInDir(clonedDir, "git", "show-ref", "--quiet", "--tags", revision); err == nil {
 		// the provided ref is a tag
 		return executor.ExecInDir(clonedDir, "git", "verify-tag", "-v", revision)
 	}
