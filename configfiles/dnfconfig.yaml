@@ -1,7 +1,7 @@
 ---
 # yamllint disable rule:line-length
 repo-bundle:
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
   # The defaults for this bundle points to the second most recent stable dot release 9.x.
   # Upstream vaults/freezes the previous release repo once a new dot release is stable.
   # The newest stable dot release keeps on receiving updates, so we use the previous one
@@ -24,9 +24,9 @@ repo-bundle:
     version-labels:
       default: 9.3
     priority: 2
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
   epel9:
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
@@ -45,13 +45,13 @@ repo-bundle:
       # default points to the latest such snapshot.
       default: v20240522-1
     priority: 2
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
 
-# ********************************************************************************************
-# DO NOT use any repo bundles below this unless you know what you're doing.
-# ********************************************************************************************
+  # ********************************************************************************************
+  # DO NOT use any repo bundles below this unless you know what you're doing.
+  # ********************************************************************************************
 
-#---------------------------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------------------------
   el9-snapshot:
     # DO NOT use el9-snapshot as a repo-bundle in your eext.yaml, unless recommended to you by the eext team.
     # el9-snapshot is a snapshot of the repo cache of el9-unsafe.
@@ -72,9 +72,9 @@ repo-bundle:
       extras:
         enabled: false
     priority: 2
-#---------------------------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------------------------
   fc40-snapshot:
     # DO NOT use fc40-snapshot as a repo-bundle in your eext.yaml,
     # unless recommended to you by the eext team.
@@ -91,9 +91,9 @@ repo-bundle:
       releases:
         enabled: true
     priority: 3
-#---------------------------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
   el9-unsafe:
     # DO NOT use el9-unsafe as a repo-bundle in your eext.yaml unless you know what you're doing.
     # Use el9 because the defaults there will ensure build reproducibility.
@@ -121,14 +121,14 @@ repo-bundle:
       # which upstream updates regularly.
       default: 9
     priority: 2
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
   el9-beta-unsafe:
-  # DO NOT use el9-beta-unsafe as a repo-bundle in your eext.yaml
-  # unless you know what you're doing. Use el9 instead because the defaults
-  # there will ensure build reproducibility.
-  # el9-beta-unsafe is used by the eext team for experiments.
+    # DO NOT use el9-beta-unsafe as a repo-bundle in your eext.yaml
+    # unless you know what you're doing. Use el9 instead because the defaults
+    # there will ensure build reproducibility.
+    # el9-beta-unsafe is used by the eext team for experiments.
 
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
@@ -151,9 +151,9 @@ repo-bundle:
       # which upstream updates regularly.
       default: 9.4-beta
     priority: 2
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
   epel9-unsafe:
     # DO NOT use epel9-unsafe as a repo-bundle in your eext.yaml
     # unless you know what you're doing. Use epel9 instead because the defaults
@@ -176,9 +176,9 @@ repo-bundle:
       # default always points to upstream stable repo which receives updates.
       default: 9
     priority: 2
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
   epel9-next-unsafe:
     # DO NOT use epel9-next-unsafe as a repo-bundle in your eext.yaml
     # unless you know what you're doing. Use epel9 instead because the defaults
@@ -200,9 +200,9 @@ repo-bundle:
       # default always points to upstream next/beta repo which receives updates.
       default: 9
     priority: 2
-# --------------------------------------------------------------------------------------------
+  # --------------------------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------------------------
   fc40-unsafe:
     # DO NOT use fc40-unsafe as a repo-bundle in your eext.yaml
     # unless you know what you're doing. Use fc40-snapshot instead because this
@@ -222,4 +222,4 @@ repo-bundle:
     version-labels:
       default: 40
     priority: 3
-#---------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
