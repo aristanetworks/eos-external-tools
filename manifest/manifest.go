@@ -52,7 +52,7 @@ type Multilib struct {
 // the command name(mock/create-srpm) and the value is a list of extra-options.
 //
 //	Valid options for mock are [ --nocheck ]
-//	Valid options for create-srpm are [ --skip-build-prep ]
+//	Valid options for create-srpm are [ --do-build-prep ]
 //
 // MultiLib specifies MultiLib spec to generate multilib. It's indexed by native-arch (i686/x86_64).
 //

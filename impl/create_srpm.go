@@ -30,7 +30,7 @@ type upstreamSrcSpec struct {
 type srpmBuilder struct {
 	pkgSpec       *manifest.Package
 	repo          string
-	skipBuildPrep bool
+	doBuildPrep   bool
 	errPrefixBase util.ErrPrefix
 	errPrefix     util.ErrPrefix
 	upstreamSrc   []upstreamSrcSpec
@@ -40,7 +40,7 @@ type srpmBuilder struct {
 
 // CreateSrpmExtraCmdlineArgs is a bundle of extra args for impl.CreateSrpm
 type CreateSrpmExtraCmdlineArgs struct {
-	SkipBuildPrep bool
+	DoBuildPrep bool
 }
 
 func (bldr *srpmBuilder) log(format string, a ...any) {
@@ -527,7 +527,7 @@ func (bldr *srpmBuilder) runStages() error {
 		return err
 	}
 
-	if !bldr.skipBuildPrep {
+	if bldr.doBuildPrep {
 		bldr.setupStageErrPrefix("build-prep")
 		if err := bldr.build(true); err != nil {
 			return err
@@ -588,7 +588,7 @@ func CreateSrpm(repo string, pkg string, extraArgs CreateSrpmExtraCmdlineArgs, e
 		bldr := srpmBuilder{
 			pkgSpec:       &pkgSpec,
 			repo:          repo,
-			skipBuildPrep: extraArgs.SkipBuildPrep,
+			doBuildPrep:   extraArgs.DoBuildPrep,
 			errPrefixBase: errPrefixBase,
 			srcConfig:     srcConfig,
 			executor:      executor,

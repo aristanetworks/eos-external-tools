@@ -43,7 +43,7 @@ package:
           mock:
             - "--nocheck"
           create-srpm:
-            - "--skip-build-prep"
+            - "--do-build-prep"
         external-dependencies:
           glibc: code.arista.io/eos/eext/glibc
   - name: binutils
