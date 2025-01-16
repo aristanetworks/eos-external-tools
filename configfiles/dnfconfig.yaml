@@ -27,6 +27,28 @@ repo-bundle:
 # --------------------------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------------------------
+  # This bundle includes the debuginfo packages related to the pacakges in the el-9 bundle.
+  el9-debug:
+    gpgcheck: true
+    gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
+    baseurl: "{{.Host}}/artifactory/eext-alma-vault/{{.Version}}/{{.RepoName}}/debug/{{.Arch}}"
+    repo:
+      AppStream:
+        enabled: true
+      BaseOS:
+        enabled: true
+      CRB:
+        enabled: true
+      devel:
+        enabled: false
+      extras:
+        enabled: false
+    version-labels:
+      default: 9.3
+    priority: 2
+# --------------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------------
   epel9:
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/epel/RPM-GPG-KEY-EPEL-9
