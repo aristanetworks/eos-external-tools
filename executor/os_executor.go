@@ -16,6 +16,7 @@ type OsExecutor struct {
 func (ex *OsExecutor) ExecInDir(dir string, name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
 	cmd.Dir = dir
+	cmd.Stderr = os.Stderr
 	if ex.Suppress {
 		cmd.Stdout = io.Discard
 	} else {
