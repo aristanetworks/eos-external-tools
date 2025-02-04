@@ -6,6 +6,7 @@ package impl
 import (
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/spf13/viper"
@@ -15,86 +16,56 @@ import (
 
 var parsedMockCfgTemplate *template.Template
 
-// CheckEnv returns an error if there's a problem with the environment.
+// CheckEnv validates environment setup and returns an error if any issue is found.
 func CheckEnv() error {
-	srcDir := viper.GetString("SrcDir")
-	workingDir := viper.GetString("WorkingDir")
-	destDir := viper.GetString("DestDir")
-	mockCfgTemplate := viper.GetString("MockCfgTemplate")
-	dnfConfigFile := viper.GetString("DnfConfigFile")
-	srcConfigFile := viper.GetString("SrcConfigFile")
-	pkiPath := viper.GetString("PkiPath")
+	checks := map[string]struct {
+		path          string
+		isDir         bool
+		writable      bool
+		parseTemplate bool
+	}{
+		"SrcDir":          {viper.GetString("SrcDir"), true, false, false},
+		"WorkingDir":      {viper.GetString("WorkingDir"), true, false, false},
+		"DestDir":         {viper.GetString("DestDir"), true, true, false},
+		"MockCfgTemplate": {viper.GetString("MockCfgTemplate"), false, false, true},
+		"DnfConfigFile":   {viper.GetString("DnfConfigFile"), false, false, false},
+		"SrcConfigFile":   {viper.GetString("SrcConfigFile"), false, false, false},
+		"PkiPath":         {viper.GetString("PkiPath"), true, false, false},
+	}
 
-	var aggError string
-	failed := false
-	if srcDir != "" {
-		info, err := os.Stat(srcDir)
+	var errors []string
+
+	for name, check := range checks {
+		if check.path == "" {
+			continue
+		}
+		info, err := os.Stat(check.path)
 		if err != nil {
-			aggError += fmt.Sprintf("\ntrouble with SrcDir: %s", err)
-			failed = true
-		} else if !info.IsDir() {
-			aggError += fmt.Sprintf("\nSrcDir is not a directory: %s", srcDir)
-			failed = true
+			errors = append(errors, fmt.Sprintf("%s: %v", name, err))
+			continue
 		}
-	} else {
-		if _, pathErr := os.Stat("./eext.yaml"); pathErr != nil {
-			aggError += fmt.Sprintf("\nNo eext.yaml in current directory. " +
-				"SrcDir is unspecified, so it is expected  that no --repo will be specified, " +
-				"and that the sources are in current working directory.")
+		if check.isDir && !info.IsDir() {
+			errors = append(errors, fmt.Sprintf("%s is not a directory: %s", name, check.path))
 		}
-	}
-	info, err := os.Stat(workingDir)
-	if err != nil {
-		aggError += fmt.Sprintf("\ntrouble with WorkingDir: %s", err)
-		failed = true
-	} else if !info.IsDir() {
-		aggError += fmt.Sprintf("\nWorkingDir is not a directory: %s", workingDir)
-		failed = true
-	}
-	info, err = os.Stat(destDir)
-	if err != nil {
-		aggError += fmt.Sprintf("\ntrouble with DestDir: %s", err)
-		failed = true
-	} else if !info.IsDir() {
-		aggError += fmt.Sprintf("\nDestDir is not a directory: %s", destDir)
-		failed = true
-	} else if unix.Access(destDir, unix.W_OK) != nil {
-		aggError += fmt.Sprintf("\nDestDir: %s is not writable", destDir)
-		failed = true
-	}
-
-	if _, err := os.Stat(mockCfgTemplate); err != nil {
-		aggError += fmt.Sprintf("\ntrouble with MockCfgTemplate: %s", err)
-		failed = true
-	} else if parsedMockCfgTemplate == nil {
-		// Only parse once
-		var parseErr error
-		if parsedMockCfgTemplate, parseErr = template.ParseFiles(mockCfgTemplate); parseErr != nil {
-			aggError += fmt.Sprintf("\ntrouble with MockCfgTemplate: %s", parseErr)
-			failed = true
+		if check.writable && unix.Access(check.path, unix.W_OK) != nil {
+			errors = append(errors, fmt.Sprintf("%s is not writable: %s", name, check.path))
+		}
+		if check.parseTemplate && parsedMockCfgTemplate == nil {
+			parsedMockCfgTemplate, err = template.ParseFiles(check.path)
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("%s parsing error: %v", name, err))
+			}
 		}
 	}
 
-	if _, err := os.Stat(dnfConfigFile); err != nil {
-		aggError += fmt.Sprintf("\ntrouble with DnfConfigFile: %s", err)
-		failed = true
+	if len(errors) > 0 {
+		return fmt.Errorf("Environment check failed:\n%s", strings.Join(errors, "\n"))
 	}
 
-	if _, err := os.Stat(srcConfigFile); err != nil {
-		aggError += fmt.Sprintf("\ntrouble with SrcConfigFile: %s", err)
-		failed = true
-	}
-	info, err = os.Stat(pkiPath)
-	if err != nil {
-		aggError += fmt.Sprintf("\ntrouble with PkiPath: %s", err)
-		failed = true
-	} else if !info.IsDir() {
-		aggError += fmt.Sprintf("\nPkiPath is not a directory: %s", srcDir)
-		failed = true
-	}
-
-	if failed {
-		return fmt.Errorf("Environment check failed:%s", aggError)
+	if checks["SrcDir"].path == "" {
+		if _, err := os.Stat("./eext.yaml"); err != nil {
+			return fmt.Errorf("No eext.yaml found. SrcDir is unspecified, so sources are expected in the current working directory.")
+		}
 	}
 
 	return nil

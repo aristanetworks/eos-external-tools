@@ -103,12 +103,8 @@ func (bldr *mockBuilder) setupDeps() error {
 	depsDir := viper.GetString("DepsDir")
 
 	// See if depsDir exists
-	info, err := os.Stat(depsDir)
-	if err != nil {
+	if info, err := os.Stat(depsDir); err != nil || !info.IsDir() {
 		return fmt.Errorf("%sProblem with DepsDir: %s", bldr.errPrefix, err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%s %s is not a directory", bldr.errPrefix, depsDir)
 	}
 
 	var missingDeps []string
@@ -118,8 +114,7 @@ func (bldr *mockBuilder) setupDeps() error {
 		depStatisfied := false
 		for _, arch := range []string{"noarch", bldr.arch} {
 			depDirWithArch := filepath.Join(depsDir, arch, dep)
-			info, err := os.Stat(depDirWithArch)
-			if err == nil && info.IsDir() {
+			if info, err := os.Stat(depDirWithArch); err == nil && info.IsDir() {
 				rpmFileGlob := fmt.Sprintf("*.%s.rpm", arch)
 				pathGlob := filepath.Join(depDirWithArch, rpmFileGlob)
 				paths, globErr := filepath.Glob(pathGlob)

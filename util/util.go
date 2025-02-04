@@ -112,17 +112,12 @@ func CopyToDestDir(
 	errPrefix ErrPrefix) error {
 
 	info, err := os.Stat(destDir)
-	if err != nil {
-		return fmt.Errorf("%sDirectory %s should be present %s",
-			errPrefix, destDir, err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%s , %s is not a directory ",
-			errPrefix, destDir)
+
+	if err != nil || !info.IsDir() {
+		return fmt.Errorf("%s: Destination %s is not a valid directory: %w", errPrefix, destDir, err)
 	}
 	if unix.Access(destDir, unix.W_OK) != nil {
-		return fmt.Errorf("%sDirectory %s should be writable",
-			errPrefix, destDir)
+		return fmt.Errorf("%sDirectory %s should be writable", errPrefix, destDir)
 	}
 
 	filesToCopy, patternErr := filepath.Glob(srcGlob)

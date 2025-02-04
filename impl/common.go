@@ -101,10 +101,8 @@ func getPkgSrpmsDestDir(pkg string) string {
 func getPkgSrpmsDir(errPrefix util.ErrPrefix, pkg string) (string, error) {
 	srpmsDirs := viper.GetString("SrpmsDir")
 	for _, srpmsDir := range strings.Split(srpmsDirs, ":") {
-		thisPath := filepath.Join(srpmsDir, pkg)
-		info, err := os.Stat(thisPath)
-		if err == nil && info.IsDir() {
-			return thisPath, nil
+		if info, err := os.Stat(filepath.Join(srpmsDir, pkg)); err == nil && info.IsDir() {
+			return filepath.Join(srpmsDir, pkg), nil
 		}
 	}
 	return "", fmt.Errorf("%ssubpath %s not found in any item in SrpmsDir %s",
@@ -134,59 +132,38 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	isUnmodified bool,
 	errPrefix util.ErrPrefix) error {
 	repoDir := util.GetRepoDir(repo)
-	info, err := os.Stat(repoDir)
-	if err != nil {
-		return fmt.Errorf("%srepo-dir %s not found: %s", errPrefix, repoDir, err)
+	if info, err := os.Stat(repoDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%srepo-dir not found or is not a directory %s", errPrefix, repoDir)
 	}
-	if !info.IsDir() {
-		return fmt.Errorf("%srepo-dir %s is not a directory ", errPrefix, repoDir)
+	if pkg == "" {
+		return nil
 	}
 
-	if pkg != "" {
-		pkgDirInRepo := getPkgDirInRepo(repo, pkg, isPkgSubdirInRepo)
-		info, err := os.Stat(pkgDirInRepo)
-		if err != nil {
-			return fmt.Errorf("%spkg-dir %s not found in repo: %s",
-				errPrefix, pkgDirInRepo, err)
+	pkgDir := getPkgDirInRepo(repo, pkg, isPkgSubdirInRepo)
+	if info, err := os.Stat(pkgDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%spkg-dir not found or is not a directory %s", errPrefix, pkgDir)
+	}
+
+	pkgSpecDir := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
+	if isUnmodified {
+		if _, err := os.Stat(pkgSpecDir); err == nil {
+			return fmt.Errorf("%sNo spec directory expected for package %s (unmodified-srpm)", errPrefix, pkg)
 		}
-		if !info.IsDir() {
-			return fmt.Errorf("%spkg-dir %s is not a directory", errPrefix, pkgDirInRepo)
+		if _, err := os.Stat(getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)); err == nil {
+			return fmt.Errorf("%sNo sources directory expected for package %s (unmodified-srpm)", errPrefix, pkg)
 		}
-		pkgSpecDirInRepo := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
-		if !isUnmodified {
-			info, err := os.Stat(pkgSpecDirInRepo)
-			if err != nil {
-				return fmt.Errorf("%sspecs-dir %s not found in repo/pkg: %s",
-					errPrefix, pkgSpecDirInRepo, err)
-			}
-			if !info.IsDir() {
-				return fmt.Errorf("%sspecs-dir %s not a directory", errPrefix, pkgSpecDirInRepo)
-			}
-			specFiles, _ := filepath.Glob(filepath.Join(pkgSpecDirInRepo, "*.spec"))
-			numSpecFiles := len(specFiles)
-			if numSpecFiles == 0 {
-				return fmt.Errorf("%sNo *.spec files found in %s",
-					errPrefix, pkgSpecDirInRepo)
-			}
-			if numSpecFiles > 1 {
-				return fmt.Errorf("%sMultiple*.spec files %s found in %s",
-					errPrefix, strings.Join(specFiles, ","), pkgSpecDirInRepo)
-			}
-		} else {
-			info, err := os.Stat(pkgSpecDirInRepo)
-			if err == nil && info.IsDir() {
-				return fmt.Errorf(
-					"%sNo spec directory expected to be present for package %s with type unmodified-srpm",
-					errPrefix, pkg)
-			}
-			pkgSourcesDirInRepo := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
-			info, err = os.Stat(pkgSourcesDirInRepo)
-			if err == nil && info.IsDir() {
-				return fmt.Errorf(
-					"%sNo sources directory expected to be present for package %s with type unmodified-srpm",
-					errPrefix, pkg)
-			}
-		}
+		return nil
+	}
+
+	if info, err := os.Stat(pkgSpecDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%sspecs-dir not found or is not a directory %s", errPrefix, pkgSpecDir)
+	}
+
+	specFiles, _ := filepath.Glob(filepath.Join(pkgSpecDir, "*.spec"))
+	if len(specFiles) == 0 {
+		return fmt.Errorf("%sNo *.spec files found in %s", errPrefix, pkgSpecDir)
+	} else if len(specFiles) > 1 {
+		return fmt.Errorf("%sMultiple *.spec files found in %s: %s", errPrefix, pkgSpecDir, strings.Join(specFiles, ","))
 	}
 	return nil
 }
