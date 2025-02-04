@@ -90,7 +90,7 @@ func (bldr *srpmBuilder) getUpstreamSourceForOthers(upstreamSrcFromManifest mani
 		}
 
 		pubKeyPath := filepath.Join(getDetachedSigDir(), pubKey)
-		if pathErr := util.CheckPath(pubKeyPath, false, false); pathErr != nil {
+		if _, pathErr := os.Stat(pubKeyPath); pathErr != nil {
 			return nil, fmt.Errorf("%sCannot find public-key at path %s",
 				bldr.errPrefix, pubKeyPath)
 		}

@@ -73,23 +73,6 @@ func CheckOutput(name string, arg ...string) (
 	return string(output), nil
 }
 
-// CheckPath checks if path exists. It also optionally checks if it is a directory,
-// or if the path is writable
-func CheckPath(path string, checkDir bool, checkWritable bool) error {
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if checkDir && !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", path)
-	}
-
-	if checkWritable && unix.Access(path, unix.W_OK) != nil {
-		return fmt.Errorf("%s is not writable", path)
-	}
-	return nil
-}
-
 // MaybeCreateDir creates a directory with permissions 0775
 // Pre-existing directories are left untouched.
 func MaybeCreateDir(dirPath string, errPrefix ErrPrefix) error {
@@ -128,9 +111,18 @@ func CopyToDestDir(
 	destDir string,
 	errPrefix ErrPrefix) error {
 
-	if err := CheckPath(destDir, true, true); err != nil {
-		return fmt.Errorf("%sDirectory %s should be present and writable: %s",
+	info, err := os.Stat(destDir)
+	if err != nil {
+		return fmt.Errorf("%sDirectory %s should be present %s",
 			errPrefix, destDir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s , %s is not a directory ",
+			errPrefix, destDir)
+	}
+	if unix.Access(destDir, unix.W_OK) != nil {
+		return fmt.Errorf("%sDirectory %s should be writable",
+			errPrefix, destDir)
 	}
 
 	filesToCopy, patternErr := filepath.Glob(srcGlob)

@@ -118,7 +118,7 @@ func (bldr *srpmBuilder) upstreamSrpmDownloadPath() string {
 	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
 	upstreamSrc := &bldr.upstreamSrc[0]
 	downloadedFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
-	if err := util.CheckPath(downloadedFilePath, false, false); err != nil {
+	if _, err := os.Stat(downloadedFilePath); err != nil {
 		panic(fmt.Sprintf("%sFile not found and expected path: %s",
 			bldr.errPrefix, downloadedFilePath))
 	}
@@ -224,9 +224,13 @@ func (bldr *srpmBuilder) setupRpmbuildTreeSrpm() error {
 		filepath.Join(rpmbuildDir, "SPECS"),
 	}
 	for _, path := range pathsToCheck {
-		if pathErr := util.CheckPath(path, true, false); pathErr != nil {
+		info, pathErr := os.Stat(path)
+		if pathErr != nil {
 			return fmt.Errorf("%s%s not found after installing upstream SRPM : %s",
 				bldr.errPrefix, path, pathErr)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("%s is not a directory", path)
 		}
 	}
 
@@ -363,7 +367,9 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 
 		// Only copy sources if present
 		// Some repos just have spec file changes and no patches.
-		if util.CheckPath(repoSourcesDir, true, false) == nil {
+
+		info, err := os.Stat(repoSourcesDir)
+		if err == nil && info.IsDir() {
 			rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
 			if err := util.CopyToDestDir(
 				repoSourcesDir+"/*",
@@ -455,11 +461,14 @@ func (bldr *srpmBuilder) build(prep bool) error {
 func (bldr *srpmBuilder) copyBuiltSrpmToDestDir() error {
 	pkg := bldr.pkgSpec.Name
 	srpmsRpmbuildDir := getSrpmsRpmbuildDir(pkg)
-	if util.CheckPath(srpmsRpmbuildDir, true, false) != nil {
-		return fmt.Errorf("%sSRPMS directory %s not found after build",
-			bldr.errPrefix, srpmsRpmbuildDir)
+	info, err := os.Stat(srpmsRpmbuildDir)
+	if err != nil {
+		return fmt.Errorf("%sSRPMS directory %s not found after build %s",
+			bldr.errPrefix, srpmsRpmbuildDir, err)
 	}
-
+	if !info.IsDir() {
+		return fmt.Errorf("%sSRPMS %s is not a directory", bldr.errPrefix, srpmsRpmbuildDir)
+	}
 	globPattern := filepath.Join(srpmsRpmbuildDir, "/*.src.rpm")
 	filenames, _ := filepath.Glob(globPattern)
 	numSrpmsBuilt := len(filenames)

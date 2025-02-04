@@ -18,6 +18,7 @@ import (
 	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
+	"golang.org/x/sys/unix"
 )
 
 // Path getters
@@ -101,7 +102,8 @@ func getPkgSrpmsDir(errPrefix util.ErrPrefix, pkg string) (string, error) {
 	srpmsDirs := viper.GetString("SrpmsDir")
 	for _, srpmsDir := range strings.Split(srpmsDirs, ":") {
 		thisPath := filepath.Join(srpmsDir, pkg)
-		if util.CheckPath(thisPath, true, false) == nil {
+		info, err := os.Stat(thisPath)
+		if err == nil && info.IsDir() {
 			return thisPath, nil
 		}
 	}
@@ -132,22 +134,33 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	isUnmodified bool,
 	errPrefix util.ErrPrefix) error {
 	repoDir := util.GetRepoDir(repo)
-	if err := util.CheckPath(repoDir, true, false); err != nil {
-		return fmt.Errorf("%srepo-dir %s not found: %s",
-			errPrefix, repoDir, err)
+	info, err := os.Stat(repoDir)
+	if err != nil {
+		return fmt.Errorf("%srepo-dir %s not found: %s", errPrefix, repoDir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%srepo-dir %s is not a directory ", errPrefix, repoDir)
 	}
 
 	if pkg != "" {
 		pkgDirInRepo := getPkgDirInRepo(repo, pkg, isPkgSubdirInRepo)
-		if err := util.CheckPath(pkgDirInRepo, true, false); err != nil {
+		info, err := os.Stat(pkgDirInRepo)
+		if err != nil {
 			return fmt.Errorf("%spkg-dir %s not found in repo: %s",
 				errPrefix, pkgDirInRepo, err)
 		}
+		if !info.IsDir() {
+			return fmt.Errorf("%spkg-dir %s is not a directory", errPrefix, pkgDirInRepo)
+		}
 		pkgSpecDirInRepo := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
 		if !isUnmodified {
-			if err := util.CheckPath(pkgSpecDirInRepo, true, false); err != nil {
+			info, err := os.Stat(pkgSpecDirInRepo)
+			if err != nil {
 				return fmt.Errorf("%sspecs-dir %s not found in repo/pkg: %s",
 					errPrefix, pkgSpecDirInRepo, err)
+			}
+			if !info.IsDir() {
+				return fmt.Errorf("%sspecs-dir %s not a directory", errPrefix, pkgSpecDirInRepo)
 			}
 			specFiles, _ := filepath.Glob(filepath.Join(pkgSpecDirInRepo, "*.spec"))
 			numSpecFiles := len(specFiles)
@@ -160,13 +173,15 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 					errPrefix, strings.Join(specFiles, ","), pkgSpecDirInRepo)
 			}
 		} else {
-			if err := util.CheckPath(pkgSpecDirInRepo, true, false); err == nil {
+			info, err := os.Stat(pkgSpecDirInRepo)
+			if err == nil && info.IsDir() {
 				return fmt.Errorf(
 					"%sNo spec directory expected to be present for package %s with type unmodified-srpm",
 					errPrefix, pkg)
 			}
 			pkgSourcesDirInRepo := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
-			if err := util.CheckPath(pkgSourcesDirInRepo, true, false); err == nil {
+			info, err = os.Stat(pkgSourcesDirInRepo)
+			if err == nil && info.IsDir() {
 				return fmt.Errorf(
 					"%sNo sources directory expected to be present for package %s with type unmodified-srpm",
 					errPrefix, pkg)
@@ -188,14 +203,18 @@ func download(srcURL string, targetDir string,
 	if parseError != nil {
 		return "", parseError
 	}
-
-	if util.CheckPath(targetDir, true, true) != nil {
-		return "",
-			fmt.Errorf("%sTarget directory %s for download should be present and writable",
-				errPrefix, targetDir)
-
+	info, err := os.Stat(targetDir)
+	if err != nil {
+		return "", fmt.Errorf("%sTarget directory %s for download should be present",
+			errPrefix, targetDir)
 	}
-
+	if !info.IsDir() {
+		return "", fmt.Errorf("%sTarget directory %s is not a directory ",
+			errPrefix, targetDir)
+	}
+	if unix.Access(targetDir, unix.W_OK) != nil {
+		return "", fmt.Errorf("%sTarget directory %s is not writable ", errPrefix, targetDir)
+	}
 	tokens := strings.Split(uri.Path, "/")
 	filename := tokens[len(tokens)-1]
 
@@ -206,7 +225,7 @@ func download(srcURL string, targetDir string,
 				errPrefix, srcURL)
 		}
 		srcAbsPath := filepath.Join(pkgDirInRepo, uri.Path)
-		if err := util.CheckPath(srcAbsPath, false, false); err != nil {
+		if _, err := os.Stat(srcAbsPath); err != nil {
 			return "", fmt.Errorf("%supstream file %s not found in repo",
 				errPrefix, srcAbsPath)
 		}

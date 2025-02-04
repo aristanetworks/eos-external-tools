@@ -5,11 +5,12 @@ package impl
 
 import (
 	"fmt"
+	"os"
 	"text/template"
 
 	"github.com/spf13/viper"
 
-	"code.arista.io/eos/tools/eext/util"
+	"golang.org/x/sys/unix"
 )
 
 var parsedMockCfgTemplate *template.Template
@@ -27,29 +28,42 @@ func CheckEnv() error {
 	var aggError string
 	failed := false
 	if srcDir != "" {
-		if err := util.CheckPath(srcDir, true, false); err != nil {
+		info, err := os.Stat(srcDir)
+		if err != nil {
 			aggError += fmt.Sprintf("\ntrouble with SrcDir: %s", err)
+			failed = true
+		} else if !info.IsDir() {
+			aggError += fmt.Sprintf("\nSrcDir is not a directory: %s", srcDir)
 			failed = true
 		}
 	} else {
-		if err := util.CheckPath("./eext.yaml", false, false); err != nil {
+		if _, pathErr := os.Stat("./eext.yaml"); pathErr != nil {
 			aggError += fmt.Sprintf("\nNo eext.yaml in current directory. " +
 				"SrcDir is unspecified, so it is expected  that no --repo will be specified, " +
 				"and that the sources are in current working directory.")
 		}
 	}
-
-	if err := util.CheckPath(workingDir, true, true); err != nil {
+	info, err := os.Stat(workingDir)
+	if err != nil {
 		aggError += fmt.Sprintf("\ntrouble with WorkingDir: %s", err)
 		failed = true
+	} else if !info.IsDir() {
+		aggError += fmt.Sprintf("\nWorkingDir is not a directory: %s", workingDir)
+		failed = true
 	}
-
-	if err := util.CheckPath(destDir, true, true); err != nil {
+	info, err = os.Stat(destDir)
+	if err != nil {
 		aggError += fmt.Sprintf("\ntrouble with DestDir: %s", err)
+		failed = true
+	} else if !info.IsDir() {
+		aggError += fmt.Sprintf("\nDestDir is not a directory: %s", destDir)
+		failed = true
+	} else if unix.Access(destDir, unix.W_OK) != nil {
+		aggError += fmt.Sprintf("\nDestDir: %s is not writable", destDir)
 		failed = true
 	}
 
-	if err := util.CheckPath(mockCfgTemplate, false, false); err != nil {
+	if _, err := os.Stat(mockCfgTemplate); err != nil {
 		aggError += fmt.Sprintf("\ntrouble with MockCfgTemplate: %s", err)
 		failed = true
 	} else if parsedMockCfgTemplate == nil {
@@ -61,18 +75,21 @@ func CheckEnv() error {
 		}
 	}
 
-	if err := util.CheckPath(dnfConfigFile, false, false); err != nil {
+	if _, err := os.Stat(dnfConfigFile); err != nil {
 		aggError += fmt.Sprintf("\ntrouble with DnfConfigFile: %s", err)
 		failed = true
 	}
 
-	if err := util.CheckPath(srcConfigFile, false, false); err != nil {
+	if _, err := os.Stat(srcConfigFile); err != nil {
 		aggError += fmt.Sprintf("\ntrouble with SrcConfigFile: %s", err)
 		failed = true
 	}
-
-	if err := util.CheckPath(pkiPath, true, false); err != nil {
+	info, err = os.Stat(pkiPath)
+	if err != nil {
 		aggError += fmt.Sprintf("\ntrouble with PkiPath: %s", err)
+		failed = true
+	} else if !info.IsDir() {
+		aggError += fmt.Sprintf("\nPkiPath is not a directory: %s", srcDir)
 		failed = true
 	}
 
