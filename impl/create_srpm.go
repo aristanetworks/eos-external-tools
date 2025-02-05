@@ -84,7 +84,7 @@ func (bldr *srpmBuilder) fetchUpstream() error {
 	// First fetch upstream source
 	downloadDir := getDownloadDir(bldr.pkgSpec.Name)
 
-	if err := util.MaybeCreateDirWithParents(downloadDir, bldr.errPrefix); err != nil {
+	if err := util.MaybeCreateDirWithParents(downloadDir, bldr.executor, bldr.errPrefix); err != nil {
 		return err
 	}
 
@@ -247,7 +247,7 @@ func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 	// Now copy tarball upstream sources to SOURCES
 	rpmbuildDir := getRpmbuildDir(bldr.pkgSpec.Name)
 	rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
-	if err := util.MaybeCreateDirWithParents(rpmbuildSourcesDir, bldr.errPrefix); err != nil {
+	if err := util.MaybeCreateDirWithParents(rpmbuildSourcesDir, bldr.executor, bldr.errPrefix); err != nil {
 		return err
 	}
 
@@ -264,7 +264,7 @@ func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 	}
 
 	rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
-	if err := util.MaybeCreateDirWithParents(rpmbuildSpecsDir, bldr.errPrefix); err != nil {
+	if err := util.MaybeCreateDirWithParents(rpmbuildSpecsDir, bldr.executor, bldr.errPrefix); err != nil {
 		return err
 	}
 
@@ -487,7 +487,7 @@ func (bldr *srpmBuilder) copyResultsToDestDir() error {
 
 	pkgSrpmsDestDir := getPkgSrpmsDestDir(bldr.pkgSpec.Name)
 	if err := util.MaybeCreateDirWithParents(
-		pkgSrpmsDestDir, bldr.errPrefix); err != nil {
+		pkgSrpmsDestDir, bldr.executor, bldr.errPrefix); err != nil {
 		return err
 	}
 
