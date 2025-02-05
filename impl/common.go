@@ -256,12 +256,12 @@ func download(srcURL string, targetDir string,
 // We walk through all the entries of pathMap and then copy files matching
 // the glob to the the corresponding destDirPath.
 // Note that we make sure destDirPath is created with parents before copying.
-func filterAndCopy(pathMap map[string]string, errPrefix util.ErrPrefix) error {
+func filterAndCopy(pathMap map[string]string, executor executor.Executor, errPrefix util.ErrPrefix) error {
 	for destDirPath, srcGlob := range pathMap {
 		// Don't create arch directory unless there's RPMs to be copied.
 		filesToCopy, _ := filepath.Glob(srcGlob)
 		if filesToCopy != nil {
-			if err := util.MaybeCreateDirWithParents(destDirPath, errPrefix); err != nil {
+			if err := util.MaybeCreateDirWithParents(destDirPath, executor, errPrefix); err != nil {
 				return err
 			}
 			if err := util.CopyToDestDir(srcGlob, destDirPath, errPrefix); err != nil {

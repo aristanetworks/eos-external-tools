@@ -138,7 +138,7 @@ func (bldr *mockBuilder) setupDeps() error {
 			bldr.errPrefix, strings.Join(missingDeps, ","), depsDir)
 	}
 
-	if copyErr := filterAndCopy(pathMap, bldr.errPrefix); copyErr != nil {
+	if copyErr := filterAndCopy(pathMap, bldr.executor, bldr.errPrefix); copyErr != nil {
 		return copyErr
 	}
 	createRepoErr := bldr.executor.Exec("createrepo", mockDepsDir)
@@ -270,7 +270,7 @@ func (bldr *mockBuilder) copyResultsToDestDir() error {
 			fmt.Sprintf("*.%s.rpm", rpmArch))
 		pathMap[pkgRpmsDestDirForArch] = globPattern
 	}
-	copyErr := filterAndCopy(pathMap, bldr.errPrefix)
+	copyErr := filterAndCopy(pathMap, bldr.executor, bldr.errPrefix)
 	if copyErr != nil {
 		return copyErr
 	}
