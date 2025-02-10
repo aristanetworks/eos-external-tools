@@ -10,7 +10,6 @@ import (
 	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/util"
 	"github.com/spf13/viper"
-	//"code.arista.io/eos/tools/eext/executor/mocked_executor"
 )
 
 func TestRpmNameFromSpecFile(t *testing.T) {
