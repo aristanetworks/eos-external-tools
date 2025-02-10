@@ -149,31 +149,21 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 		return nil, err
 	}
 
-	repoBundlePriority := b.Priority
-
-	var enabled bool
+	enabled := repoConfig.Enabled
+	priority := b.Priority
 	var exclude string
-	var priority int
-	repoOverride, isOverride := repoOverrides[repoName]
-	if isOverride {
+	repoOverride, hasOverrides := repoOverrides[repoName]
+	if hasOverrides {
 		enabled = repoOverride.Enabled
 		exclude = repoOverride.Exclude
-		priorityOverride := repoOverride.Priority
-		if priorityOverride == 0 {
-			// If repo priority not set, use repo-bundle priority
-			priority = repoBundlePriority
-		} else {
-			if priorityOverride > 1 {
-				priority = priorityOverride
-			} else if priorityOverride == 1 {
-				return nil, fmt.Errorf("%sRepo %s priority cannot be 1. Provide a priority > 1", errPrefix, repoName)
-			} else {
-				return nil, fmt.Errorf("%sInvaid repo priority %d. Provide a priority > 1", errPrefix, priorityOverride)
-			}
+		priorityOverride := repoOverride.Priority // value of 0 means it was not overridden and is already set
+		if priorityOverride < 0 {
+			return nil, fmt.Errorf("%sInvaid repo priority %d. Provide a priority > 1", errPrefix, priorityOverride)
+		} else if priorityOverride == 1 {
+			return nil, fmt.Errorf("%sRepo %s priority cannot be 1. Provide a priority > 1", errPrefix, repoName)
+		} else if priorityOverride > 1 {
+			priority = priorityOverride
 		}
-	} else {
-		enabled = repoConfig.Enabled
-		priority = repoBundlePriority
 	}
 
 	return &DnfRepoParams{
