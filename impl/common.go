@@ -18,6 +18,7 @@ import (
 	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/util"
+	"golang.org/x/sys/unix"
 )
 
 // Path getters
@@ -100,9 +101,8 @@ func getPkgSrpmsDestDir(pkg string) string {
 func getPkgSrpmsDir(errPrefix util.ErrPrefix, pkg string) (string, error) {
 	srpmsDirs := viper.GetString("SrpmsDir")
 	for _, srpmsDir := range strings.Split(srpmsDirs, ":") {
-		thisPath := filepath.Join(srpmsDir, pkg)
-		if util.CheckPath(thisPath, true, false) == nil {
-			return thisPath, nil
+		if info, err := os.Stat(filepath.Join(srpmsDir, pkg)); err == nil && info.IsDir() {
+			return filepath.Join(srpmsDir, pkg), nil
 		}
 	}
 	return "", fmt.Errorf("%ssubpath %s not found in any item in SrpmsDir %s",
@@ -132,46 +132,38 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 	isUnmodified bool,
 	errPrefix util.ErrPrefix) error {
 	repoDir := util.GetRepoDir(repo)
-	if err := util.CheckPath(repoDir, true, false); err != nil {
-		return fmt.Errorf("%srepo-dir %s not found: %s",
-			errPrefix, repoDir, err)
+	if info, err := os.Stat(repoDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%srepo-dir not found or is not a directory %s", errPrefix, repoDir)
+	}
+	if pkg == "" {
+		return nil
 	}
 
-	if pkg != "" {
-		pkgDirInRepo := getPkgDirInRepo(repo, pkg, isPkgSubdirInRepo)
-		if err := util.CheckPath(pkgDirInRepo, true, false); err != nil {
-			return fmt.Errorf("%spkg-dir %s not found in repo: %s",
-				errPrefix, pkgDirInRepo, err)
+	pkgDir := getPkgDirInRepo(repo, pkg, isPkgSubdirInRepo)
+	if info, err := os.Stat(pkgDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%spkg-dir not found or is not a directory %s", errPrefix, pkgDir)
+	}
+
+	pkgSpecDir := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
+	if isUnmodified {
+		if _, err := os.Stat(pkgSpecDir); err == nil {
+			return fmt.Errorf("%sNo spec directory expected for package %s (unmodified-srpm)", errPrefix, pkg)
 		}
-		pkgSpecDirInRepo := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
-		if !isUnmodified {
-			if err := util.CheckPath(pkgSpecDirInRepo, true, false); err != nil {
-				return fmt.Errorf("%sspecs-dir %s not found in repo/pkg: %s",
-					errPrefix, pkgSpecDirInRepo, err)
-			}
-			specFiles, _ := filepath.Glob(filepath.Join(pkgSpecDirInRepo, "*.spec"))
-			numSpecFiles := len(specFiles)
-			if numSpecFiles == 0 {
-				return fmt.Errorf("%sNo *.spec files found in %s",
-					errPrefix, pkgSpecDirInRepo)
-			}
-			if numSpecFiles > 1 {
-				return fmt.Errorf("%sMultiple*.spec files %s found in %s",
-					errPrefix, strings.Join(specFiles, ","), pkgSpecDirInRepo)
-			}
-		} else {
-			if err := util.CheckPath(pkgSpecDirInRepo, true, false); err == nil {
-				return fmt.Errorf(
-					"%sNo spec directory expected to be present for package %s with type unmodified-srpm",
-					errPrefix, pkg)
-			}
-			pkgSourcesDirInRepo := getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)
-			if err := util.CheckPath(pkgSourcesDirInRepo, true, false); err == nil {
-				return fmt.Errorf(
-					"%sNo sources directory expected to be present for package %s with type unmodified-srpm",
-					errPrefix, pkg)
-			}
+		if _, err := os.Stat(getPkgSourcesDirInRepo(repo, pkg, isPkgSubdirInRepo)); err == nil {
+			return fmt.Errorf("%sNo sources directory expected for package %s (unmodified-srpm)", errPrefix, pkg)
 		}
+		return nil
+	}
+
+	if info, err := os.Stat(pkgSpecDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%sspecs-dir not found or is not a directory %s", errPrefix, pkgSpecDir)
+	}
+
+	specFiles, _ := filepath.Glob(filepath.Join(pkgSpecDir, "*.spec"))
+	if len(specFiles) == 0 {
+		return fmt.Errorf("%sNo *.spec files found in %s", errPrefix, pkgSpecDir)
+	} else if len(specFiles) > 1 {
+		return fmt.Errorf("%sMultiple *.spec files found in %s: %s", errPrefix, pkgSpecDir, strings.Join(specFiles, ","))
 	}
 	return nil
 }
@@ -188,14 +180,18 @@ func download(srcURL string, targetDir string,
 	if parseError != nil {
 		return "", parseError
 	}
-
-	if util.CheckPath(targetDir, true, true) != nil {
-		return "",
-			fmt.Errorf("%sTarget directory %s for download should be present and writable",
-				errPrefix, targetDir)
-
+	info, err := os.Stat(targetDir)
+	if err != nil {
+		return "", fmt.Errorf("%sTarget directory %s for download should be present",
+			errPrefix, targetDir)
 	}
-
+	if !info.IsDir() {
+		return "", fmt.Errorf("%sTarget directory %s is not a directory ",
+			errPrefix, targetDir)
+	}
+	if unix.Access(targetDir, unix.W_OK) != nil {
+		return "", fmt.Errorf("%sTarget directory %s is not writable ", errPrefix, targetDir)
+	}
 	tokens := strings.Split(uri.Path, "/")
 	filename := tokens[len(tokens)-1]
 
@@ -206,7 +202,7 @@ func download(srcURL string, targetDir string,
 				errPrefix, srcURL)
 		}
 		srcAbsPath := filepath.Join(pkgDirInRepo, uri.Path)
-		if err := util.CheckPath(srcAbsPath, false, false); err != nil {
+		if _, err := os.Stat(srcAbsPath); err != nil {
 			return "", fmt.Errorf("%supstream file %s not found in repo",
 				errPrefix, srcAbsPath)
 		}

@@ -215,7 +215,7 @@ func TestGitArchive(t *testing.T) {
 	}
 
 	archivePath := filepath.Join(testWorkingDir, archiveFile)
-	err = util.CheckPath(archivePath, false, false)
+	_, err = os.Stat(archivePath)
 	if err != nil {
 		t.Fatal(err)
 	}

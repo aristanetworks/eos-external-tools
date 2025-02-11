@@ -185,7 +185,7 @@ func (bldr *srpmBuilder) getUpstreamSourceForGit(upstreamSrcFromManifest manifes
 				bldr.errPrefix, pkg)
 		}
 		pubKeyPath := filepath.Join(getDetachedSigDir(), pubKey)
-		if pathErr := util.CheckPath(pubKeyPath, false, false); pathErr != nil {
+		if _, pathErr := os.Stat(pubKeyPath); pathErr != nil {
 			return nil, fmt.Errorf("%sCannot find public-key at path %s",
 				bldr.errPrefix, pubKeyPath)
 		}
