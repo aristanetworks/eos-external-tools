@@ -10,17 +10,23 @@ repo-bundle:
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
     baseurl: "{{.Host}}/artifactory/eext-alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os"
+    base-debug-url: "{{.Host}}/artifactory/eext-alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os"
     repo:
       AppStream:
         enabled: true
+        with-debug: false
       BaseOS:
         enabled: true
+        with-debug: false
       CRB:
         enabled: true
+        with-debug: false
       devel:
         enabled: false
+        with-debug: false
       extras:
         enabled: false
+        with-debug: false
     version-labels:
       default: 9.4
     priority: 2
@@ -36,9 +42,11 @@ repo-bundle:
     # provided the dependencies are all noarch.
     use-base-arch: true
     baseurl: "{{.Host}}/artifactory/eext-snapshots-local/epel9/{{.Version}}/9/Everything/{{.Arch}}/"
+    base-debug-url: "{{.Host}}/artifactory/eext-snapshots-local/epel9/{{.Version}}/9/Everything/{{.Arch}}/"
     repo:
       epel9:
         enabled: true
+        with-debug: false
     version-labels:
       # Each version points to a timestamped snapshot of the repo cache of the epel9-unsafe repo.
       # The eext team is responsible for creating these snapshots.
@@ -60,17 +68,23 @@ repo-bundle:
     gpgcheck: true
     gpgkey: file:///usr/share/distribution-gpg-keys/alma/RPM-GPG-KEY-AlmaLinux-9
     baseurl: "{{.Host}}/artifactory/eext-snapshots-local/el9/{{.Version}}/9/{{.RepoName}}/{{.Arch}}/os"
+    base-debug-url: "{{.Host}}/artifactory/eext-snapshots-local/el9/{{.Version}}/9/{{.RepoName}}/{{.Arch}}/os"
     repo:
       AppStream:
         enabled: true
+        with-debug: false
       BaseOS:
         enabled: true
+        with-debug: false
       CRB:
         enabled: true
+        with-debug: false
       devel:
         enabled: false
+        with-debug: false
       extras:
         enabled: false
+        with-debug: false
     priority: 2
   # ---------------------------------------------------------------------------------------------
 
@@ -87,9 +101,11 @@ repo-bundle:
     # when target is i686.
     use-base-arch: true
     baseurl: "{{.Host}}/artifactory/eext-snapshots-local/fc40/{{.Version}}/{{.RepoName}}/40/Everything/{{.Arch}}/os"
+    base-debug-url: "{{.Host}}/artifactory/eext-snapshots-local/fc40/{{.Version}}/{{.RepoName}}/40/Everything/{{.Arch}}/os"
     repo:
       releases:
         enabled: true
+        with-debug: false
     priority: 3
   # ---------------------------------------------------------------------------------------------
 
@@ -105,17 +121,23 @@ repo-bundle:
     # i686 rpms are not offically supported upstream, so it is only available in vault
     # So point to eext-alma-vault repo for i686 and eext-alma-linux for other archs.
     baseurl: '{{.Host}}/artifactory/eext-alma-{{if eq .Arch "i686"}}vault{{else}}linux{{end}}/{{.Version}}/{{.RepoName}}/{{.Arch}}/os'
+    base-debug-url: '{{.Host}}/artifactory/eext-alma-{{if eq .Arch "i686"}}vault{{else}}linux{{end}}/{{.Version}}/{{.RepoName}}/{{.Arch}}/os'
     repo:
       AppStream:
         enabled: true
+        with-debug: false
       BaseOS:
         enabled: true
+        with-debug: false
       CRB:
         enabled: true
+        with-debug: false
       devel:
         enabled: false
+        with-debug: false
       extras:
         enabled: false
+        with-debug: false
     version-labels:
       # default=9 always points to upstream latest dot release 9.x,
       # which upstream updates regularly.
@@ -135,17 +157,23 @@ repo-bundle:
 
     # upstream always publishes the latest beta to vault.
     baseurl: '{{.Host}}/artifactory/eext-alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os'
+    base-debug-url: '{{.Host}}/artifactory/eext-alma-vault/{{.Version}}/{{.RepoName}}/{{.Arch}}/os'
     repo:
       AppStream:
         enabled: true
+        with-debug: false
       BaseOS:
         enabled: true
+        with-debug: false
       CRB:
         enabled: true
+        with-debug: false
       devel:
         enabled: false
+        with-debug: false
       extras:
         enabled: false
+        with-debug: false
     version-labels:
       # default always points to upstream latest dot release 9.x's beta version,
       # which upstream updates regularly.
@@ -169,9 +197,11 @@ repo-bundle:
     # provided the dependencies are all noarch.
     use-base-arch: true
     baseurl: "{{.Host}}/artifactory/eext-epel/{{.Version}}/Everything/{{.Arch}}/"
+    base-debug-url: "{{.Host}}/artifactory/eext-epel/{{.Version}}/Everything/{{.Arch}}/"
     repo:
       epel9:
         enabled: true
+        with-debug: false
     version-labels:
       # default always points to upstream stable repo which receives updates.
       default: 9
@@ -193,9 +223,11 @@ repo-bundle:
     # provided the dependencies are all noarch.
     use-base-arch: true
     baseurl: "{{.Host}}/artifactory/eext-epel/next/{{.Version}}/Everything/{{.Arch}}/"
+    base-debug-url: "{{.Host}}/artifactory/eext-epel/next/{{.Version}}/Everything/{{.Arch}}/"
     repo:
       epel9:
         enabled: true
+        with-debug: false
     version-labels:
       # default always points to upstream next/beta repo which receives updates.
       default: 9
@@ -216,9 +248,11 @@ repo-bundle:
     # when target is i686.
     use-base-arch: true
     baseurl: "{{.Host}}/artifactory/eext-fedora-linux/{{.RepoName}}/{{.Version}}/Everything/{{.Arch}}/os"
+    base-debug-url: "{{.Host}}/artifactory/eext-fedora-linux/{{.RepoName}}/{{.Version}}/Everything/{{.Arch}}/os"
     repo:
       releases:
         enabled: true
+        with-debug: false
     version-labels:
       default: 40
     priority: 3

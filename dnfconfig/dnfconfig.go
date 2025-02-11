@@ -56,9 +56,10 @@ type DnfRepoURLData struct {
 // RepoParamsOverride spec
 // this is used to override default parameters for repos in the bundle.
 type DnfRepoParamsOverride struct {
-	Enabled  bool   `yaml:"enabled"`
-	Exclude  string `yaml:"exclude"`
-	Priority int    `yaml:"priority"`
+	Enabled   bool   `yaml:"enabled"`
+	Exclude   string `yaml:"exclude"`
+	Priority  int    `yaml:"priority"`
+	WithDebug bool   `yaml:"with-debug"`
 }
 
 // RepoData holds dnf repo name and baseurl for mock.cfg generation
@@ -72,6 +73,7 @@ type DnfRepoParams struct {
 	GpgKey       string
 	Exclude      string
 	Priority     int
+	WithDebug    bool
 }
 
 func baseArch(arch string) string {
@@ -168,10 +170,12 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 	enabled := repoConfig.Enabled
 	priority := b.Priority
 	var exclude string
+	withDebug := repoConfig.WithDebug
 	repoOverride, hasOverrides := repoOverrides[repoName]
 	if hasOverrides {
 		enabled = repoOverride.Enabled
 		exclude = repoOverride.Exclude
+		withDebug = repoOverride.WithDebug
 		priorityOverride := repoOverride.Priority // value of 0 means it was not overridden and is already set
 		if priorityOverride < 0 {
 			return nil, fmt.Errorf("%sInvaid repo priority %d. Provide a priority > 1", errPrefix, priorityOverride)
@@ -191,6 +195,7 @@ func (b *DnfRepoBundleConfig) GetDnfRepoParams(
 		GpgCheck:     b.GpgCheck,
 		GpgKey:       b.GpgKey,
 		Priority:     priority,
+		WithDebug:    withDebug,
 	}, nil
 }
 
