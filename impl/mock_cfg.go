@@ -120,7 +120,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 	}
 
 	mockCfgDir := getMockCfgDir(pkg, arch)
-	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.errPrefix); err != nil {
+	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.executor, cfgBldr.errPrefix); err != nil {
 		return err
 	}
 
@@ -140,7 +140,7 @@ func (cfgBldr *mockCfgBuilder) populateTemplateData() error {
 func (cfgBldr *mockCfgBuilder) prep() error {
 	arch := cfgBldr.arch
 	mockCfgDir := getMockCfgDir(cfgBldr.pkg, arch)
-	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.errPrefix); err != nil {
+	if err := util.MaybeCreateDirWithParents(mockCfgDir, cfgBldr.executor, cfgBldr.errPrefix); err != nil {
 		return err
 	}
 

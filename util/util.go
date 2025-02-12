@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"github.com/spf13/viper"
 	"golang.org/x/sys/unix"
 )
@@ -90,20 +91,10 @@ func CheckPath(path string, checkDir bool, checkWritable bool) error {
 	return nil
 }
 
-// MaybeCreateDir creates a directory with permissions 0775
-// Pre-existing directories are left untouched.
-func MaybeCreateDir(dirPath string, errPrefix ErrPrefix) error {
-	err := os.Mkdir(dirPath, 0775)
-	if err != nil && !os.IsExist(err) {
-		return fmt.Errorf("%s: Error '%s' creating %s", errPrefix, err, dirPath)
-	}
-	return nil
-}
-
 // MaybeCreateDirWithParents creates a directory at dirPath if one
 // doesn't already exist. It also creates any parent directories.
-func MaybeCreateDirWithParents(dirPath string, errPrefix ErrPrefix) error {
-	if err := RunSystemCmd("mkdir", "-p", dirPath); err != nil {
+func MaybeCreateDirWithParents(dirPath string, executor executor.Executor, errPrefix ErrPrefix) error {
+	if err := executor.Exec("mkdir", "-p", dirPath); err != nil {
 		return fmt.Errorf("%sError '%s' trying to create directory %s with parents",
 			errPrefix, err, dirPath)
 	}

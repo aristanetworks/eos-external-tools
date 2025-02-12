@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"code.arista.io/eos/tools/eext/dnfconfig"
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/testutil"
 	"code.arista.io/eos/tools/eext/util"
@@ -83,6 +84,7 @@ func testMockConfig(t *testing.T, chained bool) {
 			buildSpec:       &manifestObj.Package[0].Build,
 			dnfConfig:       dnfConfig,
 			dependencyList:  dependencyList,
+			executor:        &executor.OsExecutor{},
 		},
 	}
 
