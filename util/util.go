@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/spf13/viper"
 	"golang.org/x/sys/unix"
@@ -21,8 +22,35 @@ type Globals struct {
 	Quiet bool
 }
 
+// Globals struct (holds global settings)
+var (
+	instance *Globals
+	once     sync.Once
+)
+
 // GlobalVar global variable exported for all global variables
-var GlobalVar Globals
+var GlobalVar *Globals
+
+// InitializeGlobals sets the GlobalInstance (can be called from another package)
+func InitializeGlobals(quiet bool) {
+	once.Do(func() {
+		instance = &Globals{Quiet: quiet}
+		GlobalVar = instance
+	})
+}
+
+// GetInstance returns the global immutable instance
+func GetInstance() *Globals {
+	if instance == nil {
+		panic("InitializeGlobals() must be called first!")
+	}
+	return instance
+}
+
+// GetGlobals returns the global instance
+func GetGlobals() *Globals {
+	return GlobalVar
+}
 
 // ErrPrefix is a container type for error prefix strings.
 type ErrPrefix string

@@ -14,6 +14,8 @@ import (
 	"code.arista.io/eos/tools/eext/util"
 )
 
+var quietFlag bool
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:          "eext",
@@ -27,6 +29,14 @@ The upstream SRPM can be checked into the repository or could be stored in anoth
 with the link specified in the mnaifest.
 
 This tool builds the Arista modified SRPM and RPMs from this repository.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		// Initialize the immutable singleton using the CLI flag value
+		util.InitializeGlobals(quietFlag)
+
+		// Access the immutable instance
+		fmt.Println("Quiet mode:", util.GetInstance().Quiet)
+
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -46,7 +56,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().String("config", "", "config file (default is eext-viper.yaml in /etc or $HOME/.config)")
-	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
+	rootCmd.PersistentFlags().BoolVarP(&(quietFlag), "quiet", "q", false, "Quiet terminal output 1 (default is false)")
 	rootCmd.PersistentFlags().BoolP("dry-run", "d", false, "Instead of running the commands, print what would be run")
 
 	// Cobra also supports local flags, which will only run
