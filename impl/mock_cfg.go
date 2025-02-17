@@ -147,10 +147,6 @@ func (cfgBldr *mockCfgBuilder) prep() error {
 	for _, includeFile := range cfgBldr.buildSpec.Include {
 		pkgDirInRepo := getPkgDirInRepo(cfgBldr.repo, cfgBldr.pkg, cfgBldr.isPkgSubdirInRepo)
 		includeFilePath := filepath.Join(pkgDirInRepo, includeFile)
-		if err := util.CheckPath(includeFilePath, false, false); err != nil {
-			return fmt.Errorf("%sinclude file %s not found in repo",
-				cfgBldr.errPrefix, pkgDirInRepo)
-		}
 		if err := util.CopyToDestDir(
 			includeFilePath, mockCfgDir, cfgBldr.errPrefix); err != nil {
 			return err

@@ -89,12 +89,7 @@ func (bldr *srpmBuilder) getUpstreamSourceForOthers(upstreamSrcFromManifest mani
 			return nil, downloadErr
 		}
 
-		pubKeyPath := filepath.Join(getDetachedSigDir(), pubKey)
-		if pathErr := util.CheckPath(pubKeyPath, false, false); pathErr != nil {
-			return nil, fmt.Errorf("%sCannot find public-key at path %s",
-				bldr.errPrefix, pubKeyPath)
-		}
-		upstreamSrc.pubKeyPath = pubKeyPath
+		upstreamSrc.pubKeyPath = filepath.Join(getDetachedSigDir(), pubKey)
 	} else if upstreamSrcType == "srpm" || upstreamSrcType == "unmodified-srpm" {
 		// We don't expect SRPMs to have detached signature or
 		// to be validated with a public-key specified in manifest.
