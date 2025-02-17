@@ -184,12 +184,7 @@ func (bldr *srpmBuilder) getUpstreamSourceForGit(upstreamSrcFromManifest manifes
 			return nil, fmt.Errorf("%sexpected public-key for %s to verify git repo",
 				bldr.errPrefix, pkg)
 		}
-		pubKeyPath := filepath.Join(getDetachedSigDir(), pubKey)
-		if pathErr := util.CheckPath(pubKeyPath, false, false); pathErr != nil {
-			return nil, fmt.Errorf("%sCannot find public-key at path %s",
-				bldr.errPrefix, pubKeyPath)
-		}
-		upstreamSrc.pubKeyPath = pubKeyPath
+		upstreamSrc.pubKeyPath = filepath.Join(getDetachedSigDir(), pubKey)
 	}
 
 	return &upstreamSrc, nil

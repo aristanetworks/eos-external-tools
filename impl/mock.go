@@ -102,11 +102,6 @@ func (bldr *mockBuilder) setupDeps() error {
 	}
 	depsDir := viper.GetString("DepsDir")
 
-	// See if depsDir exists
-	if err := util.CheckPath(depsDir, true, false); err != nil {
-		return fmt.Errorf("%sProblem with DepsDir: %s", bldr.errPrefix, err)
-	}
-
 	var missingDeps []string
 	pathMap := make(map[string]string)
 	mockDepsDir := getMockDepsDir(bldr.pkg, bldr.arch)
@@ -114,18 +109,16 @@ func (bldr *mockBuilder) setupDeps() error {
 		depStatisfied := false
 		for _, arch := range []string{"noarch", bldr.arch} {
 			depDirWithArch := filepath.Join(depsDir, arch, dep)
-			if util.CheckPath(depDirWithArch, true, false) == nil {
-				rpmFileGlob := fmt.Sprintf("*.%s.rpm", arch)
-				pathGlob := filepath.Join(depDirWithArch, rpmFileGlob)
-				paths, globErr := filepath.Glob(pathGlob)
-				if globErr != nil {
-					panic(fmt.Sprintf("Bad glob pattern %s: %s", pathGlob, globErr))
-				}
-				if paths != nil {
-					depStatisfied = true
-					copyDestDir := filepath.Join(mockDepsDir, arch, dep)
-					pathMap[copyDestDir] = pathGlob
-				}
+			rpmFileGlob := fmt.Sprintf("*.%s.rpm", arch)
+			pathGlob := filepath.Join(depDirWithArch, rpmFileGlob)
+			paths, globErr := filepath.Glob(pathGlob)
+			if globErr != nil {
+				panic(fmt.Sprintf("Bad glob pattern %s: %s", pathGlob, globErr))
+			}
+			if paths != nil {
+				depStatisfied = true
+				copyDestDir := filepath.Join(mockDepsDir, arch, dep)
+				pathMap[copyDestDir] = pathGlob
 			}
 		}
 		if !depStatisfied {

@@ -14,7 +14,6 @@ import (
 
 	"code.arista.io/eos/tools/eext/executor"
 	"github.com/spf13/viper"
-	"golang.org/x/sys/unix"
 )
 
 // Globals type struct exported for global flags
@@ -74,23 +73,6 @@ func CheckOutput(name string, arg ...string) (
 	return string(output), nil
 }
 
-// CheckPath checks if path exists. It also optionally checks if it is a directory,
-// or if the path is writable
-func CheckPath(path string, checkDir bool, checkWritable bool) error {
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if checkDir && !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", path)
-	}
-
-	if checkWritable && unix.Access(path, unix.W_OK) != nil {
-		return fmt.Errorf("%s is not writable", path)
-	}
-	return nil
-}
-
 // MaybeCreateDirWithParents creates a directory at dirPath if one
 // doesn't already exist. It also creates any parent directories.
 func MaybeCreateDirWithParents(dirPath string, executor executor.Executor, errPrefix ErrPrefix) error {
@@ -118,11 +100,6 @@ func CopyToDestDir(
 	srcGlob string,
 	destDir string,
 	errPrefix ErrPrefix) error {
-
-	if err := CheckPath(destDir, true, true); err != nil {
-		return fmt.Errorf("%sDirectory %s should be present and writable: %s",
-			errPrefix, destDir, err)
-	}
 
 	filesToCopy, patternErr := filepath.Glob(srcGlob)
 	if patternErr != nil {
