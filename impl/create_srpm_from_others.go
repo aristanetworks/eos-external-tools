@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/srcconfig"
 	"code.arista.io/eos/tools/eext/util"
@@ -56,6 +57,7 @@ func (bldr *srpmBuilder) getUpstreamSourceForOthers(upstreamSrcFromManifest mani
 	bldr.log("downloading %s", srcParams.SrcURL)
 	// Download source
 	if upstreamSrc.sourceFile, downloadErr = download(
+		bldr.executor,
 		srcParams.SrcURL,
 		downloadDir,
 		repo, pkg, isPkgSubdirInRepo,
@@ -82,6 +84,7 @@ func (bldr *srpmBuilder) getUpstreamSourceForOthers(upstreamSrcFromManifest mani
 				bldr.errPrefix, srcParams.SrcURL)
 		}
 		if upstreamSrc.sigFile, downloadErr = download(
+			bldr.executor,
 			srcParams.SignatureURL,
 			downloadDir,
 			repo, pkg, isPkgSubdirInRepo,
@@ -141,8 +144,9 @@ func isSigfileApplicable(tarballPath, tarballSigPath string) (bool, bool) {
 
 // uncompressTarball decompresses the compression one layer at a time
 // to match the tarball with its valid signature
-func uncompressTarball(tarballPath string, downloadDir string) (string, error) {
-	if err := util.RunSystemCmd(
+func uncompressTarball(executor executor.Executor, tarballPath string, downloadDir string) (string, error) {
+
+	if err := executor.Exec(
 		"7za", "x",
 		"-y", tarballPath,
 		"-o"+downloadDir); err != nil {
@@ -154,7 +158,7 @@ func uncompressTarball(tarballPath string, downloadDir string) (string, error) {
 
 // matchTarballSignCmprsn evaluvates and finds correct compressed/uncompressed tarball
 // that matches with the sign file.
-func matchTarballSignCmprsn(tarballPath string, tarballSigPath string,
+func matchTarballSignCmprsn(executor executor.Executor, tarballPath string, tarballSigPath string,
 	downloadDir string, errPrefix util.ErrPrefix) (string, error) {
 	ok, dcmprsnReqd := isSigfileApplicable(tarballPath, tarballSigPath)
 	if !ok {
@@ -162,7 +166,7 @@ func matchTarballSignCmprsn(tarballPath string, tarballSigPath string,
 			errPrefix)
 	}
 	if dcmprsnReqd {
-		newTarballPath, err := uncompressTarball(tarballPath, downloadDir)
+		newTarballPath, err := uncompressTarball(executor, tarballPath, downloadDir)
 		if err != nil {
 			return "", fmt.Errorf("%sError '%s' while decompressing trarball",
 				errPrefix, err)
@@ -175,8 +179,8 @@ func matchTarballSignCmprsn(tarballPath string, tarballSigPath string,
 // VerifyTarballSignature verifies that the detached signature of the tarball
 // is valid.
 func verifyTarballSignature(
-	tarballPath string, tarballSigPath string, pubKeyPath string,
-	errPrefix util.ErrPrefix) error {
+	executor executor.Executor, tarballPath string, tarballSigPath string,
+	pubKeyPath string, errPrefix util.ErrPrefix) error {
 	tmpDir, mkdtErr := os.MkdirTemp("", "eext-keyring")
 	if mkdtErr != nil {
 		return fmt.Errorf("%sError '%s'creating temp dir for keyring",
@@ -192,14 +196,16 @@ func verifyTarballSignature(
 
 	// Create keyring
 	createKeyRingCmdArgs := append(baseArgs, "--fingerprint")
-	if err := util.RunSystemCmd(gpgCmd, createKeyRingCmdArgs...); err != nil {
+
+	if err := executor.Exec(gpgCmd, createKeyRingCmdArgs...); err != nil {
 		return fmt.Errorf("%sError '%s'creating keyring",
 			errPrefix, err)
 	}
 
 	// Import public key
 	importKeyCmdArgs := append(baseArgs, "--import", pubKeyPath)
-	if err := util.RunSystemCmd(gpgCmd, importKeyCmdArgs...); err != nil {
+
+	if err := executor.Exec(gpgCmd, importKeyCmdArgs...); err != nil {
 		return fmt.Errorf("%sError '%s' importing public-key %s",
 			errPrefix, err, pubKeyPath)
 	}

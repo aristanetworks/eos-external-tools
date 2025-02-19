@@ -152,6 +152,7 @@ func (cfgBldr *mockCfgBuilder) prep() error {
 				cfgBldr.errPrefix, pkgDirInRepo)
 		}
 		if err := util.CopyToDestDir(
+			cfgBldr.executor,
 			includeFilePath, mockCfgDir, cfgBldr.errPrefix); err != nil {
 			return err
 		}

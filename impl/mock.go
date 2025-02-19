@@ -180,11 +180,6 @@ func (bldr *mockBuilder) mockArgs(extraArgs []string) []string {
 	baseArgs := []string{
 		cfgArg,
 	}
-	if util.GlobalVar.Quiet {
-		baseArgs = append(baseArgs, "--quiet")
-	} else {
-		baseArgs = append(baseArgs, "--verbose")
-	}
 
 	mockArgs := append(baseArgs, extraArgs...)
 	mockArgs = append(mockArgs, bldr.srpmPath)
