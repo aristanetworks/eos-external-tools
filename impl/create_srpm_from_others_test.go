@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,6 +37,7 @@ func TestMatchTarballSignature(t *testing.T) {
 	tarballSigPath := filepath.Join(workingDir, "libpcap-1.10.4.tar.gz.sig")
 	tarballPath := filepath.Join(workingDir, "libpcap-1.10.4.tar.gz")
 	intermediateTarball, err := matchTarballSignCmprsn(
+		&executor.OsExecutor{},
 		tarballPath,
 		tarballSigPath,
 		workingDir,

@@ -180,7 +180,7 @@ func checkRepo(repo string, pkg string, isPkgSubdirInRepo bool,
 // srcURL could be URL or file path
 // If it is a file:// path, root directory is the
 // repo src diretory(or pkg if subdir if set).
-func download(srcURL string, targetDir string,
+func download(executor executor.Executor, srcURL string, targetDir string,
 	repo string, pkg string, isPkgSubdirInRepo bool,
 	errPrefix util.ErrPrefix) (string, error) {
 	var uri *url.URL
@@ -211,7 +211,7 @@ func download(srcURL string, targetDir string,
 				errPrefix, srcAbsPath)
 		}
 		if err := util.CopyToDestDir(
-			srcAbsPath, targetDir, errPrefix); err != nil {
+			executor, srcAbsPath, targetDir, errPrefix); err != nil {
 			return "", err
 		}
 	} else {
@@ -264,7 +264,7 @@ func filterAndCopy(pathMap map[string]string, executor executor.Executor, errPre
 			if err := util.MaybeCreateDirWithParents(destDirPath, executor, errPrefix); err != nil {
 				return err
 			}
-			if err := util.CopyToDestDir(srcGlob, destDirPath, errPrefix); err != nil {
+			if err := util.CopyToDestDir(executor, srcGlob, destDirPath, errPrefix); err != nil {
 				return err
 			}
 		}

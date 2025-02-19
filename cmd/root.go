@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/viper"
 
 	"code.arista.io/eos/tools/eext/executor"
-	"code.arista.io/eos/tools/eext/util"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -46,7 +45,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().String("config", "", "config file (default is eext-viper.yaml in /etc or $HOME/.config)")
-	rootCmd.PersistentFlags().BoolVarP(&(util.GlobalVar.Quiet), "quiet", "q", false, "Quiet terminal output (default is false)")
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Quiet terminal output (default is false)")
 	rootCmd.PersistentFlags().BoolP("dry-run", "d", false, "Instead of running the commands, print what would be run")
 
 	// Cobra also supports local flags, which will only run

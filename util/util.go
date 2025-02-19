@@ -17,43 +17,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// Globals type struct exported for global flags
-type Globals struct {
-	Quiet bool
-}
-
-// GlobalVar global variable exported for all global variables
-var GlobalVar Globals
-
 // ErrPrefix is a container type for error prefix strings.
 type ErrPrefix string
-
-// RunSystemCmd runs a command on the shell and pipes to stdout and stderr
-func RunSystemCmd(name string, arg ...string) error {
-	cmd := exec.Command(name, arg...)
-	cmd.Stderr = os.Stderr
-	if !GlobalVar.Quiet {
-		cmd.Stdout = os.Stdout
-	} else {
-		cmd.Stdout = io.Discard
-	}
-	err := cmd.Run()
-	return err
-}
-
-// Runs the system command from a specified directory
-func RunSystemCmdInDir(dir string, name string, arg ...string) error {
-	cmd := exec.Command(name, arg...)
-	cmd.Dir = dir
-	cmd.Stderr = os.Stderr
-	if !GlobalVar.Quiet {
-		cmd.Stdout = os.Stdout
-	} else {
-		cmd.Stdout = io.Discard
-	}
-	err := cmd.Run()
-	return err
-}
 
 // CheckOutput runs a command on the shell and returns stdout if it is successful
 // else it return the error
@@ -115,6 +80,7 @@ func RemoveDirs(dirs []string, errPrefix ErrPrefix) error {
 // CopyToDestDir copies files/dirs specified by srcGlob to destDir
 // It is assumed that destDir is present and writable
 func CopyToDestDir(
+	executor executor.Executor,
 	srcGlob string,
 	destDir string,
 	errPrefix ErrPrefix) error {
@@ -131,7 +97,7 @@ func CopyToDestDir(
 
 	for _, file := range filesToCopy {
 		insideDestDir := destDir + "/"
-		if err := RunSystemCmd("cp", "-rf", file, insideDestDir); err != nil {
+		if err := executor.Exec("cp", "-rf", file, insideDestDir); err != nil {
 			return fmt.Errorf("%scopying %s to %s errored out with '%s'",
 				errPrefix, file, insideDestDir, err)
 		}

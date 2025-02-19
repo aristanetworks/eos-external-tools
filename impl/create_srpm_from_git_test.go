@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/util"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -63,8 +64,8 @@ func cloneRepoFromUrl(url, targetDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download tarball from %s: %s", url, err)
 	}
-
-	err = util.RunSystemCmdInDir(targetDir, "tar", "-xvf", tarBallFilePath)
+	executor := &executor.OsExecutor{}
+	err = executor.ExecInDir(targetDir, "tar", "-xvf", tarBallFilePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract tarball %s: %s", tarBallFilePath, err)
 	}
@@ -78,7 +79,7 @@ func cloneRepoFromUrl(url, targetDir string) (string, error) {
 		return "", fmt.Errorf("failed to get current user %s", err)
 	}
 	suppressCmdArgs := []string{"chown", "-R", strings.TrimSpace(user), clonedDir}
-	err = util.RunSystemCmd("sudo", suppressCmdArgs...)
+	err = executor.Exec("sudo", suppressCmdArgs...)
 	if err != nil {
 		return "", fmt.Errorf("failed to suppress git warning %s", err)
 	}
@@ -182,7 +183,7 @@ func TestVerifyGitSignature(t *testing.T) {
 	for _, data := range testData {
 		gitSpec := data.gitSpec
 
-		err := verifyGitSignature(pubKeyPath, *gitSpec, "")
+		err := verifyGitSignature(&executor.OsExecutor{}, pubKeyPath, *gitSpec, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -209,7 +210,7 @@ func TestGitArchive(t *testing.T) {
 	repo := "upstream-git-repo-1"
 	revision := "libpcap-1.10.1"
 
-	archiveFile, err := generateArchiveFile(testWorkingDir, clonedDir, revision, repo, pkg, false, "")
+	archiveFile, err := generateArchiveFile(&executor.OsExecutor{}, testWorkingDir, clonedDir, revision, repo, pkg, false, "")
 	if err != nil {
 		t.Fatal(err)
 	}

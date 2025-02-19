@@ -17,7 +17,6 @@ import (
 	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/manifest"
 	"code.arista.io/eos/tools/eext/testutil"
-	"code.arista.io/eos/tools/eext/util"
 )
 
 func testMockConfig(t *testing.T, chained bool) {
@@ -128,7 +127,7 @@ func testMockConfig(t *testing.T, chained bool) {
 	}
 	generatedExpectedMockCfgFileHandle.Close()
 
-	if diffErr := util.RunSystemCmd("diff", "-u", generatedExpectedMockCfgPath, outFilePath); diffErr != nil {
+	if diffErr := cfgBldr.executor.Exec("diff", "-u", generatedExpectedMockCfgPath, outFilePath); diffErr != nil {
 		t.Errorf("Mock configuration differes from expected one: diff -u %s %s failed",
 			generatedExpectedMockCfgPath, outFilePath)
 	}

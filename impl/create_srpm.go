@@ -167,7 +167,7 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 	} else if bldr.pkgSpec.Type == "git-upstream" {
 		for _, upstreamSrc := range bldr.upstreamSrc {
 			if !upstreamSrc.skipSigCheck {
-				err := verifyGitSignature(upstreamSrc.pubKeyPath, upstreamSrc.gitSpec, bldr.errPrefix)
+				err := verifyGitSignature(bldr.executor, upstreamSrc.pubKeyPath, upstreamSrc.gitSpec, bldr.errPrefix)
 				if err != nil {
 					return err
 				}
@@ -181,6 +181,7 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 				upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
 				upstreamSigFilePath := filepath.Join(downloadDir, upstreamSrc.sigFile)
 				uncompressedTarballPath, err := matchTarballSignCmprsn(
+					bldr.executor,
 					upstreamSourceFilePath, upstreamSigFilePath,
 					downloadDir, bldr.errPrefix)
 				if err != nil {
@@ -191,6 +192,7 @@ func (bldr *srpmBuilder) verifyUpstream() error {
 					defer os.Remove(uncompressedTarballPath)
 				}
 				if err := verifyTarballSignature(
+					bldr.executor,
 					upstreamSourceFilePath,
 					upstreamSigFilePath,
 					upstreamSrc.pubKeyPath,
@@ -256,7 +258,7 @@ func (bldr *srpmBuilder) setupRpmbuildTreeNonSrpm() error {
 		for _, upstreamSrc := range bldr.upstreamSrc {
 			upstreamSourceFilePath := filepath.Join(downloadDir, upstreamSrc.sourceFile)
 
-			if err := util.CopyToDestDir(upstreamSourceFilePath, rpmbuildSourcesDir,
+			if err := util.CopyToDestDir(bldr.executor, upstreamSourceFilePath, rpmbuildSourcesDir,
 				bldr.errPrefix); err != nil {
 				return err
 			}
@@ -366,6 +368,7 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 		if util.CheckPath(repoSourcesDir, true, false) == nil {
 			rpmbuildSourcesDir := filepath.Join(rpmbuildDir, "SOURCES")
 			if err := util.CopyToDestDir(
+				bldr.executor,
 				repoSourcesDir+"/*",
 				rpmbuildSourcesDir,
 				bldr.errPrefix); err != nil {
@@ -376,6 +379,7 @@ func (bldr *srpmBuilder) setupRpmbuildTree() error {
 		rpmbuildSpecsDir := filepath.Join(rpmbuildDir, "SPECS")
 		repoSpecsDir := getPkgSpecDirInRepo(repo, pkg, isPkgSubdirInRepo)
 		if err := util.CopyToDestDir(
+			bldr.executor,
 			repoSpecsDir+"/*",
 			rpmbuildSpecsDir,
 			bldr.errPrefix); err != nil {
@@ -475,6 +479,7 @@ func (bldr *srpmBuilder) copyBuiltSrpmToDestDir() error {
 
 	pkgSrpmsDestDir := getPkgSrpmsDestDir(pkg)
 	if err := util.CopyToDestDir(
+		bldr.executor,
 		filenames[0], pkgSrpmsDestDir,
 		bldr.errPrefix); err != nil {
 		return err
