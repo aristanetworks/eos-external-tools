@@ -275,6 +275,30 @@ images:
           mkdir -p $DESTDIR/etc/pki/eext
           cp -a /src/2/pki/* $DESTDIR/etc/pki/eext
 
+  eext-lite:
+    units:
+      - image: .%go-binaries
+      - image: .%eext-staticfiles
+      - sources: []
+        build: |
+          mkdir -p $DESTDIR/etc
+          touch $DESTDIR/etc/resolv.conf
+
+    entry:
+      mutables: &eext-mutables
+        - /var/eext
+        - /var/cache
+        - /var/lib/mock
+        - /var/lib/rpm
+        - /var/tmp
+      mounts:
+        - source: /etc/resolv.conf
+          target: /etc/resolv.conf
+          options: ro,bind
+      # We need access to artifactory.infra.corp.arista.io
+      # to make mock work
+      share-net: true
+
   eext:
     units:
       - image: .%base-image-build
