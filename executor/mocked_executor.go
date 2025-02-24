@@ -13,7 +13,7 @@ type MockedExecutor struct {
 	Responses []Response
 
 	// records of what has been called on the executor
-	Calls []RecordedCall
+	RecordedCalls []RecordedCall
 }
 
 // RecordedCall stores information about what call was made
@@ -42,14 +42,14 @@ func NewResponse(code int, out string, err error) Response {
 // Mocked Exec that instead of running the command, it stores the information
 // about the call, and returns predefined return code and an error object.
 func (ex *MockedExecutor) Exec(name string, arg ...string) error {
-	ex.Calls = append(ex.Calls, RecordedCall{"", name, arg})
+	ex.RecordedCalls = append(ex.RecordedCalls, RecordedCall{"", name, arg})
 	return ex.popResponse().Err
 }
 
 // Mocked ExecInDir that instead of running the command, it stores the information
 // about the call, and returns predefined return code and an error object.
 func (ex *MockedExecutor) ExecInDir(dir string, name string, arg ...string) error {
-	ex.Calls = append(ex.Calls, RecordedCall{dir, name, arg})
+	ex.RecordedCalls = append(ex.RecordedCalls, RecordedCall{dir, name, arg})
 	return ex.popResponse().Err
 }
 
@@ -57,7 +57,7 @@ func (ex *MockedExecutor) ExecInDir(dir string, name string, arg ...string) erro
 // about the call, and returns predefined return code, the mocked Output that
 // the command would have printed on the standard output, and an error object.
 func (ex *MockedExecutor) Output(name string, arg ...string) (string, error) {
-	ex.Calls = append(ex.Calls, RecordedCall{"", name, arg})
+	ex.RecordedCalls = append(ex.RecordedCalls, RecordedCall{"", name, arg})
 	response := ex.popResponse()
 	return response.Output, response.Err
 }
@@ -75,7 +75,7 @@ func (ex *MockedExecutor) popResponse() Response {
 
 // Check if a call with exact params was made
 func (ex *MockedExecutor) HasCall(call RecordedCall) bool {
-	for _, recordedCall := range ex.Calls {
+	for _, recordedCall := range ex.RecordedCalls {
 		if reflect.DeepEqual(call, recordedCall) {
 			return true
 		}
@@ -86,5 +86,5 @@ func (ex *MockedExecutor) HasCall(call RecordedCall) bool {
 // Check whether the calls made with the executor match exactly (and are in
 // the same order)
 func (ex *MockedExecutor) HasExactCalls(calls []RecordedCall) bool {
-	return reflect.DeepEqual(calls, ex.Calls)
+	return reflect.DeepEqual(calls, ex.RecordedCalls)
 }

@@ -53,7 +53,7 @@ func TestGitArchive(t *testing.T) {
 	expectedCall := executor.NewRecordedCall("/tmp/fake-cloned-dir", "git",
 		[]string{"archive", "--prefix", "libpcap-1.10.1/", "-o", "/tmp/fake-working-dir/Source0.tar.gz", "libpcap-1.10.1"})
 	//expected := "In the directory '/tmp/fake-cloned-dir', would execute: git archive --prefix libpcap-1.10.1/ -o /tmp/fake-working-dir/Source0.tar.gz libpcap-1.10.1"
-	actual := mex.Calls[0]
+	actual := mex.RecordedCalls[0]
 	if !mex.HasCall(expectedCall) {
 		t.Fatalf("generateArchiveFile executed an unexpected command.\nExpected:\n%s\nActual:\n%s", expectedCall, actual)
 	}
@@ -85,7 +85,7 @@ func TestVerifyGitSignatureRevIsTagPassing(t *testing.T) {
 		executor.NewRecordedCall(spec.ClonedDir, "git", []string{"verify-tag", "-v", spec.Revision}),
 	}
 	if !mex.HasExactCalls(expectedCalls) {
-		t.Fatalf("verifyGitSignature executed wrong commands.\nExpected:\n%v\nActual:\n%v", expectedCalls, mex.Calls)
+		t.Fatalf("verifyGitSignature executed wrong commands.\nExpected:\n%v\nActual:\n%v", expectedCalls, mex.RecordedCalls)
 	}
 }
 
@@ -115,6 +115,6 @@ func TestVerifyGitSignatureRevIsCommitPassing(t *testing.T) {
 		executor.NewRecordedCall(spec.ClonedDir, "git", []string{"verify-commit", "-v", spec.Revision}),
 	}
 	if !mex.HasExactCalls(expectedCalls) {
-		t.Fatalf("verifyGitSignature executed wrong commands.\nExpected:\n%v\nActual:\n%v", expectedCalls, mex.Calls)
+		t.Fatalf("verifyGitSignature executed wrong commands.\nExpected:\n%v\nActual:\n%v", expectedCalls, mex.RecordedCalls)
 	}
 }

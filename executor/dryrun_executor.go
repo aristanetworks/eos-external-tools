@@ -15,7 +15,7 @@ type DryRunExecutor struct {
 	// extra abstractions feel unnecessary.
 
 	// human friendly description of what an invocation would do
-	Invocations []string
+	invocations []string
 
 	// a script that would be equivalent to the invocations requested
 	shellScript []string
@@ -25,7 +25,7 @@ func (ex *DryRunExecutor) Exec(name string, arg ...string) error {
 	escapedInvocation := shellEscape(append([]string{name}, arg...))
 	message := fmt.Sprintf("Would execute: %s", escapedInvocation)
 	fmt.Println(message)
-	ex.Invocations = append(ex.Invocations, message)
+	ex.invocations = append(ex.invocations, message)
 	ex.shellScript = append(ex.shellScript, escapedInvocation)
 	return nil
 }
@@ -35,7 +35,7 @@ func (ex *DryRunExecutor) ExecInDir(dir string, name string, arg ...string) erro
 	message := fmt.Sprintf(
 		"In the directory '%s', would execute: %s", dir, escapedInvocation)
 
-	ex.Invocations = append(ex.Invocations, message)
+	ex.invocations = append(ex.invocations, message)
 
 	// empty `dir` means run in the same directory, but if we just simply
 	// interpolate arg for `cd` with an empty string, the result will change the
@@ -59,5 +59,5 @@ func (ex *DryRunExecutor) GenerateShellScript() string {
 }
 
 func (ex *DryRunExecutor) GenerateDescription() string {
-	return strings.Join(ex.Invocations, "\n")
+	return strings.Join(ex.invocations, "\n")
 }
