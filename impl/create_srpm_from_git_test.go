@@ -1,156 +1,16 @@
 // Copyright (c) 2023 Arista Networks, Inc.  All rights reserved.
 // Arista Networks, Inc. Confidential and Proprietary.
 
-//go:build containerized
-
 package impl
 
 import (
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
+	"os/exec"
 	"testing"
 
+	"code.arista.io/eos/tools/eext/executor"
 	"code.arista.io/eos/tools/eext/util"
 	"github.com/spf13/viper"
-	"github.com/stretchr/testify/require"
 )
-
-type TestDataType struct {
-	gitSpec       *gitSpec
-	expectedValue string
-}
-
-// We are currently using a tarball of the libpcap repo, and extracting it in a temp folder.
-// This ensures that we mock 'cloneGitRepo' and steps after are tested.
-// If we migrate to a remote repo, we can use this function to update the url.
-func getSrcURL() string {
-	url := "https://artifactory.infra.corp.arista.io/artifactory/eext-sources/eext-testData/libpcap.tar"
-	return url
-}
-
-func downloadTarball(url, targetDir string) (string, error) {
-	tarBallFilePath := filepath.Join(targetDir, "libpcap.tar")
-	out, err := os.Create(tarBallFilePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to create file: %s", err)
-	}
-	defer out.Close()
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to download file: %s", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("server returned: %s", resp.Status)
-	}
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to write to file: %s", err)
-	}
-
-	return tarBallFilePath, nil
-}
-
-// Gets the .tar file from test repo, and untars it into the required git repo.
-func cloneRepoFromUrl(url, targetDir string) (string, error) {
-	tarBallFilePath, err := downloadTarball(url, targetDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to download tarball from %s: %s", url, err)
-	}
-
-	err = util.RunSystemCmdInDir(targetDir, "tar", "-xvf", tarBallFilePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to extract tarball %s: %s", tarBallFilePath, err)
-	}
-
-	clonedDir := filepath.Join(targetDir, "libpcap")
-	fmt.Println(clonedDir)
-
-	// suppress git error 128 (dubious ownership)
-	user, err := util.CheckOutput("whoami", []string{}...)
-	if err != nil {
-		return "", fmt.Errorf("failed to get current user %s", err)
-	}
-	suppressCmdArgs := []string{"chown", "-R", strings.TrimSpace(user), clonedDir}
-	err = util.RunSystemCmd("sudo", suppressCmdArgs...)
-	if err != nil {
-		return "", fmt.Errorf("failed to suppress git warning %s", err)
-	}
-
-	return clonedDir, nil
-}
-
-// A mock function for cloneGitRepo().
-// Since we do not use remote git repo, this function downloads a tarball from a test repo,
-// and expands it to be used as though we have cloned the repo from git.
-func cloneGitDir() (string, error) {
-	srcURL := getSrcURL()
-	tempDir, err := os.MkdirTemp("", "upstream-git-test")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %s", err)
-	}
-
-	clonedDir, err := cloneRepoFromUrl(srcURL, tempDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to clone repo dir from source %s at %s: %s", srcURL, tempDir, err)
-	}
-
-	return clonedDir, nil
-}
-
-func populateTestData(cloneDir string, revisionList, expectedList []string) []*TestDataType {
-	// Not used in any tests currently, since we mock cloneGitRepo.
-	// Will be usefull for testing gitSpec.typeOfGitRevisionFromRemote.
-	srcURL := getSrcURL()
-
-	var dataList []*TestDataType
-	for i, revision := range revisionList {
-		gitSpec := &gitSpec{
-			SrcUrl:    srcURL,
-			Revision:  revision,
-			ClonedDir: cloneDir,
-		}
-		dataType := &TestDataType{
-			gitSpec:       gitSpec,
-			expectedValue: expectedList[i],
-		}
-		dataList = append(dataList, dataType)
-	}
-
-	return dataList
-}
-
-func populateTestDataForRevision(cloneDir string) []*TestDataType {
-	revisionList := []string{"libpcap-1.10.4", "95691eb", "59747a7e74506bd2fbf6cc668e1d66b68ac6eb6d"}
-	expectedList := []string{"TAG", "COMMIT", "COMMIT"}
-
-	testData := populateTestData(cloneDir, revisionList, expectedList)
-
-	// Required for testing typeOfGitRevisionFromRemote()
-	// Keep disabled until we start using remote test data.
-	/*for i, data := range testData {
-		if i%2 == 0 {
-			data.gitSpec.ClonedDir = ""
-		}
-	}*/
-
-	return testData
-}
-
-func populateTestDataForGitSignature(cloneDir string) []*TestDataType {
-	// Yet to verify commit signatures,
-	// since not many commits signed with public keys are available.
-	revisionList := []string{"libpcap-1.10.1"}
-	expectedList := []string{""}
-
-	return populateTestData(cloneDir, revisionList, expectedList)
-}
 
 func TestRpmNameFromSpecFile(t *testing.T) {
 	viper.Set("SrcDir", "testData/")
@@ -159,66 +19,102 @@ func TestRpmNameFromSpecFile(t *testing.T) {
 	repo := "upstream-git-repo-1"
 	expectedRpmName := "libpcap-1.10.1"
 
-	gotRpmName, err := getRpmNameFromSpecFile(repo, pkg, false)
+	mex := executor.MockedExecutor{
+		Responses: []executor.Response{executor.NewResponse(0, "libpcap-1.10.1", nil)},
+	}
+	gotRpmName, err := getRpmNameFromSpecFile(repo, pkg, false, &mex)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	require.Equal(t, expectedRpmName, gotRpmName)
+	if expectedRpmName != gotRpmName {
+		t.Fatalf("TestRpmNameFromSpecFile test failed. Expected: %s, Got %s",
+			expectedRpmName, gotRpmName)
+
+	}
 	t.Log("Test rpmNameFromSpecFile PASSED")
 }
 
-func TestVerifyGitSignature(t *testing.T) {
-	cloneDir, err := cloneGitDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(cloneDir)
-
-	viper.Set("PkiPath", "../pki")
-	defer viper.Reset()
-	pubKeyPath := filepath.Join(getDetachedSigDir(), "tcpdump/tcpdumpPubKey.pem")
-	testData := populateTestDataForGitSignature(cloneDir)
-	for _, data := range testData {
-		gitSpec := data.gitSpec
-
-		err := verifyGitSignature(pubKeyPath, *gitSpec, "")
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	t.Log("Test verifyGitRepoSignature PASSED")
-}
-
 func TestGitArchive(t *testing.T) {
-	clonedDir, err := cloneGitDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(clonedDir)
-
-	testWorkingDir, mkdirErr := os.MkdirTemp("", "upstream-git")
-	if mkdirErr != nil {
-		t.Fatal(mkdirErr)
-	}
-	defer os.RemoveAll(testWorkingDir)
-
-	viper.Set("SrcDir", "testData/")
-	defer viper.Reset()
+	clonedDir := "/tmp/fake-cloned-dir"
+	testWorkingDir := "/tmp/fake-working-dir"
 	pkg := "libpcap"
 	repo := "upstream-git-repo-1"
 	revision := "libpcap-1.10.1"
+	parentFolder := "libpcap-1.10.1"
+	mex := executor.MockedExecutor{
+		Responses: []executor.Response{executor.NewResponse(0, "libpcap-1.10.1", nil)},
+	}
 
-	archiveFile, err := generateArchiveFile(testWorkingDir, clonedDir, revision, repo, pkg, false, "")
+	_, err := generateArchiveFile(testWorkingDir, clonedDir, revision, repo, pkg, parentFolder, "", &mex)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	archivePath := filepath.Join(testWorkingDir, archiveFile)
-	_, err = os.Stat(archivePath)
-	if err != nil {
-		t.Fatal(err)
+	expectedCall := executor.NewRecordedCall("/tmp/fake-cloned-dir", "git",
+		[]string{"archive", "--prefix", "libpcap-1.10.1/", "-o", "/tmp/fake-working-dir/Source0.tar.gz", "libpcap-1.10.1"})
+	//expected := "In the directory '/tmp/fake-cloned-dir', would execute: git archive --prefix libpcap-1.10.1/ -o /tmp/fake-working-dir/Source0.tar.gz libpcap-1.10.1"
+	actual := mex.RecordedCalls[0]
+	if !mex.HasCall(expectedCall) {
+		t.Fatalf("generateArchiveFile executed an unexpected command.\nExpected:\n%s\nActual:\n%s", expectedCall, actual)
 	}
 
 	t.Log("Test gitArchive PASSED")
+}
+
+func TestVerifyGitSignatureRevIsTagPassing(t *testing.T) {
+	spec := gitSpec{
+		SrcUrl:    "http://example.com",
+		Revision:  "A-tag",
+		ClonedDir: "/tmp/verification-dir",
+	}
+	pubKeyPath := "/tmp/pubkey"
+	mex := executor.MockedExecutor{
+		Responses: []executor.Response{
+			executor.NewResponse(0, "", nil),            // for gpg --fingerprint
+			executor.NewResponse(0, "", nil),            // for gpg --import
+			executor.NewResponse(0, spec.Revision, nil), // for git show-ref
+			executor.NewResponse(0, "", nil),            // for git verify-tag
+		},
+	}
+
+	verifyGitSignature(pubKeyPath, spec, util.ErrPrefix(""), &mex)
+	expectedCalls := []executor.RecordedCall{
+		executor.NewRecordedCall("", "gpg", []string{"--fingerprint"}),
+		executor.NewRecordedCall("", "gpg", []string{"--import", pubKeyPath}),
+		executor.NewRecordedCall(spec.ClonedDir, "git", []string{"show-ref", "--quiet", "--tags", spec.Revision}),
+		executor.NewRecordedCall(spec.ClonedDir, "git", []string{"verify-tag", "-v", spec.Revision}),
+	}
+	if !mex.HasExactCalls(expectedCalls) {
+		t.Fatalf("verifyGitSignature executed wrong commands.\nExpected:\n%v\nActual:\n%v", expectedCalls, mex.RecordedCalls)
+	}
+}
+
+func TestVerifyGitSignatureRevIsCommitPassing(t *testing.T) {
+	spec := gitSpec{
+		SrcUrl:    "http://example.com",
+		Revision:  "A-tag",
+		ClonedDir: "/tmp/verification-dir",
+	}
+	pubKeyPath := "/tmp/pubkey"
+	mex := executor.MockedExecutor{
+		Responses: []executor.Response{
+			executor.NewResponse(0, "", nil),               // for gpg --fingerprint
+			executor.NewResponse(0, "", nil),               // for gpg --import
+			executor.NewResponse(1, "", &exec.ExitError{}), // for git show-ref
+			executor.NewResponse(0, "", nil),               // for git cat-file
+			executor.NewResponse(0, "", nil),               // for git verify-commit
+		},
+	}
+
+	verifyGitSignature(pubKeyPath, spec, util.ErrPrefix(""), &mex)
+	expectedCalls := []executor.RecordedCall{
+		executor.NewRecordedCall("", "gpg", []string{"--fingerprint"}),
+		executor.NewRecordedCall("", "gpg", []string{"--import", pubKeyPath}),
+		executor.NewRecordedCall(spec.ClonedDir, "git", []string{"show-ref", "--quiet", "--tags", spec.Revision}),
+		executor.NewRecordedCall(spec.ClonedDir, "git", []string{"cat-file", "-e", spec.Revision}),
+		executor.NewRecordedCall(spec.ClonedDir, "git", []string{"verify-commit", "-v", spec.Revision}),
+	}
+	if !mex.HasExactCalls(expectedCalls) {
+		t.Fatalf("verifyGitSignature executed wrong commands.\nExpected:\n%v\nActual:\n%v", expectedCalls, mex.RecordedCalls)
+	}
 }
